@@ -1,5 +1,6 @@
 package agu.bitmap;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.IntBuffer;
@@ -14,15 +15,21 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Rect;
 import android.os.Build;
 
-public class PrivateDecoder {
+public class AguDecoder {
+	private static final int MARK_READ_LIMIT = 16384;
+	
 	private InputStream in;
 	private Rect region;
 	private Resampler resampler;
 	private Config config;
 	
-	public PrivateDecoder(InputStream in) {
+	public AguDecoder(InputStream in) {
 		this.in = in;
-		this.resampler = new IdenticalResampler();
+		
+		if (!in.markSupported()) {
+			in = new BufferedInputStream(in, MARK_READ_LIMIT + 1);
+		}
+		in.mark(MARK_READ_LIMIT);
 	}
 
 	public InputStream getInputStream() {
@@ -38,6 +45,10 @@ public class PrivateDecoder {
 	}
 	
 	public Bitmap decode() {
+		if (resampler == null) {
+			resampler = new IdenticalResampler();
+		}
+		
 		Bitmap bitmap = decodePng();
 		if (bitmap == null) {
 			try {
@@ -64,10 +75,6 @@ public class PrivateDecoder {
 			resampler = new HalfsizeResampler(resampler);
 			sampleSize >>= 1;
 		}
-		
-		if (resampler == null) {
-			resampler = new IdenticalResampler();
-		}
 	}
 	
 	private Bitmap decodeJpeg() {
@@ -83,8 +90,8 @@ public class PrivateDecoder {
 		final int width = d.getImageWidth();
 		final int height = d.getImageHeight();
 		
-		final int left = (region == null ? 0 : Math.min(Math.max(0, region.left), width));
-		final int top = (region == null ? 0 : Math.min(Math.max(0, region.top), height));
+		final int left = (region == null ? 0 : Math.max(0, region.left));
+		final int top = (region == null ? 0 : Math.max(0, region.top));
 		final int right = (region == null ? width : Math.min(Math.max(left, region.right), width));
 		final int bottom = (region == null ? height : Math.min(Math.max(top, region.bottom), height));
 		
@@ -169,8 +176,8 @@ public class PrivateDecoder {
 		final int width = pr.imgInfo.cols;
 		final int height = pr.imgInfo.rows;
 		
-		final int left = (region == null ? 0 : Math.min(Math.max(0, region.left), width));
-		final int top = (region == null ? 0 : Math.min(Math.max(0, region.top), height));
+		final int left = (region == null ? 0 : Math.max(0, region.left));
+		final int top = (region == null ? 0 : Math.max(0, region.top));
 		final int right = (region == null ? width : Math.min(Math.max(left, region.right), width));
 		final int bottom = (region == null ? height : Math.min(Math.max(top, region.bottom), height));
 		

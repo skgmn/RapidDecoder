@@ -1,31 +1,27 @@
 package agu.bitmap;
 
-import agu.scaling.AspectRatioCalculator;
-import agu.scaling.ScaleAlignment;
+import java.io.InputStream;
+
+import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 
 public abstract class BitmapDecoder {
-	private static final int BUFFER_LENGTH = 16384 + 1;
-	
 	public static final int SIZE_AUTO = 0;
 	
-	protected Options opts;
-	
-	private Rect bounds;
-	private int frameWidth;
-	private int frameHeight;
+	private Options opts;
+	private Rect region;
 	
 	private int width;
 	private int height;
+	private int targetWidth;
+	private int targetHeight;
 	
 	private void decodeSize() {
 		ensureOptions();
 		opts.inJustDecodeBounds = true;
-		decodeImpl();
+		decode(opts);
 		opts.inJustDecodeBounds = false;
 	}
 	
@@ -46,40 +42,71 @@ public abstract class BitmapDecoder {
 	}
 	
 	public Bitmap decode() {
-		return decodeImpl();
+		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
+		
+		if (postScale) {
+			ensureOptions();
+			opts.inSampleSize = calculateInSampleSize(width(), height(), targetWidth, targetHeight);
+			opts.inScaled = false;
+		} else {
+			if (opts != null) {
+				opts.inScaled = true;
+			}
+		}
+		
+		Bitmap bitmap;
+		if (region == null) {
+			bitmap = decode(opts);
+		} else {
+			bitmap = decodePartial(opts, region);
+		}
+		
+		if (postScale) {
+			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true);
+			bitmap.recycle();
+			return bitmap2;
+		} else {
+			return bitmap;
+		}
 	}
 	
 	public BitmapDecoder scale(int width, int height) {
 		if (width == SIZE_AUTO || height == SIZE_AUTO) {
 			if (width == SIZE_AUTO) {
-				this.width = (int) (((double) width() / height()) * height);
-				this.height = height;
+				targetWidth = (int) (((double) width() / height()) * height);
+				targetHeight = height;
 			} else {
-				this.height = (int) (((double) height() / width()) * width);
-				this.width = width;
+				targetHeight = (int) (((double) height() / width()) * width);
+				targetWidth = width;
 			}
 		} else {
-			this.width = width;
-			this.height = height;
+			targetWidth = width;
+			targetHeight = height;
 		}
 		
 		return this;
 	}
 	
-	public BitmapDecoder fitIn(int width, int height) {
-		return fitIn(width, height, ScaleAlignment.CENTER, null);
+	public BitmapDecoder region(Rect region) {
+		if (region == null) {
+			this.region = null;
+			return this;
+		} else {
+			return region(region.left, region.top, region.right, region.bottom);
+		}
 	}
 	
-	public BitmapDecoder fitIn(int width, int height, Drawable fill) {
-		return fitIn(width, height, ScaleAlignment.CENTER, fill);
-	}
-	
-	public BitmapDecoder fitIn(int width, int height, ScaleAlignment align, Drawable fill) {
-		ensureBounds();
-		AspectRatioCalculator.scale(width(), height(), width, height, align, true, bounds);
+	public BitmapDecoder region(int left, int top, int right, int bottom) {
+		left = Math.max(0, left);
+		top = Math.max(0, top);
+		right = Math.max(left, Math.min(right, left + width()));
+		bottom = Math.max(top, Math.min(bottom, top + height()));
 		
-		frameWidth = width;
-		frameHeight = height;
+		if (this.region == null) {
+			this.region = new Rect(left, top, right, bottom);
+		} else {
+			this.region.set(left, top, right, bottom);
+		}
 		
 		return this;
 	}
@@ -90,20 +117,11 @@ public abstract class BitmapDecoder {
 		}
 	}
 	
-	private void ensureBounds() {
-		if (bounds != null) {
-			bounds = new Rect();
-		}
-	}
-	
-	protected abstract Bitmap decodeImpl();
+	protected abstract Bitmap decode(Options opts);
+	protected abstract Bitmap decodePartial(Options opts, Rect region);
 
-	private static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
-		
+	private static int calculateInSampleSize(int width, int height, int reqWidth, int reqHeight) {
 	    // Raw height and width of image
-	    final int height = options.outHeight;
-	    final int width = options.outWidth;
 	    int inSampleSize = 1;
 	
 	    if (height > reqHeight || width > reqWidth) {
@@ -127,5 +145,28 @@ public abstract class BitmapDecoder {
 	
 	public static BitmapDecoder from(byte[] data, int offset, int length) {
 		return new ByteArrayDecoder(data, offset, length);
+	}
+	
+	public static BitmapDecoder from(Resources res, int id) {
+		return new ResourceDecoder(res, id);
+	}
+
+	protected static Bitmap aguDecode(InputStream in, Options opts, Rect region) {
+		return aguDecodePreProcessed(in, opts, region, new AguBitmapProcessor(opts, region).preProcess());
+	}
+	
+	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region, AguBitmapProcessor processor) {
+		final AguDecoder d = new AguDecoder(in);
+		d.setRegion(region);
+		d.setSampleSize(opts.inSampleSize);
+		
+		if (opts != null) {
+			d.setConfig(opts.inPreferredConfig);
+		}
+		
+		final Bitmap bitmap = d.decode();
+		d.close();
+		
+		return processor.postProcess(bitmap);
 	}
 }

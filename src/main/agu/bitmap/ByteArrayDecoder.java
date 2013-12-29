@@ -1,7 +1,11 @@
 package agu.bitmap;
 
+import java.io.ByteArrayInputStream;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
+import android.graphics.Rect;
 
 class ByteArrayDecoder extends BitmapDecoder {
 	private byte[] data;
@@ -15,7 +19,13 @@ class ByteArrayDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected Bitmap decodeImpl() {
+	protected Bitmap decode(Options opts) {
 		return BitmapFactory.decodeByteArray(data, offset, length, opts);
+	}
+
+	@Override
+	protected Bitmap decodePartial(Options opts, Rect region) {
+		final ByteArrayInputStream in = new ByteArrayInputStream(data, offset, length);
+		return aguDecode(in, opts, region);
 	}
 }
