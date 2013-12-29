@@ -1,25 +1,19 @@
 package agu.bitmap;
 
-import java.io.IOException;
 import java.io.InputStream;
 
-import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
-import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 
 class ResourceDecoder extends BitmapDecoder {
 	private Resources res;
 	private int id;
-	
-	private InputStream in;
-	
+
 	public ResourceDecoder(Resources res, int id) {
 		this.res = res;
 		this.id = id;
@@ -30,34 +24,15 @@ class ResourceDecoder extends BitmapDecoder {
 		return BitmapFactory.decodeResource(res, id, opts);
 	}
 
-	@SuppressLint("NewApi")
-	@Override
-	protected Bitmap decodePartial(Options opts, Rect region) {
-		final AguBitmapProcessor processor = new AguResourceProcessor(opts, region);
-		processor.preProcess();
-		
-//		if (Build.VERSION.SDK_INT >= 10) {
-//			try {
-//				final Bitmap bitmap = BitmapRegionDecoder.newInstance(in, false).decodeRegion(region, opts);
-//				return processor.postProcess(bitmap);
-//			} catch (IOException e) {
-//				return null;
-//			}
-//		} else {
-			return aguDecodePreProcessed(in, opts, region, processor);
-//		}
-	}
-	
 	class AguResourceProcessor extends AguBitmapProcessor {
 		public AguResourceProcessor(Options opts, Rect region) {
 			super(opts, region);
-			
 		}
 		
 		@Override
 		public AguBitmapProcessor preProcess() {
 			final TypedValue value = new TypedValue();
-			in = res.openRawResource(id, value);
+			res.getValue(id, value, true);
 			
 			if (opts != null) {
 				if (opts.inDensity == 0) {
@@ -78,5 +53,15 @@ class ResourceDecoder extends BitmapDecoder {
 		} else {
 			return resDensity;
 		}
+	}
+
+	@Override
+	protected AguBitmapProcessor createBitmapProcessor(Options opts, Rect region) {
+		return new AguResourceProcessor(opts, region);
+	}
+
+	@Override
+	protected InputStream openInputStream() {
+		return res.openRawResource(id);
 	}
 }

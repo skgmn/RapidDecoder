@@ -1,5 +1,7 @@
 package agu.bitmap;
 
+import java.io.InputStream;
+
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.BitmapFactory.Options;
@@ -9,6 +11,7 @@ public class AguBitmapProcessor {
 	protected Rect region;
 	
 	private double scaleFactor;
+	private InputStream in;
 	
 	public AguBitmapProcessor(Options opts, Rect region) {
 		this.opts = opts;
@@ -66,5 +69,9 @@ public class AguBitmapProcessor {
 
 	public double getScaleFactor() {
 		return scaleFactor;
+	}
+	
+	public InputStream getInputStream() {
+		return in;
 	}
 }

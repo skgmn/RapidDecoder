@@ -1,5 +1,7 @@
-package agu.scaling;
+package agu.test;
 
+import agu.scaling.AspectRatioCalculator;
+import agu.scaling.ScaleAlignment;
 import android.graphics.Rect;
 import android.test.AndroidTestCase;
 

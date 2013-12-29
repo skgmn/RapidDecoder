@@ -1,17 +1,22 @@
 package agu.bitmap;
 
+import java.io.IOException;
 import java.io.InputStream;
 
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
+import android.os.Build;
 
 public abstract class BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
 	
 	private Options opts;
 	private Rect region;
+	protected boolean mutable;
 	
 	private int width;
 	private int height;
@@ -41,6 +46,7 @@ public abstract class BitmapDecoder {
 		return height;
 	}
 	
+	@SuppressLint("NewApi")
 	public Bitmap decode() {
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
 		
@@ -48,17 +54,25 @@ public abstract class BitmapDecoder {
 			ensureOptions();
 			opts.inSampleSize = calculateInSampleSize(width(), height(), targetWidth, targetHeight);
 			opts.inScaled = false;
-		} else {
-			if (opts != null) {
-				opts.inScaled = true;
-			}
 		}
 		
 		Bitmap bitmap;
-		if (region == null) {
+		if (region == null && !mutable) {
 			bitmap = decode(opts);
 		} else {
-			bitmap = decodePartial(opts, region);
+			if (region != null) {
+				bitmap = decodePartial(opts, region);
+			} else {
+				// mutable
+				
+				if (Build.VERSION.SDK_INT >= 11) {
+					ensureOptions();
+					opts.inMutable = true;
+					bitmap = decode(opts);
+				} else {
+					bitmap = aguDecode(openInputStream(), opts, null);
+				}
+			}
 		}
 		
 		if (postScale) {
@@ -111,6 +125,15 @@ public abstract class BitmapDecoder {
 		return this;
 	}
 	
+	public BitmapDecoder mutable() {
+		return mutable(true);
+	}
+	
+	public BitmapDecoder mutable(boolean mutable) {
+		this.mutable = mutable;
+		return this;
+	}
+	
 	private void ensureOptions() {
 		if (opts == null) {
 			opts = new Options();
@@ -118,7 +141,31 @@ public abstract class BitmapDecoder {
 	}
 	
 	protected abstract Bitmap decode(Options opts);
-	protected abstract Bitmap decodePartial(Options opts, Rect region);
+	protected abstract InputStream openInputStream();
+	
+	@SuppressLint("NewApi")
+	protected Bitmap decodePartial(Options opts, Rect region) {
+		final AguBitmapProcessor processor = createBitmapProcessor(opts, region);
+		processor.preProcess();
+		
+		final InputStream in = openInputStream();
+		
+		if (Build.VERSION.SDK_INT >= 10) {
+			try {
+				final Bitmap bitmap = BitmapRegionDecoder.newInstance(in, false)
+						.decodeRegion(region, opts);
+				return processor.postProcess(bitmap);
+			} catch (IOException e) {
+				return null;
+			}
+		} else {
+			return aguDecodePreProcessed(in, opts, region, processor);
+		}
+	}
+	
+	protected AguBitmapProcessor createBitmapProcessor(Options opts, Rect region) {
+		return new AguBitmapProcessor(opts, region);
+	}
 
 	private static int calculateInSampleSize(int width, int height, int reqWidth, int reqHeight) {
 	    // Raw height and width of image
