@@ -2,14 +2,14 @@
 <project basedir="." default="build" name="AndroidGraphicUtility">
     <property environment="env" />
     <property name="android.sdk" value="${env.ANDROID_HOME}" />
-    <property name="bin" value="bin/main" />
+    <property name="bin" value="bin" />
+    <property name="bin.classes" value="bin/classes" />
     <property name="output.jar" value="agu.jar" />
     
     <target name="clean">
         <delete includeemptydirs="true">
             <fileset dir="${bin}" includes="**/*" />
         </delete>
-        <delete file="${output.jar}" />
     </target>
     
     <target name="compile">
@@ -20,15 +20,21 @@
 	                <containsregex pattern="^target=android-([0-9]+)"
 	                    replace = "\1" />
 	            </tokenfilter>
+	            <tokenfilter>
+	                <filetokenizer />
+	                <trim />
+	            </tokenfilter>
 	        </filterchain>
 	    </loadfile>
-
+	    
 	    <path id="android">
 	        <pathelement location="${android.sdk}/platforms/android-${android.target}/android.jar" />
 	    </path>
-	    	    
+
+	    <mkdir dir="${bin.classes}" />
+	    
 	    <javac srcdir="src/main"
-	        destdir="${bin}"
+	        destdir="${bin.classes}"
 	        includeantruntime="false">
 	        
             <classpath refid="android" />
@@ -36,7 +42,12 @@
     </target>
     
     <target name="build" depends="compile">
-        <jar destfile="${output.jar}" basedir="bin/main" />
+        <jar destfile="${output.jar}">
+            <fileset dir="${bin.classes}">
+                <exclude name="**/*Test.class" />
+                <exclude name="agu/test/**" />
+            </fileset>
+        </jar>
     </target>
     
 </project>

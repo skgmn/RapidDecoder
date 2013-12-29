@@ -9,8 +9,7 @@
 *.class
 
 # generated files
-bin/main/
-bin/test/
+bin/
 gen/
 
 # Local configuration file (sdk path, etc)

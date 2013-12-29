@@ -10,11 +10,11 @@ public class AspectRatioCalculator {
 	 * @param frameWidth Frame width.
 	 * @param frameHeight Frame height.
 	 * @param align Direction to align when there are remaining spaces after scaling.
-	 * @param overflow True if the scaled size should overflow or at least be the same with the frame size. False otherwise.
+	 * @param fitIn True if the scaled size should not overflow the frame size. False otherwise.
 	 * @param out A Rect instance to retrieve the scaled size and adjusted position. 
 	 */
-	public static void resize(int width, int height, int frameWidth, int frameHeight,
-			ScaleAlignment align, boolean overflow, Rect out) {
+	public static void scale(int width, int height, int frameWidth, int frameHeight,
+			ScaleAlignment align, boolean fitIn, Rect out) {
 		
 		double ratio = (double) height / width;
 		
@@ -24,7 +24,7 @@ public class AspectRatioCalculator {
 			return;
 		}
 		
-		final boolean fitWidth = ((height2 > frameHeight && overflow) || (height2 < frameHeight && !overflow));
+		final boolean fitWidth = ((height2 > frameHeight && !fitIn) || (height2 < frameHeight && fitIn));
 		if (fitWidth) {
 			out.left = 0;
 			out.right = frameWidth;
