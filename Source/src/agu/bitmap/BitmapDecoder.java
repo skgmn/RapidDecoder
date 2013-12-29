@@ -1,13 +1,12 @@
 package agu.bitmap;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapRegionDecoder;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
 import android.os.Build;
 
@@ -57,17 +56,15 @@ public abstract class BitmapDecoder {
 		}
 		
 		Bitmap bitmap;
-		if (region == null && !mutable) {
-			bitmap = decode(opts);
+		if (region != null) {
+			bitmap = decodePartial(opts, region);
 		} else {
-			if (region != null) {
-				bitmap = decodePartial(opts, region);
+			if (Build.VERSION.SDK_INT >= 11) {
+				ensureOptions();
+				opts.inMutable = mutable;
+				bitmap = decode(opts);
 			} else {
-				// mutable
-				
-				if (Build.VERSION.SDK_INT >= 11) {
-					ensureOptions();
-					opts.inMutable = true;
+				if (!mutable) {
 					bitmap = decode(opts);
 				} else {
 					bitmap = aguDecode(openInputStream(), opts, null);
@@ -142,25 +139,24 @@ public abstract class BitmapDecoder {
 	
 	protected abstract Bitmap decode(Options opts);
 	protected abstract InputStream openInputStream();
+	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 	
 	@SuppressLint("NewApi")
 	protected Bitmap decodePartial(Options opts, Rect region) {
 		final AguBitmapProcessor processor = createBitmapProcessor(opts, region);
 		processor.preProcess();
 		
-		final InputStream in = openInputStream();
-		
-		if (Build.VERSION.SDK_INT >= 10) {
-			try {
-				final Bitmap bitmap = BitmapRegionDecoder.newInstance(in, false)
-						.decodeRegion(region, opts);
-				return processor.postProcess(bitmap);
-			} catch (IOException e) {
-				return null;
-			}
-		} else {
-			return aguDecodePreProcessed(in, opts, region, processor);
-		}
+//		if (Build.VERSION.SDK_INT >= 10) {
+//			final BitmapRegionDecoder d = createBitmapRegionDecoder();
+//			if (d == null) {
+//				return null;
+//			} else {
+//				final Bitmap bitmap = d.decodeRegion(region, opts);
+//				return processor.postProcess(bitmap);
+//			}
+//		} else {
+			return aguDecodePreProcessed(openInputStream(), opts, region, processor);
+//		}
 	}
 	
 	protected AguBitmapProcessor createBitmapProcessor(Options opts, Rect region) {
@@ -199,15 +195,18 @@ public abstract class BitmapDecoder {
 	}
 
 	protected static Bitmap aguDecode(InputStream in, Options opts, Rect region) {
-		return aguDecodePreProcessed(in, opts, region, new AguBitmapProcessor(opts, region).preProcess());
+		return aguDecodePreProcessed(in, opts, region,
+				new AguBitmapProcessor(opts, region).preProcess());
 	}
 	
-	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region, AguBitmapProcessor processor) {
+	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region,
+			AguBitmapProcessor processor) {
+		
 		final AguDecoder d = new AguDecoder(in);
 		d.setRegion(region);
-		d.setSampleSize(opts.inSampleSize);
 		
 		if (opts != null) {
+			d.setSampleSize(opts.inSampleSize);
 			d.setConfig(opts.inPreferredConfig);
 		}
 		

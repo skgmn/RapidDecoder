@@ -1,12 +1,15 @@
 package agu.bitmap;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.BitmapRegionDecoder;
+import android.os.Build;
 
 class ByteArrayDecoder extends BitmapDecoder {
 	private byte[] data;
@@ -28,5 +31,15 @@ class ByteArrayDecoder extends BitmapDecoder {
 	@Override
 	protected InputStream openInputStream() {
 		return new ByteArrayInputStream(data, offset, length);
+	}
+
+	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
+	@Override
+	protected BitmapRegionDecoder createBitmapRegionDecoder() {
+		try {
+			return BitmapRegionDecoder.newInstance(data, offset, length, false);
+		} catch (IOException e) {
+			return null;
+		}
 	}
 }

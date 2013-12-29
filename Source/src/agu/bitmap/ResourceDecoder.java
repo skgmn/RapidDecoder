@@ -1,12 +1,15 @@
 package agu.bitmap;
 
+import java.io.IOException;
 import java.io.InputStream;
-
+import android.annotation.TargetApi;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
+import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 
@@ -63,5 +66,15 @@ class ResourceDecoder extends BitmapDecoder {
 	@Override
 	protected InputStream openInputStream() {
 		return res.openRawResource(id);
+	}
+
+	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
+	@Override
+	protected BitmapRegionDecoder createBitmapRegionDecoder() {
+		try {
+			return BitmapRegionDecoder.newInstance(openInputStream(), false);
+		} catch (IOException e) {
+			return null;
+		}
 	}
 }

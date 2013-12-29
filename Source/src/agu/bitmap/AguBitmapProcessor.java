@@ -48,6 +48,8 @@ public class AguBitmapProcessor {
 	}
 	
 	public Bitmap postProcess(Bitmap bitmap) {
+		if (bitmap == null) return null;
+		
 		if (opts != null && opts.inDensity != 0) {
 			bitmap.setDensity(opts.inDensity);
 		}
