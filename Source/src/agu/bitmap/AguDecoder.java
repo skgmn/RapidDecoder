@@ -21,6 +21,7 @@ public class AguDecoder {
 	private Rect region;
 	private Resampler resampler;
 	private Config config;
+	private boolean useFilter = true;
 	
 	public AguDecoder(InputStream in) {
 		this.in = in;
@@ -41,6 +42,13 @@ public class AguDecoder {
 	
 	public void setConfig(Config config) {
 		this.config = config;
+	}
+	
+	public void setUseFilter(boolean filter) {
+		useFilter = filter;
+		if (resampler != null) {
+			resampler.setUseFilter(filter);
+		}
 	}
 	
 	public Bitmap decode() {
@@ -73,6 +81,10 @@ public class AguDecoder {
 		while (sampleSize > 1) {
 			resampler = new HalfsizeResampler(resampler);
 			sampleSize >>= 1;
+		}
+		
+		if (resampler != null) {
+			resampler.setUseFilter(useFilter);
 		}
 	}
 	
@@ -130,87 +142,6 @@ public class AguDecoder {
 			d.close();
 		}
 	}
-
-//	private Bitmap decodeJpeg() {
-//		final JPEGDecoderLegacy d = new JPEGDecoderLegacy(in);
-//		try {
-//			if (!d.startDecode()) {
-//				return null;
-//			}
-//		} catch (IOException e) {
-//			return null;
-//		}
-//		
-//		final int width = d.getImageWidth();
-//		final int height = d.getImageHeight();
-//		
-//		final int left = (region == null ? 0 : Math.max(0, region.left));
-//		final int top = (region == null ? 0 : Math.max(0, region.top));
-//		final int right = (region == null ? width : Math.min(Math.max(left, region.right), width));
-//		final int bottom = (region == null ? height : Math.min(Math.max(top, region.bottom), height));
-//		
-//		final int w = right - left;
-//		final int h = bottom - top;
-//		
-//		final int sampleSize = resampler.getSampleSize();
-//		final int sampledWidth = w / sampleSize;
-//		final int sampledHeight = h / sampleSize;
-//		
-//		final Config config = (this.config != null ? this.config : getDefaultConfig(false));
-//		final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
-//
-//		final int mcuRowHeight = d.getMCURowHeight();
-//		final IntBuffer buffer = IntBuffer.allocate(w * mcuRowHeight);
-//
-//		try {
-//			d.skipMCURows(top / mcuRowHeight);
-//		} catch (IOException e) {
-//			return null;
-//		}
-//		
-//		int srcY = -(top % mcuRowHeight);
-//		int targetY = 0;
-//		
-//		while (srcY < h) {
-//			buffer.rewind();
-//			
-//			final int skipRows = (srcY < 0 ? -srcY : 0);
-//			try {
-//				d.decodeRGB(buffer, w, left, w, skipRows, 1);
-//			} catch (IOException e) {
-//				break;
-//			}
-//			
-//			final int[] pixels = buffer.array();
-//
-//			final int heightToCopy = Math.min(mcuRowHeight, h - srcY) - skipRows;
-//			if (heightToCopy > 0) {
-//				final int offset = skipRows * w;
-//				
-//				if (sampleSize == 1) {
-//					bitmap.setPixels(pixels, offset, w, 0, targetY, w, heightToCopy);
-//					
-//					targetY += heightToCopy;
-//				} else {
-//					for (int i = 0; i < heightToCopy; ++i) {
-//						final int[] sampled = resampler.resample(pixels, offset + i * w, w);
-//						if (sampled == null) continue;
-//						
-//						bitmap.setPixels(sampled, 0, sampledWidth, 0, targetY++, sampledWidth, 1);
-//					}
-//				}
-//			}
-//
-//			srcY += mcuRowHeight;
-//		}
-//		
-//		final int[] remain = resampler.finish();
-//		if (remain != null && targetY < sampledHeight) {
-//			bitmap.setPixels(remain, 0, sampledWidth, 0, targetY, sampledWidth, 1);
-//		}
-//		
-//		return bitmap;
-//	}
 	
 	private Bitmap decodePng() {
 		final PngReaderByte pr;

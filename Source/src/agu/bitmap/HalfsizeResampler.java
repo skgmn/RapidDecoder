@@ -64,19 +64,24 @@ public class HalfsizeResampler extends Resampler {
 		for (int i = 0; i < resultCache.length; ++i) {
 			final int index2 = i * 2;
 			
-			pixelCount = 0;
-			a = r = g = b = 0;
-			
-			addPixel(first, index2);
-			addPixel(first, index2 + 1);
-			addPixel(second, offset + index2);
-			addPixel(second, offset + index2 + 1);
-			
-			final int pixel = Color.argb(
-					a / pixelCount,
-					r / pixelCount,
-					g / pixelCount,
-					b / pixelCount);
+			final int pixel;
+			if (filter) {
+				pixelCount = 0;
+				a = r = g = b = 0;
+				
+				addPixel(first, index2);
+				addPixel(first, index2 + 1);
+				addPixel(second, offset + index2);
+				addPixel(second, offset + index2 + 1);
+				
+				pixel = Color.argb(
+						a / pixelCount,
+						r / pixelCount,
+						g / pixelCount,
+						b / pixelCount);
+			} else {
+				pixel = first[index2];
+			}
 			
 			resultCache[i] = pixel;
 		}
@@ -107,6 +112,14 @@ public class HalfsizeResampler extends Resampler {
 			first = null;
 			
 			return result;
+		}
+	}
+	
+	@Override
+	public void setUseFilter(boolean filter) {
+		super.setUseFilter(filter);
+		if (another != null) {
+			another.setUseFilter(filter);
 		}
 	}
 }

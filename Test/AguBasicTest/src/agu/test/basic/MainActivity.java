@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
 
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
 				.region(100, 100, 400, 400)
+				.scale(200, 500, false)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		

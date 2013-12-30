@@ -26,11 +26,11 @@ public class AguBitmapProcessor {
 	}
 	
 	public AguBitmapProcessor preProcess() {
-		if (opts != null && opts.inScaled &&
+		if (opts != null &&
 				opts.inDensity != 0 && opts.inTargetDensity != 0 &&
 				opts.inDensity != opts.inTargetDensity) {
 			
-			scaleFactor = (double) opts.inTargetDensity / opts.inDensity;
+			double scaleFactor = (double) opts.inTargetDensity / opts.inDensity;
 			
 			if (region != null) {
 				region.left = (int) (region.left / scaleFactor);
@@ -39,38 +39,44 @@ public class AguBitmapProcessor {
 				region.bottom = (int) (region.bottom / scaleFactor);
 			}
 
-			if (scaleFactor <= 0.5) {
-				if (opts.inSampleSize < 1) {
-					opts.inSampleSize = 1;
+			if (opts.inScaled) {
+				if (scaleFactor <= 0.5) {
+					if (opts.inSampleSize < 1) {
+						opts.inSampleSize = 1;
+					}
+					while (scaleFactor <= 0.5) {
+						opts.inSampleSize *= 2;
+						scaleFactor *= 2;
+					}
 				}
-				while (scaleFactor <= 0.5) {
-					opts.inSampleSize *= 2;
-					scaleFactor *= 2;
-				}
+				this.scaleFactor = scaleFactor;
 			}
 		}
 		
 		return this;
 	}
 	
-	public Bitmap postProcess(Bitmap bitmap) {
+	public Bitmap postProcess(Bitmap bitmap, boolean filter) {
 		if (bitmap == null) return null;
 		
-		if (opts != null && opts.inDensity != 0) {
-			bitmap.setDensity(opts.inDensity);
-		}
-
 		if (scaleFactor != 1) {
+			if (opts != null && opts.inDensity != 0) {
+				bitmap.setDensity(opts.inDensity);
+			}
+
 			final int newWidth = (int) (bitmap.getWidth() * scaleFactor);
 			final int newHeight = (int) (bitmap.getHeight() * scaleFactor);
 			
-			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, filter);
+			
 			bitmap2.setDensity(opts.inTargetDensity);
-
 			bitmap.recycle();
 			
 			return bitmap2;
 		} else {
+			if (opts != null && opts.inTargetDensity != 0) {
+				bitmap.setDensity(opts.inTargetDensity);
+			}
 			return bitmap;
 		}
 	}

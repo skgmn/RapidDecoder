@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
-import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
 import android.os.Build;
@@ -23,6 +22,7 @@ public abstract class BitmapDecoder {
 	private int height;
 	private int targetWidth;
 	private int targetHeight;
+	private boolean scaleFilter = true;
 	
 	private void decodeSize() {
 		ensureOptions();
@@ -53,37 +53,67 @@ public abstract class BitmapDecoder {
 		
 		if (postScale) {
 			ensureOptions();
-			opts.inSampleSize = calculateInSampleSize(width(), height(), targetWidth, targetHeight);
+			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(), targetWidth, targetHeight);
 			opts.inScaled = false;
 		}
 		
+		final boolean useOwnDecoder =
+				(mutable && Build.VERSION.SDK_INT < 11) ||
+				(opts.inSampleSize > 1 && !scaleFilter);
+
 		Bitmap bitmap;
-		if (region != null) {
-			bitmap = decodePartial(opts, region);
+		if (useOwnDecoder) {
+			bitmap = aguDecode(openInputStream(), opts, region);
 		} else {
-			if (Build.VERSION.SDK_INT >= 11) {
-				ensureOptions();
-				opts.inMutable = mutable;
-				bitmap = decode(opts);
+			if (region != null) {
+				bitmap = decodePartial(opts, region);
 			} else {
-				if (!mutable) {
-					bitmap = decode(opts);
-				} else {
-					bitmap = aguDecode(openInputStream(), opts, null);
+				if (Build.VERSION.SDK_INT >= 11) {
+					ensureOptions();
+					opts.inMutable = mutable;
 				}
+				bitmap = decode(opts);
 			}
 		}
 		
-		if (postScale) {
-			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true);
+		if (postScale &&
+				(bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
+
+			bitmap.setDensity(Bitmap.DENSITY_NONE);
+			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
+			
 			bitmap.recycle();
+
+			if (opts != null && opts.inTargetDensity != 0) {
+				bitmap2.setDensity(opts.inTargetDensity);
+			}
 			return bitmap2;
 		} else {
 			return bitmap;
 		}
 	}
 	
+	private int regionWidth() {
+		if (region == null) {
+			return width();
+		} else {
+			return region.width();
+		}
+	}
+	
+	private int regionHeight() {
+		if (region == null) {
+			return height();
+		} else {
+			return region.height();
+		}
+	}
+	
 	public BitmapDecoder scale(int width, int height) {
+		return scale(width, height, true);
+	}
+	
+	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
 		if (width == SIZE_AUTO || height == SIZE_AUTO) {
 			if (width == SIZE_AUTO) {
 				targetWidth = (int) (((double) width() / height()) * height);
@@ -97,6 +127,7 @@ public abstract class BitmapDecoder {
 			targetHeight = height;
 		}
 		
+		this.scaleFilter = scaleFilter;
 		return this;
 	}
 	
@@ -154,10 +185,10 @@ public abstract class BitmapDecoder {
 				return null;
 			} else {
 				final Bitmap bitmap = d.decodeRegion(region, opts);
-				return processor.postProcess(bitmap);
+				return processor.postProcess(bitmap, scaleFilter);
 			}
 		} else {
-			return aguDecodePreProcessed(openInputStream(), opts, region, processor);
+			return aguDecodePreProcessed(openInputStream(), region, processor);
 		}
 	}
 	
@@ -209,11 +240,11 @@ public abstract class BitmapDecoder {
 	}
 
 	protected Bitmap aguDecode(InputStream in, Options opts, Rect region) {
-		return aguDecodePreProcessed(in, opts, region,
+		return aguDecodePreProcessed(in, region,
 				createBitmapProcessor(opts, region).preProcess());
 	}
 	
-	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region,
+	protected Bitmap aguDecodePreProcessed(InputStream in, Rect region,
 			AguBitmapProcessor processor) {
 		
 		if (in == null) return null;
@@ -222,6 +253,7 @@ public abstract class BitmapDecoder {
 		
 		final AguDecoder d = new AguDecoder(in);
 		d.setRegion(region);
+		d.setUseFilter(scaleFilter);
 		
 		if (opts != null) {
 			d.setSampleSize(opts.inSampleSize);
@@ -231,6 +263,6 @@ public abstract class BitmapDecoder {
 		final Bitmap bitmap = d.decode();
 		d.close();
 		
-		return processor.postProcess(bitmap);
+		return processor.postProcess(bitmap, scaleFilter);
 	}
 }
