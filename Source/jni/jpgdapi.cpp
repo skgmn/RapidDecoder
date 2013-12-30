@@ -1,5 +1,4 @@
 #include "jpgdapi.h"
-#include "ping.h"
 
 using namespace jpgd;
 

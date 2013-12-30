@@ -18,7 +18,7 @@ include $(CLEAR_VARS)
 
 LOCAL_DEFAULT_CPP_EXTENSION := cpp    
 LOCAL_MODULE := jpgd
-LOCAL_LDLIBS += -llog
+#LOCAL_LDLIBS += -llog
 LOCAL_SRC_FILES := jpgd.cpp jpgdapi.cpp
 
 include $(BUILD_SHARED_LIBRARY)
