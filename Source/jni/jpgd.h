@@ -23,14 +23,6 @@ namespace jpgd
   typedef unsigned int   uint;
   typedef   signed int   int32;
 
-  // Loads a JPEG image from a memory buffer or a file.
-  // req_comps can be 1 (grayscale), 3 (RGB), or 4 (RGBA).
-  // On return, width/height will be set to the image's dimensions, and actual_comps will be set to the either 1 (grayscale) or 3 (RGB).
-  // Notes: For more control over where and how the source data is read, see the decompress_jpeg_image_from_stream() function below, or call the jpeg_decoder class directly.
-  // Requesting a 8 or 32bpp image is currently a little faster than 24bpp because the jpeg_decoder class itself currently always unpacks to either 8 or 32bpp.
-  unsigned char *decompress_jpeg_image_from_memory(const unsigned char *pSrc_data, int src_data_size, int *width, int *height, int *actual_comps, int req_comps);
-  unsigned char *decompress_jpeg_image_from_file(const char *pSrc_filename, int *width, int *height, int *actual_comps, int req_comps);
-
   // Success/failure error codes.
   enum jpgd_status
   {
@@ -66,46 +58,6 @@ namespace jpgd
     virtual int read(uint8 *pBuf, int max_bytes_to_read, bool *pEOF_flag) = 0;
   };
 
-  // stdio FILE stream class.
-  class jpeg_decoder_file_stream : public jpeg_decoder_stream
-  {
-    jpeg_decoder_file_stream(const jpeg_decoder_file_stream &);
-    jpeg_decoder_file_stream &operator =(const jpeg_decoder_file_stream &);
-
-    FILE *m_pFile;
-    bool m_eof_flag, m_error_flag;
-
-  public:
-    jpeg_decoder_file_stream();
-    virtual ~jpeg_decoder_file_stream();
-    
-    bool open(const char *Pfilename);
-    void close();
-
-    virtual int read(uint8 *pBuf, int max_bytes_to_read, bool *pEOF_flag);
-  };
-
-  // Memory stream class.
-  class jpeg_decoder_mem_stream : public jpeg_decoder_stream
-  {
-    const uint8 *m_pSrc_data;
-    uint m_ofs, m_size;
-
-  public:
-    jpeg_decoder_mem_stream() : m_pSrc_data(NULL), m_ofs(0), m_size(0) { }
-    jpeg_decoder_mem_stream(const uint8 *pSrc_data, uint size) : m_pSrc_data(pSrc_data), m_ofs(0), m_size(size) { }
-
-    virtual ~jpeg_decoder_mem_stream() { }
-
-    bool open(const uint8 *pSrc_data, uint size);
-    void close() { m_pSrc_data = NULL; m_ofs = 0; m_size = 0; }
-    
-    virtual int read(uint8 *pBuf, int max_bytes_to_read, bool *pEOF_flag);
-  };
-
-  // Loads JPEG file from a jpeg_decoder_stream.
-  unsigned char *decompress_jpeg_image_from_stream(jpeg_decoder_stream *pStream, int *width, int *height, int *actual_comps, int req_comps);
-
   enum 
   { 
     JPGD_IN_BUF_SIZE = 8192, JPGD_MAX_BLOCKS_PER_MCU = 10, JPGD_MAX_HUFF_TABLES = 8, JPGD_MAX_QUANT_TABLES = 4, 
@@ -135,8 +87,14 @@ namespace jpgd
     // Returns JPGD_DONE if all scan lines have been returned.
     // Returns JPGD_FAILED if an error occurred. Call get_error_code() for a more info.
     int decode(const void** pScan_line, uint* pScan_line_len);
+    int skip(uint* pScan_line_len);
     
+    void set_column_offset(int offset);
+    void set_column_length(int length);
+
     inline jpgd_status get_error_code() const { return m_error_code; }
+
+    inline jpeg_decoder_stream* get_stream() const { return m_pStream; }
 
     inline int get_width() const { return m_image_x_size; }
     inline int get_height() const { return m_image_y_size; }
@@ -148,7 +106,7 @@ namespace jpgd
 
     // Returns the total number of bytes actually consumed by the decoder (which should equal the actual size of the JPEG file).
     inline int get_total_bytes_read() const { return m_total_bytes_read; }
-    
+
   private:
     jpeg_decoder(const jpeg_decoder &);
     jpeg_decoder &operator =(const jpeg_decoder &);
@@ -179,6 +137,12 @@ namespace jpgd
       size_t m_size;
       char m_data[1];
     };
+
+    // Added by Nirvan Fallacy
+    bool m_little_endian;
+    int m_col_offset;
+    int m_col_length;
+    ////
 
     jmp_buf m_jmp_state;
     mem_block *m_pMem_blocks;
@@ -279,7 +243,9 @@ namespace jpgd
     coeff_buf* coeff_buf_open(int block_num_x, int block_num_y, int block_len_x, int block_len_y);
     inline jpgd_block_t *coeff_buf_getp(coeff_buf *cb, int block_x, int block_y);
     void load_next_row();
+    void load_next_row_skip();
     void decode_next_row();
+    void decode_next_row_skip();
     void make_huff_table(int index, huff_tables *pH);
     void check_quant_tables();
     void check_huff_tables();

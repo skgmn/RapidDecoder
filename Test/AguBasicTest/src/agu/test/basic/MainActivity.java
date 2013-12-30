@@ -1,9 +1,9 @@
 package agu.test.basic;
 
 import agu.bitmap.BitmapDecoder;
-import android.os.Bundle;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.os.Bundle;
 import android.view.Menu;
 import android.widget.ImageView;
 

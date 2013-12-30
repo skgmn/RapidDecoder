@@ -8,7 +8,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
-import android.os.Build;
 
 public abstract class BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
@@ -59,17 +58,17 @@ public abstract class BitmapDecoder {
 		if (region != null) {
 			bitmap = decodePartial(opts, region);
 		} else {
-			if (Build.VERSION.SDK_INT >= 11) {
-				ensureOptions();
-				opts.inMutable = mutable;
-				bitmap = decode(opts);
-			} else {
-				if (!mutable) {
-					bitmap = decode(opts);
-				} else {
+//			if (Build.VERSION.SDK_INT >= 11) {
+//				ensureOptions();
+//				opts.inMutable = mutable;
+//				bitmap = decode(opts);
+//			} else {
+//				if (!mutable) {
+//					bitmap = decode(opts);
+//				} else {
 					bitmap = aguDecode(openInputStream(), opts, null);
-				}
-			}
+//				}
+//			}
 		}
 		
 		if (postScale) {
