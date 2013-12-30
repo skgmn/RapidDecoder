@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
+import android.os.Build;
 
 public abstract class BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
@@ -145,17 +146,17 @@ public abstract class BitmapDecoder {
 		final AguBitmapProcessor processor = createBitmapProcessor(opts, region);
 		processor.preProcess();
 		
-//		if (Build.VERSION.SDK_INT >= 10) {
-//			final BitmapRegionDecoder d = createBitmapRegionDecoder();
-//			if (d == null) {
-//				return null;
-//			} else {
-//				final Bitmap bitmap = d.decodeRegion(region, opts);
-//				return processor.postProcess(bitmap);
-//			}
-//		} else {
+		if (Build.VERSION.SDK_INT >= 10) {
+			final BitmapRegionDecoder d = createBitmapRegionDecoder();
+			if (d == null) {
+				return null;
+			} else {
+				final Bitmap bitmap = d.decodeRegion(region, opts);
+				return processor.postProcess(bitmap);
+			}
+		} else {
 			return aguDecodePreProcessed(openInputStream(), opts, region, processor);
-//		}
+		}
 	}
 	
 	protected AguBitmapProcessor createBitmapProcessor(Options opts, Rect region) {
@@ -193,9 +194,9 @@ public abstract class BitmapDecoder {
 		return new ResourceDecoder(res, id);
 	}
 
-	protected static Bitmap aguDecode(InputStream in, Options opts, Rect region) {
+	protected Bitmap aguDecode(InputStream in, Options opts, Rect region) {
 		return aguDecodePreProcessed(in, opts, region,
-				new AguBitmapProcessor(opts, region).preProcess());
+				createBitmapProcessor(opts, region).preProcess());
 	}
 	
 	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region,
