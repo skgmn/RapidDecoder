@@ -19,11 +19,6 @@ public class PngChunkUNKNOWN extends PngChunkMultiple { // unkown, custom or not
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		return raw;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) {
 
 	}

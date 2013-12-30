@@ -1,8 +1,5 @@
 package agu.bitmap.png.chunks;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import agu.bitmap.png.ImageInfo;
 import agu.bitmap.png.PngHelperInternal;
 import agu.bitmap.png.PngjException;
@@ -28,32 +25,6 @@ public class PngChunkSPLT extends PngChunkMultiple {
 	@Override
 	public ChunkOrderingConstraint getOrderingConstraint() {
 		return ChunkOrderingConstraint.BEFORE_IDAT;
-	}
-
-	@Override
-	public ChunkRaw createRawChunk() {
-		try {
-			ByteArrayOutputStream ba = new ByteArrayOutputStream();
-			ba.write(ChunkHelper.toBytes(palName));
-			ba.write(0); // separator
-			ba.write((byte) sampledepth);
-			int nentries = getNentries();
-			for (int n = 0; n < nentries; n++) {
-				for (int i = 0; i < 4; i++) {
-					if (sampledepth == 8)
-						PngHelperInternal.writeByte(ba, (byte) palette[n * 5 + i]);
-					else
-						PngHelperInternal.writeInt2(ba, palette[n * 5 + i]);
-				}
-				PngHelperInternal.writeInt2(ba, palette[n * 5 + 4]);
-			}
-			byte[] b = ba.toByteArray();
-			ChunkRaw chunk = createEmptyChunk(b.length, false);
-			chunk.data = b;
-			return chunk;
-		} catch (IOException e) {
-			throw new PngjException(e);
-		}
 	}
 
 	@Override

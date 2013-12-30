@@ -27,18 +27,6 @@ public class PngChunkTIME extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = createEmptyChunk(7, true);
-		PngHelperInternal.writeInt2tobytes(year, c.data, 0);
-		c.data[2] = (byte) mon;
-		c.data[3] = (byte) day;
-		c.data[4] = (byte) hour;
-		c.data[5] = (byte) min;
-		c.data[6] = (byte) sec;
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		if (chunk.len != 7)
 			throw new PngjException("bad chunk " + chunk);

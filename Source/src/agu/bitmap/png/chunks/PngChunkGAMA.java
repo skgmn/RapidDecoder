@@ -25,14 +25,6 @@ public class PngChunkGAMA extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = createEmptyChunk(4, true);
-		int g = (int) (gamma * 100000 + 0.5);
-		PngHelperInternal.writeInt4tobytes(g, c.data, 0);
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		if (chunk.len != 4)
 			throw new PngjException("bad chunk " + chunk);

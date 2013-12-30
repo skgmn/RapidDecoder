@@ -30,20 +30,6 @@ public class PngChunkPLTE extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		int len = 3 * nentries;
-		int[] rgb = new int[3];
-		ChunkRaw c = createEmptyChunk(len, true);
-		for (int n = 0, i = 0; n < nentries; n++) {
-			getEntryRgb(n, rgb);
-			c.data[i++] = (byte) rgb[0];
-			c.data[i++] = (byte) rgb[1];
-			c.data[i++] = (byte) rgb[2];
-		}
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		setNentries(chunk.len / 3);
 		for (int n = 0, i = 0; n < nentries; n++) {

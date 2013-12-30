@@ -37,13 +37,12 @@ class ResourceDecoder extends BitmapDecoder {
 			final TypedValue value = new TypedValue();
 			res.getValue(id, value, true);
 			
-			if (opts != null) {
-				if (opts.inDensity == 0) {
-					opts.inDensity = translateDensity(value.density);
-				}
-				if (opts.inTargetDensity == 0) {
-					opts.inTargetDensity = res.getDisplayMetrics().densityDpi;
-				}
+			ensureOptions();
+			if (opts.inDensity == 0) {
+				opts.inDensity = translateDensity(value.density);
+			}
+			if (opts.inTargetDensity == 0) {
+				opts.inTargetDensity = res.getDisplayMetrics().densityDpi;
 			}
 			
 			return super.preProcess();

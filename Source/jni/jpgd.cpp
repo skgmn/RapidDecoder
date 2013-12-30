@@ -2745,7 +2745,7 @@ void jpeg_decoder::init_frame()
   m_dest_bytes_per_scan_line = ((m_image_x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
 
   int x_size = (m_col_length >= 0 ? m_col_length : m_image_x_size);
-  m_real_dest_bytes_per_scan_line = x_size;
+  m_real_dest_bytes_per_scan_line = x_size * m_dest_bytes_per_pixel;
   //m_real_dest_bytes_per_scan_line = (x_size * m_dest_bytes_per_pixel);
 
   // Initialize two scan line buffers.

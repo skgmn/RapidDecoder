@@ -109,7 +109,6 @@ public class JpegDecoder {
 	}
 	
 	@Override
-	@FindBugsSuppressWarnings("FI_EMPTY")
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();

@@ -1,11 +1,13 @@
 package agu.bitmap;
 
+import java.io.FileDescriptor;
 import java.io.InputStream;
 
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
 import android.os.Build;
@@ -59,17 +61,17 @@ public abstract class BitmapDecoder {
 		if (region != null) {
 			bitmap = decodePartial(opts, region);
 		} else {
-//			if (Build.VERSION.SDK_INT >= 11) {
-//				ensureOptions();
-//				opts.inMutable = mutable;
-//				bitmap = decode(opts);
-//			} else {
-//				if (!mutable) {
-//					bitmap = decode(opts);
-//				} else {
+			if (Build.VERSION.SDK_INT >= 11) {
+				ensureOptions();
+				opts.inMutable = mutable;
+				bitmap = decode(opts);
+			} else {
+				if (!mutable) {
+					bitmap = decode(opts);
+				} else {
 					bitmap = aguDecode(openInputStream(), opts, null);
-//				}
-//			}
+				}
+			}
 		}
 		
 		if (postScale) {
@@ -193,6 +195,18 @@ public abstract class BitmapDecoder {
 	public static BitmapDecoder from(Resources res, int id) {
 		return new ResourceDecoder(res, id);
 	}
+	
+	public static BitmapDecoder from(String pathName) {
+		return new FileDecoder(pathName);
+	}
+	
+	public static BitmapDecoder from(FileDescriptor fd) {
+		return new FileDescriptorDecoder(fd);
+	}
+	
+	public static BitmapDecoder from(InputStream in) {
+		return new StreamDecoder(in);
+	}
 
 	protected Bitmap aguDecode(InputStream in, Options opts, Rect region) {
 		return aguDecodePreProcessed(in, opts, region,
@@ -201,6 +215,10 @@ public abstract class BitmapDecoder {
 	
 	protected static Bitmap aguDecodePreProcessed(InputStream in, Options opts, Rect region,
 			AguBitmapProcessor processor) {
+		
+		if (in == null) return null;
+		
+		opts = processor.getOptions();
 		
 		final AguDecoder d = new AguDecoder(in);
 		d.setRegion(region);

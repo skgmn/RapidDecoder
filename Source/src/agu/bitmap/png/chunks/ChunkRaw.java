@@ -1,13 +1,11 @@
 package agu.bitmap.png.chunks;
 
 import java.io.ByteArrayInputStream;
-import java.io.OutputStream;
 import java.util.zip.CRC32;
 
 import agu.bitmap.png.PngHelperInternal;
 import agu.bitmap.png.PngjBadCrcException;
 import agu.bitmap.png.PngjException;
-import agu.bitmap.png.PngjOutputException;
 
 /**
  * Raw (physical) chunk.
@@ -69,34 +67,6 @@ public class ChunkRaw {
 	public void allocData() { // TODO: not public
 		if (data == null || data.length < len)
 			data = new byte[len];
-	}
-
-	/**
-	 * this is called after setting data, before writing to os
-	 */
-	private void computeCrcForWriting() {
-		crcengine = new CRC32();
-		crcengine.update(idbytes, 0, 4);
-		if (len > 0)
-			crcengine.update(data, 0, len); //
-		PngHelperInternal.writeInt4tobytes((int) crcengine.getValue(), crcval, 0);
-	}
-
-	/**
-	 * Computes the CRC and writes to the stream. If error, a
-	 * PngjOutputException is thrown
-	 * 
-	 * Note that this is only used for non
-	 */
-	public void writeChunk(OutputStream os) {
-		if (idbytes.length != 4)
-			throw new PngjOutputException("bad chunkid [" + ChunkHelper.toString(idbytes) + "]");
-		PngHelperInternal.writeInt4(os, len);
-		PngHelperInternal.writeBytes(os, idbytes);
-		if (len > 0)
-			PngHelperInternal.writeBytes(os, data, 0, len);
-		computeCrcForWriting();
-		PngHelperInternal.writeBytes(os, crcval, 0, 4);
 	}
 
 	public void checkCrc() {

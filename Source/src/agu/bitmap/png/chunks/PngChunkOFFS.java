@@ -27,15 +27,6 @@ public class PngChunkOFFS extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = createEmptyChunk(9, true);
-		PngHelperInternal.writeInt4tobytes((int) posX, c.data, 0);
-		PngHelperInternal.writeInt4tobytes((int) posY, c.data, 4);
-		c.data[8] = (byte) units;
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		if (chunk.len != 9)
 			throw new PngjException("bad chunk length " + chunk);

@@ -1,7 +1,6 @@
 package agu.bitmap.png.chunks;
 
 import agu.bitmap.png.ImageInfo;
-import agu.bitmap.png.PngjException;
 
 /**
  * tEXt chunk.
@@ -13,16 +12,6 @@ public class PngChunkTEXT extends PngChunkTextVar {
 
 	public PngChunkTEXT(ImageInfo info) {
 		super(ID, info);
-	}
-
-	@Override
-	public ChunkRaw createRawChunk() {
-		if (key == null || key.trim().length() == 0)
-			throw new PngjException("Text chunk key must be non empty");
-		byte[] b = ChunkHelper.toBytes(key + "\0" + val);
-		ChunkRaw chunk = createEmptyChunk(b.length, false);
-		chunk.data = b;
-		return chunk;
 	}
 
 	@Override

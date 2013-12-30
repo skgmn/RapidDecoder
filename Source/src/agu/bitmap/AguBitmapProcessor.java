@@ -19,6 +19,12 @@ public class AguBitmapProcessor {
 		this.scaleFactor = 1;
 	}
 	
+	protected void ensureOptions() {
+		if (opts == null) {
+			opts = new Options();
+		}
+	}
+	
 	public AguBitmapProcessor preProcess() {
 		if (opts != null && opts.inScaled &&
 				opts.inDensity != 0 && opts.inTargetDensity != 0 &&
@@ -75,5 +81,9 @@ public class AguBitmapProcessor {
 	
 	public InputStream getInputStream() {
 		return in;
+	}
+	
+	public Options getOptions() {
+		return opts;
 	}
 }

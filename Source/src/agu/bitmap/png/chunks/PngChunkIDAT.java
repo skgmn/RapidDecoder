@@ -24,11 +24,6 @@ public class PngChunkIDAT extends PngChunkMultiple {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {// does nothing
-		return null;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) { // does nothing
 	}
 

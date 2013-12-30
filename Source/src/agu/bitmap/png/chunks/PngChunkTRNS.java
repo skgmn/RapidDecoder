@@ -31,26 +31,6 @@ public class PngChunkTRNS extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = null;
-		if (imgInfo.greyscale) {
-			c = createEmptyChunk(2, true);
-			PngHelperInternal.writeInt2tobytes(gray, c.data, 0);
-		} else if (imgInfo.indexed) {
-			c = createEmptyChunk(paletteAlpha.length, true);
-			for (int n = 0; n < c.len; n++) {
-				c.data[n] = (byte) paletteAlpha[n];
-			}
-		} else {
-			c = createEmptyChunk(6, true);
-			PngHelperInternal.writeInt2tobytes(red, c.data, 0);
-			PngHelperInternal.writeInt2tobytes(green, c.data, 0);
-			PngHelperInternal.writeInt2tobytes(blue, c.data, 0);
-		}
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) {
 		if (imgInfo.greyscale) {
 			gray = PngHelperInternal.readInt2fromBytes(c.data, 0);

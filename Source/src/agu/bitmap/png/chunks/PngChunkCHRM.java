@@ -28,21 +28,6 @@ public class PngChunkCHRM extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = null;
-		c = createEmptyChunk(32, true);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(whitex), c.data, 0);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(whitey), c.data, 4);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(redx), c.data, 8);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(redy), c.data, 12);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(greenx), c.data, 16);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(greeny), c.data, 20);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(bluex), c.data, 24);
-		PngHelperInternal.writeInt4tobytes(PngHelperInternal.doubleToInt100000(bluey), c.data, 28);
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) {
 		if (c.len != 32)
 			throw new PngjException("bad chunk " + c);

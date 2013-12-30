@@ -24,13 +24,6 @@ public class PngChunkSTER extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = createEmptyChunk(1, true);
-		c.data[0] = (byte) mode;
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		if (chunk.len != 1)
 			throw new PngjException("bad chunk length " + chunk);

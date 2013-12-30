@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import java.util.zip.CRC32;
@@ -103,33 +102,6 @@ public final class PngHelperInternal {
 				| (b[offset + 3] & 0xff);
 	}
 
-	public static void writeByte(OutputStream os, byte b) {
-		try {
-			os.write(b);
-		} catch (IOException e) {
-			throw new PngjOutputException(e);
-		}
-	}
-
-	public static void writeByte(OutputStream os, byte[] bs) {
-		try {
-			os.write(bs);
-		} catch (IOException e) {
-			throw new PngjOutputException(e);
-		}
-	}
-
-	public static void writeInt2(OutputStream os, int n) {
-		byte[] temp = { (byte) ((n >> 8) & 0xff), (byte) (n & 0xff) };
-		writeBytes(os, temp);
-	}
-
-	public static void writeInt4(OutputStream os, int n) {
-		byte[] temp = new byte[4];
-		writeInt4tobytes(n, temp, 0);
-		writeBytes(os, temp);
-	}
-
 	public static void writeInt2tobytes(int n, byte[] b, int offset) {
 		b[offset] = (byte) ((n >> 8) & 0xff);
 		b[offset + 1] = (byte) (n & 0xff);
@@ -178,22 +150,6 @@ public final class PngHelperInternal {
 			}
 		} catch (IOException e) {
 			throw new PngjInputException(e);
-		}
-	}
-
-	public static void writeBytes(OutputStream os, byte[] b) {
-		try {
-			os.write(b);
-		} catch (IOException e) {
-			throw new PngjOutputException(e);
-		}
-	}
-
-	public static void writeBytes(OutputStream os, byte[] b, int offset, int n) {
-		try {
-			os.write(b, offset, n);
-		} catch (IOException e) {
-			throw new PngjOutputException(e);
 		}
 	}
 
@@ -286,14 +242,6 @@ public final class PngHelperInternal {
 			throw new PngjInputException("Could not open " + f, e);
 		}
 		return is;
-	}
-
-	static OutputStream ostreamFromFile(File f) {
-		return ostreamFromFile(f, true);
-	}
-
-	static OutputStream ostreamFromFile(File f, boolean overwrite) {
-		return PngHelperInternal2.ostreamFromFile(f, overwrite);
 	}
 
 	/**

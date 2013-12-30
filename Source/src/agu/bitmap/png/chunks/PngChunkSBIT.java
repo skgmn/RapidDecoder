@@ -53,24 +53,6 @@ public class PngChunkSBIT extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = null;
-		c = createEmptyChunk(getCLen(), true);
-		if (imgInfo.greyscale) {
-			c.data[0] = (byte) graysb;
-			if (imgInfo.alpha)
-				c.data[1] = (byte) alphasb;
-		} else {
-			c.data[0] = (byte) redsb;
-			c.data[1] = (byte) greensb;
-			c.data[2] = (byte) bluesb;
-			if (imgInfo.alpha)
-				c.data[3] = (byte) alphasb;
-		}
-		return c;
-	}
-
-	@Override
 	public PngChunk cloneForWrite(ImageInfo imgInfo) {
 		PngChunkSBIT other = new PngChunkSBIT(imgInfo);
 		other.graysb = graysb;

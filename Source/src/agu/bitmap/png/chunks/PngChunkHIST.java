@@ -36,18 +36,6 @@ public class PngChunkHIST extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		if (!imgInfo.indexed)
-			throw new PngjException("only indexed images accept a HIST chunk");
-		ChunkRaw c = null;
-		c = createEmptyChunk(hist.length * 2, true);
-		for (int i = 0; i < hist.length; i++) {
-			PngHelperInternal.writeInt2tobytes(hist[i], c.data, i * 2);
-		}
-		return c;
-	}
-
-	@Override
 	public PngChunk cloneForWrite(ImageInfo imgInfo) {
 		PngChunkHIST other = new PngChunkHIST(imgInfo);
 		other.hist = new int[hist.length];

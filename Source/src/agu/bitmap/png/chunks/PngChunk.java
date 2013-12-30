@@ -1,9 +1,6 @@
 package agu.bitmap.png.chunks;
 
-import java.io.OutputStream;
-
 import agu.bitmap.png.ImageInfo;
-import agu.bitmap.png.PngjExceptionInternal;
 
 /**
  * Represents a instance of a PNG chunk.
@@ -138,22 +135,6 @@ public abstract class PngChunk {
 	public void setPriority(boolean priority) {
 		this.priority = priority;
 	}
-
-	final void write(OutputStream os) {
-		if (raw == null)
-			raw = createRawChunk();
-		if (raw == null)
-			throw new PngjExceptionInternal("null chunk ! creation failed for " + this);
-		raw.writeChunk(os);
-	}
-
-	/**
-	 * Creates the physical chunk. This is used when writing (serialization).
-	 * Each particular chunk class implements its own logic.
-	 * 
-	 * @return A newly allocated and filled raw chunk
-	 */
-	protected abstract ChunkRaw createRawChunk();
 
 	/**
 	 * Parses raw chunk and fill inside data. This is used when reading

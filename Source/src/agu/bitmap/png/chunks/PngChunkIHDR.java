@@ -37,22 +37,6 @@ public class PngChunkIHDR extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = new ChunkRaw(13, ChunkHelper.b_IHDR, true);
-		int offset = 0;
-		PngHelperInternal.writeInt4tobytes(cols, c.data, offset);
-		offset += 4;
-		PngHelperInternal.writeInt4tobytes(rows, c.data, offset);
-		offset += 4;
-		c.data[offset++] = (byte) bitspc;
-		c.data[offset++] = (byte) colormodel;
-		c.data[offset++] = (byte) compmeth;
-		c.data[offset++] = (byte) filmeth;
-		c.data[offset++] = (byte) interlaced;
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) {
 		if (c.len != 13)
 			throw new PngjException("Bad IDHR len " + c.len);

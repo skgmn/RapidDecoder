@@ -38,14 +38,6 @@ public class PngChunkSRGB extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = null;
-		c = createEmptyChunk(1, true);
-		c.data[0] = (byte) intent;
-		return c;
-	}
-
-	@Override
 	public PngChunk cloneForWrite(ImageInfo imgInfo) {
 		PngChunkSRGB other = new PngChunkSRGB(imgInfo);
 		other.intent = intent;

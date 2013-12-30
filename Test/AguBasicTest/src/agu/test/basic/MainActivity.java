@@ -1,10 +1,16 @@
 package agu.test.basic;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.ImageView;
 
 public class MainActivity extends Activity {
@@ -16,11 +22,21 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
-		
+
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
-//				.region(100, 100, 400, 400)
+				.region(100, 100, 400, 400)
 				.decode();
 		imageView.setImageBitmap(bitmap);
+		
+		imageView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+			@SuppressWarnings("deprecation")
+			@Override
+			public void onGlobalLayout() {
+				imageView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+				
+				Log.e("asdf", "width = " + imageView.getWidth() + ", height = " + imageView.getHeight());
+			}
+		});
 	}
 
 	@Override

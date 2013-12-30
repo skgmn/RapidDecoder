@@ -25,16 +25,6 @@ public class PngChunkICCP extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = createEmptyChunk(profileName.length() + compressedProfile.length + 2, true);
-		System.arraycopy(ChunkHelper.toBytes(profileName), 0, c.data, 0, profileName.length());
-		c.data[profileName.length()] = 0;
-		c.data[profileName.length() + 1] = 0;
-		System.arraycopy(compressedProfile, 0, c.data, profileName.length() + 2, compressedProfile.length);
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw chunk) {
 		int pos0 = ChunkHelper.posNullByte(chunk.data);
 		profileName = ChunkHelper.toString(chunk.data, 0, pos0);

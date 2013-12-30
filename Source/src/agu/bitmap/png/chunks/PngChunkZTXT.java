@@ -1,8 +1,5 @@
 package agu.bitmap.png.chunks;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import agu.bitmap.png.ImageInfo;
 import agu.bitmap.png.PngjException;
 
@@ -17,26 +14,6 @@ public class PngChunkZTXT extends PngChunkTextVar {
 	// http://www.w3.org/TR/PNG/#11zTXt
 	public PngChunkZTXT(ImageInfo info) {
 		super(ID, info);
-	}
-
-	@Override
-	public ChunkRaw createRawChunk() {
-		if (key == null || key.trim().length() == 0)
-			throw new PngjException("Text chunk key must be non empty");
-		try {
-			ByteArrayOutputStream ba = new ByteArrayOutputStream();
-			ba.write(ChunkHelper.toBytes(key));
-			ba.write(0); // separator
-			ba.write(0); // compression method: 0
-			byte[] textbytes = ChunkHelper.compressBytes(ChunkHelper.toBytes(val), true);
-			ba.write(textbytes);
-			byte[] b = ba.toByteArray();
-			ChunkRaw chunk = createEmptyChunk(b.length, false);
-			chunk.data = b;
-			return chunk;
-		} catch (IOException e) {
-			throw new PngjException(e);
-		}
 	}
 
 	@Override

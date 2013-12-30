@@ -22,12 +22,6 @@ public class PngChunkIEND extends PngChunkSingle {
 	}
 
 	@Override
-	public ChunkRaw createRawChunk() {
-		ChunkRaw c = new ChunkRaw(0, ChunkHelper.b_IEND, false);
-		return c;
-	}
-
-	@Override
 	public void parseFromRaw(ChunkRaw c) {
 		// this is not used
 	}
