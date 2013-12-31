@@ -10,6 +10,7 @@ import agu.bitmap.png.PngReaderByte;
 import agu.bitmap.png.PngjException;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
@@ -51,26 +52,28 @@ public class AguDecoder {
 		}
 	}
 
-	public Bitmap decode(String mimeType) {
+	public Bitmap decode(Options opts) {
 		if (resampler == null) {
 			resampler = new IdentityResampler();
 		}
 		
+		final String mimeType = opts.outMimeType;
+		
 		Bitmap bitmap;
 		
 		if (mimeType == null) {
-			bitmap = decodePng();
+			bitmap = decodePng(opts);
 			if (bitmap == null) {
 				try {
 					in.reset();
-					bitmap = decodeJpeg();
+					bitmap = decodeJpeg(opts);
 				} catch (IOException e) {
 				}
 			}
 		} else if (mimeType.equals("image/png")) {
-			bitmap = decodePng();
+			bitmap = decodePng(opts);
 		} else if (mimeType.equals("image/jpeg")) {
-			bitmap = decodeJpeg();
+			bitmap = decodeJpeg(opts);
 		} else {
 			bitmap = null;
 		}
@@ -98,12 +101,14 @@ public class AguDecoder {
 		}
 	}
 	
-	private Bitmap decodeJpeg() {
+	private Bitmap decodeJpeg(Options opts) {
 		final JpegDecoder d = new JpegDecoder(in);
 		try {
 			if (!d.begin()) {
 				return null;
 			}
+			
+			if (opts.mCancel) return null;
 			
 			final int width = d.getWidth();
 			final int height = d.getHeight();
@@ -129,11 +134,14 @@ public class AguDecoder {
 			
 			d.sliceColumn(left, w);
 			for (int i = 0; i < top; ++i) {
+				if (opts.mCancel) return null;
 				d.skipLine();
 			}
 			
 			for (int i = top; i < bottom; ++i) {
 				d.readLine(scanline);
+				
+				if (opts.mCancel) return null;
 				
 				final int[] sampled = resampler.resample(scanline, 0, w);
 				if (sampled != null) {
@@ -153,13 +161,15 @@ public class AguDecoder {
 		}
 	}
 	
-	private Bitmap decodePng() {
+	private Bitmap decodePng(Options opts) {
 		final PngReaderByte pr;
 		try {
 			pr = new PngReaderByte(in);
 		} catch (PngjException e) {
 			return null;
 		}
+		
+		if (opts.mCancel) return null;
 		
 		final int channels = pr.imgInfo.channels;
 		final boolean alpha = pr.imgInfo.alpha;
@@ -217,6 +227,8 @@ public class AguDecoder {
 				}
 			}
 			
+			if (opts.mCancel) return null;
+
 			final int[] sampled = resampler.resample(pixels, 0, pixels.length);
 			if (sampled != null) {
 				bitmap.setPixels(sampled, 0, sampledWidth, 0, y, sampledWidth, 1);

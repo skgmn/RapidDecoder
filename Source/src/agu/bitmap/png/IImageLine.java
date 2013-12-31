@@ -31,12 +31,4 @@ public interface IImageLine {
 	 */
 	void endReadFromPngRaw();
 
-	/**
-	 * Writes the line to a PNG raw byte array, in the unfiltered PNG format
-	 * Notice that the first byte is the filter type, you should write it only
-	 * if you know it.
-	 * 
-	 */
-	void writeToPngRaw(byte[] raw);
-
 }

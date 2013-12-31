@@ -68,6 +68,8 @@ public abstract class BitmapDecoder {
 	
 	@SuppressLint("NewApi")
 	public Bitmap decode() {
+		opts.mCancel = false;
+		
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
 		
 		if (postScale) {
@@ -270,9 +272,13 @@ public abstract class BitmapDecoder {
 		d.setSampleSize(opts.inSampleSize);
 		d.setConfig(opts.inPreferredConfig);
 		
-		final Bitmap bitmap = d.decode(opts.outMimeType);
+		final Bitmap bitmap = d.decode(opts);
 		d.close();
 		
 		return processor.postProcess(bitmap, scaleFilter);
+	}
+	
+	public void cancel() {
+		opts.requestCancelDecode();
 	}
 }

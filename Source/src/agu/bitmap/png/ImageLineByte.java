@@ -29,13 +29,13 @@ public class ImageLineByte implements IImageLine, IImageLineArray {
 		scanline = sci != null && sci.length >= size ? sci : new byte[size];
 	}
 
-	public static IImageLineFactory<ImageLineByte> getFactory(ImageInfo iminfo) {
-		return new IImageLineFactory<ImageLineByte>() {
-			public ImageLineByte createImageLine(ImageInfo iminfo) {
-				return new ImageLineByte(iminfo);
-			}
-		};
-	}
+//	public static IImageLineFactory<ImageLineByte> getFactory(ImageInfo iminfo) {
+//		return new IImageLineFactory<ImageLineByte>() {
+//			public ImageLineByte createImageLine(ImageInfo iminfo) {
+//				return new ImageLineByte(iminfo);
+//			}
+//		};
+//	}
 
 	public FilterType getFilterUsed() {
 		return filterType;
@@ -102,35 +102,6 @@ public class ImageLineByte implements IImageLine, IImageLineArray {
 						i += step1;
 					}
 				} while (mask != 0 && i < size);
-			}
-		}
-	}
-
-	public void writeToPngRaw(byte[] raw) {
-		raw[0] = (byte) filterType.val;
-		if (imgInfo.bitDepth == 8) {
-			System.arraycopy(scanline, 0, raw, 1, size);
-			for (int i = 0; i < size; i++) {
-				raw[i + 1] = (byte) scanline[i];
-			}
-		} else if (imgInfo.bitDepth == 16) {
-			for (int i = 0, s = 1; i < size; i++) {
-				raw[s++] = scanline[i];
-				raw[s++] = 0;
-			}
-		} else { // packed formats
-			int shi, bd, v;
-			bd = imgInfo.bitDepth;
-			shi = 8 - bd;
-			v = 0;
-			for (int i = 0, r = 1; i < size; i++) {
-				v |= (scanline[i] << shi);
-				shi -= bd;
-				if (shi < 0 || i == size - 1) {
-					raw[r++] = (byte) v;
-					shi = 8 - bd;
-					v = 0;
-				}
 			}
 		}
 	}
