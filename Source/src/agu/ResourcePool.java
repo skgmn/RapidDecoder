@@ -138,6 +138,7 @@ public abstract class ResourcePool<T> {
 	}
 	
 	public void recycle(T obj) {
+		if (obj == null) return;
 		stack.push(obj);
 	}
 }

@@ -37,7 +37,6 @@ class ResourceDecoder extends BitmapDecoder {
 			final TypedValue value = new TypedValue();
 			res.getValue(id, value, true);
 			
-			ensureOptions();
 			if (opts.inDensity == 0) {
 				opts.inDensity = translateDensity(value.density);
 			}

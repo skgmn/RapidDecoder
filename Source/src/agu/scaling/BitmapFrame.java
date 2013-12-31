@@ -54,8 +54,55 @@ public class BitmapFrame {
 			RECT.recycle(bounds);
 		}
 	}
-	
+
 	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight) {
+		return cutOut(bitmap, frameWidth, frameHeight, ScaleAlignment.CENTER);
+	}
+	
+	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment scale) {
 		
+		return null;
+	}
+
+	public static Bitmap scale(Bitmap bitmap, int frameWidth, int frameHeight,
+			ScaleAlignment align, boolean fitIn, Drawable background) {
+		
+		final Rect bounds = RECT.obtain(false);
+		try {
+			AspectRatioCalculator.scale(bitmap.getWidth(), bitmap.getHeight(),
+					frameWidth, frameHeight, align, true, bounds);
+			
+			final int w = bounds.width();
+			final int h = bounds.height();
+			
+			if (bitmap.getWidth() == w && bitmap.getHeight() == h) {
+				return bitmap;
+			} else {
+				final Bitmap bitmap2 = Bitmap.createBitmap(w, h, bitmap.getConfig());
+				final Canvas canvas = new Canvas(bitmap2);
+				
+				if (background != null) {
+					canvas.save(Canvas.CLIP_SAVE_FLAG);
+					canvas.clipRect(bounds, Op.DIFFERENCE);
+					
+					background.setBounds(0, 0, w, h);
+					background.draw(canvas);
+					
+					canvas.restore();
+				}
+				
+				final Paint p = PAINT.obtain();
+				try {
+					p.setFilterBitmap(true);
+					canvas.drawBitmap(bitmap, null, bounds, p);
+				} finally {
+					PAINT.recycle(p);
+				}
+
+				return bitmap2;
+			}
+		} finally {
+			RECT.recycle(bounds);
+		}
 	}
 }

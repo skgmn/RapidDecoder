@@ -11,6 +11,8 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Rect;
 import android.os.Build;
 
+import static agu.ResourcePool.*;
+
 public abstract class BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
 	
@@ -24,8 +26,24 @@ public abstract class BitmapDecoder {
 	private int targetHeight;
 	private boolean scaleFilter = true;
 	
+	protected BitmapDecoder() {
+		opts = OPTIONS.obtain();
+	}
+	
+	public void release() {
+		if (opts != null) {
+			OPTIONS.recycle(opts);
+			opts = null;
+		}
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		release();
+		super.finalize();
+	}
+	
 	private void decodeSize() {
-		ensureOptions();
 		opts.inJustDecodeBounds = true;
 		decode(opts);
 		opts.inJustDecodeBounds = false;
@@ -52,7 +70,6 @@ public abstract class BitmapDecoder {
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
 		
 		if (postScale) {
-			ensureOptions();
 			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(), targetWidth, targetHeight);
 			opts.inScaled = false;
 		}
@@ -69,7 +86,6 @@ public abstract class BitmapDecoder {
 				bitmap = decodePartial(opts, region);
 			} else {
 				if (Build.VERSION.SDK_INT >= 11) {
-					ensureOptions();
 					opts.inMutable = mutable;
 				}
 				bitmap = decode(opts);
@@ -84,7 +100,7 @@ public abstract class BitmapDecoder {
 			
 			bitmap.recycle();
 
-			if (opts != null && opts.inTargetDensity != 0) {
+			if (opts.inTargetDensity != 0) {
 				bitmap2.setDensity(opts.inTargetDensity);
 			}
 			return bitmap2;
@@ -162,12 +178,6 @@ public abstract class BitmapDecoder {
 	public BitmapDecoder mutable(boolean mutable) {
 		this.mutable = mutable;
 		return this;
-	}
-	
-	private void ensureOptions() {
-		if (opts == null) {
-			opts = new Options();
-		}
 	}
 	
 	protected abstract Bitmap decode(Options opts);
@@ -249,16 +259,11 @@ public abstract class BitmapDecoder {
 		
 		if (in == null) return null;
 		
-		opts = processor.getOptions();
-		
 		final AguDecoder d = new AguDecoder(in);
 		d.setRegion(region);
 		d.setUseFilter(scaleFilter);
-		
-		if (opts != null) {
-			d.setSampleSize(opts.inSampleSize);
-			d.setConfig(opts.inPreferredConfig);
-		}
+		d.setSampleSize(opts.inSampleSize);
+		d.setConfig(opts.inPreferredConfig);
 		
 		final Bitmap bitmap = d.decode(opts.outMimeType);
 		d.close();
