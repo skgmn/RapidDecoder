@@ -10,9 +10,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
-
 import static agu.ResourcePool.*;
 
 public abstract class BitmapDecoder {
@@ -71,9 +71,10 @@ public abstract class BitmapDecoder {
 		return height;
 	}
 	
-	@SuppressLint("NewApi")
 	public Bitmap decode() {
 		opts.mCancel = false;
+		
+		// Calculate sample size in advance when it should be scaled.
 		
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
 		
@@ -81,28 +82,16 @@ public abstract class BitmapDecoder {
 			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 					targetWidth, targetHeight);
 			opts.inScaled = false;
-		}
-		
-		final boolean useOwnDecoder =
-				(mutable && Build.VERSION.SDK_INT < 11) ||
-				(opts.inSampleSize > 1 && !scaleFilter);
-
-		Bitmap bitmap;
-		if (useOwnDecoder) {
-			bitmap = aguDecode(openInputStream(), opts, region);
 		} else {
-			if (region != null &&
-					!(region.left == 0 && region.top == 0 &&
-					region.width() == width() && region.height() == height())) {
-				
-				bitmap = decodePartial(opts, region);
-			} else {
-				if (Build.VERSION.SDK_INT >= 11) {
-					opts.inMutable = mutable;
-				}
-				bitmap = decode(opts);
-			}
+			opts.inSampleSize = 1;
+			opts.inScaled = true;
 		}
+
+		// Execute actual decoding
+		
+		final Bitmap bitmap = executeDecoding();
+		
+		// Scale it finally.
 		
 		if (postScale &&
 				(bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
@@ -118,6 +107,37 @@ public abstract class BitmapDecoder {
 			return bitmap2;
 		} else {
 			return bitmap;
+		}
+	}
+	
+	public Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
+		opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
+				targetWidth, targetHeight);
+		opts.inScaled = false;
+		
+		return executeDecoding();
+	}
+	
+	@SuppressLint("NewApi")
+	private Bitmap executeDecoding() {
+		final boolean useOwnDecoder =
+				(mutable && Build.VERSION.SDK_INT < 11) ||
+				(opts.inSampleSize > 1 && !scaleFilter);
+
+		if (useOwnDecoder) {
+			return aguDecode(openInputStream(), opts, region);
+		} else {
+			if (region != null &&
+					!(region.left == 0 && region.top == 0 &&
+					region.width() == width() && region.height() == height())) {
+				
+				return decodePartial(opts, region);
+			} else {
+				if (Build.VERSION.SDK_INT >= 11) {
+					opts.inMutable = mutable;
+				}
+				return decode(opts);
+			}
 		}
 	}
 	
@@ -142,10 +162,6 @@ public abstract class BitmapDecoder {
 	}
 	
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
-		if (width == SIZE_AUTO && height == SIZE_AUTO) {
-			throw new IllegalArgumentException("Either width or height must be specified.");
-		}
-		
 		if (width == SIZE_AUTO || height == SIZE_AUTO) {
 			if (width == SIZE_AUTO) {
 				targetWidth = AspectRatioCalculator.fitHeight(width(), height(), height);
@@ -294,9 +310,26 @@ public abstract class BitmapDecoder {
 	}
 	
 	public void draw(Canvas cv, int left, int top, int right, int bottom) {
-		
+		final Rect bounds = RECT.obtain(false);
+		try {
+			bounds.set(left, top, right, bottom);
+			draw(cv, bounds);
+		} finally {
+			RECT.recycle(bounds);
+		}
 	}
 	
 	public void draw(Canvas cv, Rect rectDest) {
+		final Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
+		
+		final Paint p = PAINT.obtain();
+		try {
+			p.setFilterBitmap(true);
+			cv.drawBitmap(bitmap, null, rectDest, p);
+		} finally {
+			PAINT.recycle(p);
+		}
+		
+		bitmap.recycle();
 	}
 }
