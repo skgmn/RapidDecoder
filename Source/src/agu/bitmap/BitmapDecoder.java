@@ -294,6 +294,7 @@ public abstract class BitmapDecoder {
 	}
 	
 	public void draw(Canvas cv, int left, int top, int right, int bottom) {
+		
 	}
 	
 	public void draw(Canvas cv, Rect rectDest) {
