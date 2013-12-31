@@ -60,7 +60,6 @@ public class BitmapFrame {
 	}
 	
 	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment scale) {
-		
 		return null;
 	}
 }
