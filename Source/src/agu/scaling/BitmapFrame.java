@@ -18,7 +18,7 @@ public class BitmapFrame {
 		
 		final Rect bounds = RECT.obtain(false);
 		try {
-			AspectRatioCalculator.scale(bitmap.getWidth(), bitmap.getHeight(),
+			AspectRatioCalculator.frame(bitmap.getWidth(), bitmap.getHeight(),
 					frameWidth, frameHeight, align, true, bounds);
 			
 			final int w = bounds.width();
@@ -53,9 +53,5 @@ public class BitmapFrame {
 		} finally {
 			RECT.recycle(bounds);
 		}
-	}
-	
-	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight) {
-		
 	}
 }

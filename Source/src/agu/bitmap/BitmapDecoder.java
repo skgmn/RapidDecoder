@@ -3,6 +3,7 @@ package agu.bitmap;
 import java.io.FileDescriptor;
 import java.io.InputStream;
 
+import agu.scaling.AspectRatioCalculator;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -114,12 +115,16 @@ public abstract class BitmapDecoder {
 	}
 	
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
+		if (width == SIZE_AUTO && height == SIZE_AUTO) {
+			throw new IllegalArgumentException("Either width or height must be specified.");
+		}
+		
 		if (width == SIZE_AUTO || height == SIZE_AUTO) {
 			if (width == SIZE_AUTO) {
-				targetWidth = (int) (((double) width() / height()) * height);
+				targetWidth = AspectRatioCalculator.fitHeight(width(), height(), height);
 				targetHeight = height;
 			} else {
-				targetHeight = (int) (((double) height() / width()) * width);
+				targetHeight = AspectRatioCalculator.fitWidth(width(), height(), width);
 				targetWidth = width;
 			}
 		} else {

@@ -13,7 +13,7 @@ public class AspectRatioCalculator {
 	 * @param fitIn True if the scaled size should not overflow the frame size. False otherwise.
 	 * @param out A Rect instance to retrieve the scaled size and adjusted position. 
 	 */
-	public static void scale(int width, int height, int frameWidth, int frameHeight,
+	public static void frame(int width, int height, int frameWidth, int frameHeight,
 			ScaleAlignment align, boolean fitIn, Rect out) {
 		
 		double ratio = (double) height / width;
@@ -57,5 +57,15 @@ public class AspectRatioCalculator {
 				out.right = out.left + width2;
 			}
 		}
+	}
+	
+	public static int fitWidth(int width, int height, int targetWidth) {
+		final double ratio = (double) height / width;
+		return (int) (ratio * targetWidth);
+	}
+	
+	public static int fitHeight(int width, int height, int targetHeight) {
+		final double ratio = (double) width / height;
+		return (int) (ratio * targetHeight);
 	}
 }
