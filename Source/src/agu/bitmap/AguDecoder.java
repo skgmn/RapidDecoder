@@ -50,19 +50,29 @@ public class AguDecoder {
 			resampler.setUseFilter(filter);
 		}
 	}
-	
-	public Bitmap decode() {
+
+	public Bitmap decode(String mimeType) {
 		if (resampler == null) {
 			resampler = new IdentityResampler();
 		}
 		
-		Bitmap bitmap = decodePng();
-		if (bitmap == null) {
-			try {
-				in.reset();
-				bitmap = decodeJpeg();
-			} catch (IOException e) {
+		Bitmap bitmap;
+		
+		if (mimeType == null) {
+			bitmap = decodePng();
+			if (bitmap == null) {
+				try {
+					in.reset();
+					bitmap = decodeJpeg();
+				} catch (IOException e) {
+				}
 			}
+		} else if (mimeType.equals("image/png")) {
+			bitmap = decodePng();
+		} else if (mimeType.equals("image/jpeg")) {
+			bitmap = decodeJpeg();
+		} else {
+			bitmap = null;
 		}
 
 		return bitmap;

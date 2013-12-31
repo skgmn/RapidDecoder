@@ -260,7 +260,7 @@ public abstract class BitmapDecoder {
 			d.setConfig(opts.inPreferredConfig);
 		}
 		
-		final Bitmap bitmap = d.decode();
+		final Bitmap bitmap = d.decode(opts.outMimeType);
 		d.close();
 		
 		return processor.postProcess(bitmap, scaleFilter);
