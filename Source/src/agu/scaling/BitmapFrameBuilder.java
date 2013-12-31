@@ -9,40 +9,44 @@ import android.graphics.Rect;
 import android.graphics.Region.Op;
 import android.graphics.drawable.Drawable;
 
-public class BitmapFrame {
-	public static Bitmap fitIn(Bitmap bitmap, int frameWidth, int frameHeight, Drawable background) {
-		return scale(bitmap, frameWidth, frameHeight, ScaleAlignment.CENTER, true, false, background);
-	}
-
-	public static Bitmap fitIn(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment align,
-			Drawable background) {
-		
-		return scale(bitmap, frameWidth, frameHeight, align, true, false, background);
+public class BitmapFrameBuilder {
+	private Bitmap bitmap;
+	private int frameWidth;
+	private int frameHeight;
+	private ScaleAlignment align = ScaleAlignment.CENTER;
+	private boolean onlyWhenOverflowed = false;
+	private Drawable background;
+	
+	public BitmapFrameBuilder(Bitmap bitmap, int frameWidth, int frameHeight) {
+		this.bitmap = bitmap;
+		this.frameWidth = frameWidth;
+		this.frameHeight = frameHeight;
 	}
 	
-	public static Bitmap fitIn(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment align,
-			boolean onlyWhenOverflowed, Drawable background) {
-		
-		return scale(bitmap, frameWidth, frameHeight, align, true, onlyWhenOverflowed, background);
+	public BitmapFrameBuilder setScaleAlignment(ScaleAlignment align) {
+		this.align = align;
+		return this;
 	}
 	
-	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight) {
-		return scale(bitmap, frameWidth, frameHeight, ScaleAlignment.CENTER, false, false, null);
-	}
-
-	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment align) {
-		return scale(bitmap, frameWidth, frameHeight, align, false, false, null);
+	public BitmapFrameBuilder setScaleOnlyWhenOverflowed(boolean on) {
+		this.onlyWhenOverflowed = on;
+		return this;
 	}
 	
-	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment align,
-			boolean onlyWhenOverflowed, Drawable background) {
-		
-		return scale(bitmap, frameWidth, frameHeight, align, false, onlyWhenOverflowed, background);
+	public BitmapFrameBuilder setBackground(Drawable d) {
+		this.background = d;
+		return this;
 	}
 	
-	private static Bitmap scale(Bitmap bitmap, int frameWidth, int frameHeight,
-			ScaleAlignment align, boolean fitIn, boolean onlyWhenOverflowed, Drawable background) {
-		
+	public Bitmap fitIn() {
+		return scale(true);
+	}
+	
+	public Bitmap cutOut() {
+		return scale(false);
+	}
+	
+	private Bitmap scale(boolean fitIn) {
 		final int width = bitmap.getWidth();
 		final int height = bitmap.getHeight();
 		

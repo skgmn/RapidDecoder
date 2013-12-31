@@ -9,6 +9,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
+import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.os.Build;
 
@@ -35,6 +36,10 @@ public abstract class BitmapDecoder {
 		if (opts != null) {
 			OPTIONS.recycle(opts);
 			opts = null;
+		}
+		if (region != null) {
+			RECT.recycle(region);
+			region = null;
 		}
 	}
 	
@@ -73,7 +78,8 @@ public abstract class BitmapDecoder {
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
 		
 		if (postScale) {
-			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(), targetWidth, targetHeight);
+			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
+					targetWidth, targetHeight);
 			opts.inScaled = false;
 		}
 		
@@ -85,7 +91,10 @@ public abstract class BitmapDecoder {
 		if (useOwnDecoder) {
 			bitmap = aguDecode(openInputStream(), opts, region);
 		} else {
-			if (region != null) {
+			if (region != null &&
+					!(region.left == 0 && region.top == 0 &&
+					region.width() == width() && region.height() == height())) {
+				
 				bitmap = decodePartial(opts, region);
 			} else {
 				if (Build.VERSION.SDK_INT >= 11) {
@@ -156,6 +165,9 @@ public abstract class BitmapDecoder {
 	
 	public BitmapDecoder region(Rect region) {
 		if (region == null) {
+			if (this.region != null) {
+				RECT.recycle(this.region);
+			}
 			this.region = null;
 			return this;
 		} else {
@@ -170,10 +182,9 @@ public abstract class BitmapDecoder {
 		bottom = Math.max(top, Math.min(bottom, top + height()));
 		
 		if (this.region == null) {
-			this.region = new Rect(left, top, right, bottom);
-		} else {
-			this.region.set(left, top, right, bottom);
+			this.region = RECT.obtain();
 		}
+		this.region.set(left, top, right, bottom);
 		
 		return this;
 	}
@@ -280,5 +291,11 @@ public abstract class BitmapDecoder {
 	
 	public void cancel() {
 		opts.requestCancelDecode();
+	}
+	
+	public void draw(Canvas cv, int left, int top, int right, int bottom) {
+	}
+	
+	public void draw(Canvas cv, Rect rectDest) {
 	}
 }
