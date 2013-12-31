@@ -54,4 +54,13 @@ public class BitmapFrame {
 			RECT.recycle(bounds);
 		}
 	}
+
+	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight) {
+		return cutOut(bitmap, frameWidth, frameHeight, ScaleAlignment.CENTER);
+	}
+	
+	public static Bitmap cutOut(Bitmap bitmap, int frameWidth, int frameHeight, ScaleAlignment scale) {
+		
+		return null;
+	}
 }

@@ -19,15 +19,8 @@ public class AguBitmapProcessor {
 		this.scaleFactor = 1;
 	}
 	
-	protected void ensureOptions() {
-		if (opts == null) {
-			opts = new Options();
-		}
-	}
-	
 	public AguBitmapProcessor preProcess() {
-		if (opts != null &&
-				opts.inDensity != 0 && opts.inTargetDensity != 0 &&
+		if (opts.inDensity != 0 && opts.inTargetDensity != 0 &&
 				opts.inDensity != opts.inTargetDensity) {
 			
 			double scaleFactor = (double) opts.inTargetDensity / opts.inDensity;
@@ -60,7 +53,7 @@ public class AguBitmapProcessor {
 		if (bitmap == null) return null;
 		
 		if (scaleFactor != 1) {
-			if (opts != null && opts.inDensity != 0) {
+			if (opts.inDensity != 0) {
 				bitmap.setDensity(opts.inDensity);
 			}
 
@@ -74,7 +67,7 @@ public class AguBitmapProcessor {
 			
 			return bitmap2;
 		} else {
-			if (opts != null && opts.inTargetDensity != 0) {
+			if (opts.inTargetDensity != 0) {
 				bitmap.setDensity(opts.inTargetDensity);
 			}
 			return bitmap;
@@ -87,9 +80,5 @@ public class AguBitmapProcessor {
 	
 	public InputStream getInputStream() {
 		return in;
-	}
-	
-	public Options getOptions() {
-		return opts;
 	}
 }
