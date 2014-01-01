@@ -22,9 +22,9 @@ public class AguDecoder {
 	
 	private InputStream in;
 	private Rect region;
-	private Resampler resampler;
 	private Config config;
 	private boolean useFilter = true;
+	private int sampleSize;
 	
 	public AguDecoder(InputStream in) {
 		this.in = in;
@@ -49,16 +49,9 @@ public class AguDecoder {
 	
 	public void setUseFilter(boolean filter) {
 		useFilter = filter;
-		if (resampler != null) {
-			resampler.setUseFilter(filter);
-		}
 	}
 
 	public Bitmap decode(Options opts) {
-		if (resampler == null) {
-			resampler = new IdentityResampler();
-		}
-		
 		final String mimeType = opts.outMimeType;
 		Bitmap bitmap = null;
 		try {
@@ -91,15 +84,7 @@ public class AguDecoder {
 	}
 	
 	public void setSampleSize(int sampleSize) {
-		resampler = null;
-		while (sampleSize > 1) {
-			resampler = new HalfsizeResampler(resampler);
-			sampleSize >>= 1;
-		}
-		
-		if (resampler != null) {
-			resampler.setUseFilter(useFilter);
-		}
+		this.sampleSize = sampleSize;
 	}
 	
 	private void validateRegion(int width, int height) {
@@ -132,9 +117,15 @@ public class AguDecoder {
 			final int w = right - left;
 			final int h = bottom - top;
 			
-			final int sampleSize = resampler.getSampleSize();
 			final int sampledWidth = w / sampleSize;
 			final int sampledHeight = h / sampleSize;
+			
+			final Resampler resampler;
+			if (sampleSize > 1) {
+				resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
+			} else {
+				resampler = new IdentityResampler();
+			}
 			
 			final Config config = (this.config != null ? this.config : getDefaultConfig(false));
 			final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
@@ -199,13 +190,18 @@ public class AguDecoder {
 		final int right = (region == null ? width : region.right);
 		final int bottom = (region == null ? height : region.bottom);
 		
-		final int sampleSize = resampler.getSampleSize();
-		
 		final int w = right - left;
 		final int h = bottom - top;
 
 		final int sampledWidth = w / sampleSize;
 		final int sampledHeight = h / sampleSize;
+		
+		final Resampler resampler;
+		if (sampleSize > 1) {
+			resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
+		} else {
+			resampler = new IdentityResampler();
+		}
 		
 		final Config config = (this.config != null ? this.config : getDefaultConfig(alpha));
 		
