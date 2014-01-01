@@ -1,10 +1,11 @@
 package agu.sample.integrated;
 
 import android.os.Bundle;
-import android.app.Activity;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.view.Menu;
+import android.support.v4.widget.DrawerLayout;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -12,6 +13,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 public class MainActivity extends FragmentActivity {
+	private DrawerLayout drawer;
 	private ListView listDrawerMenu;
 	private ArrayAdapter<String> adapterDrawerMenu;
 
@@ -20,6 +22,7 @@ public class MainActivity extends FragmentActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+		drawer = (DrawerLayout) findViewById(R.id.drawer);
 		listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);
 		
 		adapterDrawerMenu = new ArrayAdapter<String>(this,
@@ -49,13 +52,17 @@ public class MainActivity extends FragmentActivity {
 		
 		setTitle(adapterDrawerMenu.getItem(index));
 		getSupportFragmentManager().beginTransaction().replace(R.id.content, fragment).commit();
+		
+		drawer.closeDrawers();
 	}
-
+	
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_MENU) {
+			drawer.openDrawer(Gravity.LEFT);
+			return true;
+		} else {
+			return super.onKeyDown(keyCode, event);
+		}
 	}
-
 }

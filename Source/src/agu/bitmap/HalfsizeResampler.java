@@ -22,6 +22,9 @@ public class HalfsizeResampler extends Resampler {
 		if (another != null) {
 			pixels = another.resample(pixels, offset, count);
 			if (pixels == null) return null;
+			
+			offset = 0;
+			count = pixels.length;
 		}
 		
 		if (!hasFirst) {

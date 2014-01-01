@@ -30,13 +30,20 @@ public class ScaledDecodingFragment extends Fragment {
 		int width = getResources().getDimensionPixelSize(R.dimen.scaled_decoding_width);
 		int height = getResources().getDimensionPixelSize(R.dimen.scaled_decoding_height);
 		
+		BitmapDecoder decoder;
+		Bitmap bitmap;
+		int sourceWidth;
+		int sourceHeight;
+		
 		// Jpeg
 		
-		BitmapDecoder decoder = BitmapDecoder.from(getResources(), R.drawable.amanda);
-		int sourceWidth = decoder.width();
-		int sourceHeight = decoder.height();
+		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda);
+		sourceWidth = decoder.width();
+		sourceHeight = decoder.height();
 		
-		Bitmap bitmap = decoder.scale(width, height).decode();
+		bitmap = decoder
+				.forceUseOwnDecoder()
+				.scale(width, height).decode();
 		imageJpeg.setImageBitmap(bitmap);
 		
 		textJpegInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
@@ -44,14 +51,16 @@ public class ScaledDecodingFragment extends Fragment {
 
 		// Png
 		
-		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda2);
-		sourceWidth = decoder.width();
-		sourceHeight = decoder.height();
-		
-		bitmap = decoder.scale(width, height).decode();
-		imagePng.setImageBitmap(bitmap);
-		
-		textPngInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
-				"Bitmap width = " + bitmap.getWidth() + ", Bitmap height = " + bitmap.getHeight());
+//		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda2);
+//		sourceWidth = decoder.width();
+//		sourceHeight = decoder.height();
+//		
+//		bitmap = decoder
+//				.forceUseOwnDecoder()
+//				.scale(width, height).decode();
+//		imagePng.setImageBitmap(bitmap);
+//		
+//		textPngInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
+//				"Bitmap width = " + bitmap.getWidth() + ", Bitmap height = " + bitmap.getHeight());
 	}
 }

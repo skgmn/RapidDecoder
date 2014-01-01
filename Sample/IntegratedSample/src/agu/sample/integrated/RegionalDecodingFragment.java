@@ -27,16 +27,18 @@ public class RegionalDecodingFragment extends Fragment {
 		// Jpeg
 		
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
+				.forceUseOwnDecoder()
 				.region(140, 22, 1010, 1111)
-				.scaleByRatio(0.5f)
+				.scaleByRatio(0.5)
 				.decode();
 		imageJpeg.setImageBitmap(bitmap);
 		
 		// Png
 		
 		bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
+				.forceUseOwnDecoder()
 				.region(204, 0, 900, 773)
-				.scaleByRatio(0.5f)
+				.scaleByRatio(0.5)
 				.decode();
 		imagePng.setImageBitmap(bitmap);
 	}
