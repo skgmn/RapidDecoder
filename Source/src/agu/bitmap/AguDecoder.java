@@ -31,7 +31,14 @@ public class AguDecoder {
 		
 		if (!in.markSupported()) {
 			in = new BufferedInputStream(in, MARK_READ_LIMIT + 1);
+		} else {
+			try {
+				in.reset();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
+
 		in.mark(MARK_READ_LIMIT);
 	}
 
@@ -58,7 +65,7 @@ public class AguDecoder {
 			if (mimeType == null) {
 				in.reset();
 				bitmap = decodePng(opts);
-				if (bitmap == null) {
+				if (bitmap == null && !opts.mCancel) {
 					in.reset();
 					bitmap = decodeJpeg(opts);
 				}

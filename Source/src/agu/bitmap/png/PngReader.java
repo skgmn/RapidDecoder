@@ -109,6 +109,7 @@ public class PngReader {
 		try {
 			this.chunkseq = new ChunkSeqReaderPng(false); // this works only in polled mode
 			streamFeeder = new BufferedStreamFeeder(inputStream);
+			streamFeeder.setCloseStream(false);
 			streamFeeder.setFailIfNoFeed(true);
 			if (!streamFeeder.feedFixed(chunkseq, 36)) // 8+13+12=36 PNG signature+IHDR chunk
 				throw new PngjInputException("error reading first 21 bytes");
