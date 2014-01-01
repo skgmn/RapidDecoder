@@ -840,7 +840,13 @@ namespace DCT_Upsample
 // Unconditionally frees all allocated m_blocks.
 void jpeg_decoder::free_all_blocks()
 {
-  m_pStream = NULL;
+    m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
+    m_env->DeleteGlobalRef(m_in_buf_java);
+
+    m_env->CallVoidMethod(m_in, InputStream_close);
+    m_env->ExceptionClear();
+    m_env->DeleteGlobalRef(m_in);
+
   for (mem_block *b = m_pMem_blocks; b; )
   {
     mem_block *n = b->m_pNext;
@@ -902,13 +908,29 @@ void jpeg_decoder::word_clear(void *p, uint16 c, uint n)
 // the stream's read() method reports and end of file condition.
 void jpeg_decoder::prep_in_buffer()
 {
-  m_in_buf_left = 0;
-  m_pIn_buf_ofs = m_in_buf;
+    m_in_buf_left = 0;
+    m_pIn_buf_ofs = m_in_buf;
 
-  if (m_eof_flag)
-    return;
+    if (m_eof_flag)
+        return;
 
-  do
+    m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
+
+    jint bytes_read = m_env->CallIntMethod(m_in, InputStream_read3, m_in_buf_java, 0, JPGD_IN_BUF_SIZE);
+    if (m_env->ExceptionOccurred() != NULL)
+    {
+        m_env->ExceptionClear();
+        stop_decoding(JPGD_STREAM_READ);
+    }
+
+    m_eof_flag = (bytes_read < 0);
+    m_in_buf_left += bytes_read;
+    m_total_bytes_read += m_in_buf_left;
+
+    m_in_buf = (uint8*)m_env->GetByteArrayElements(m_in_buf_java, NULL);
+    m_pIn_buf_ofs = m_in_buf;
+
+/*  do
   {
     int bytes_read = m_pStream->read(m_in_buf + m_in_buf_left, JPGD_IN_BUF_SIZE - m_in_buf_left, &m_eof_flag);
     if (bytes_read == -1)
@@ -917,7 +939,7 @@ void jpeg_decoder::prep_in_buffer()
     m_in_buf_left += bytes_read;
   } while ((m_in_buf_left < JPGD_IN_BUF_SIZE) && (!m_eof_flag));
 
-  m_total_bytes_read += m_in_buf_left;
+  m_total_bytes_read += m_in_buf_left;*/
 
   // Pad the end of the block with M_EOI (prevents the decompressor from going off the rails if the stream is invalid).
   // (This dates way back to when this decompressor was written in C/asm, and the all-asm Huffman decoder did some fancy things to increase perf.)
@@ -1352,8 +1374,15 @@ int jpeg_decoder::locate_sos_marker()
 }
 
 // Reset everything to default/uninitialized state.
-void jpeg_decoder::init(jpeg_decoder_stream *pStream)
+void jpeg_decoder::init(JNIEnv* env, jobject is)
 {
+    m_env = env;
+    m_in = env->NewGlobalRef(is);
+
+    jclass InputStream = env->FindClass("java/io/InputStream");
+    InputStream_close = env->GetMethodID(InputStream, "close", "()V");
+    InputStream_read3 = env->GetMethodID(InputStream, "read", "([BII)I");
+
   // Added by Nirvan Fallacy
   int temp = 1;
   m_little_endian = (*((char*)&temp) == 1);
@@ -1364,7 +1393,6 @@ void jpeg_decoder::init(jpeg_decoder_stream *pStream)
   m_error_code = JPGD_SUCCESS;
   m_ready_flag = false;
   m_image_x_size = m_image_y_size = 0;
-  m_pStream = pStream;
   m_progressive_flag = JPGD_FALSE;
 
   memset(m_huff_ac, 0, sizeof(m_huff_ac));
@@ -1419,6 +1447,9 @@ void jpeg_decoder::init(jpeg_decoder_stream *pStream)
   m_eob_run = 0;
 
   memset(m_block_y_mcu, 0, sizeof(m_block_y_mcu));
+
+    m_in_buf_java = (jbyteArray)env->NewGlobalRef(env->NewByteArray(JPGD_IN_BUF_SIZE + 128));
+    m_in_buf = (uint8*)env->GetByteArrayElements(m_in_buf_java, NULL);
 
   m_pIn_buf_ofs = m_in_buf;
   m_in_buf_left = 0;
@@ -3136,19 +3167,19 @@ void jpeg_decoder::decode_start()
     init_sequential();
 }
 
-void jpeg_decoder::decode_init(jpeg_decoder_stream *pStream)
+void jpeg_decoder::decode_init(JNIEnv* env, jobject is)
 {
-  init(pStream);
+  init(env, is);
   locate_sof_marker();
 }
 
-jpeg_decoder::jpeg_decoder(jpeg_decoder_stream *pStream)
+jpeg_decoder::jpeg_decoder(JNIEnv* env, jobject is)
 {
   if (setjmp(m_jmp_state))
   {
     return;
   }
-  decode_init(pStream);
+  decode_init(env, is);
 }
 
 int jpeg_decoder::begin_decoding()

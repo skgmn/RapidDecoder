@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <setjmp.h>
+#include <jni.h>
 
 #ifdef _MSC_VER
   #define JPGD_NORETURN __declspec(noreturn) 
@@ -72,7 +73,7 @@ namespace jpgd
   public:
     // Call get_error_code() after constructing to determine if the stream is valid or not. You may call the get_width(), get_height(), etc.
     // methods after the constructor is called. You may then either destruct the object, or begin decoding the image by calling begin_decoding(), then decode() on each scanline.
-    jpeg_decoder(jpeg_decoder_stream *pStream);
+    jpeg_decoder(JNIEnv* env, jobject is);
 
     ~jpeg_decoder();
 
@@ -93,8 +94,6 @@ namespace jpgd
     void set_column_length(int length);
 
     inline jpgd_status get_error_code() const { return m_error_code; }
-
-    inline jpeg_decoder_stream* get_stream() const { return m_pStream; }
 
     inline int get_width() const { return m_image_x_size; }
     inline int get_height() const { return m_image_y_size; }
@@ -139,6 +138,10 @@ namespace jpgd
     };
 
     // Added by Nirvan Fallacy
+    JNIEnv* m_env;
+    jmethodID InputStream_close;
+    jmethodID InputStream_read3;
+    jobject m_in;
     bool m_little_endian;
     int m_col_offset;
     int m_col_length;
@@ -191,7 +194,9 @@ namespace jpgd
     int m_tem_flag;
     bool m_eof_flag;
     uint8 m_in_buf_pad_start[128];
-    uint8 m_in_buf[JPGD_IN_BUF_SIZE + 128];
+    jbyteArray m_in_buf_java;
+    uint8* m_in_buf;
+    //uint8 m_in_buf[JPGD_IN_BUF_SIZE + 128];
     uint8 m_in_buf_pad_end[128];
     int m_bits_left;
     uint m_bit_buf;
@@ -235,7 +240,7 @@ namespace jpgd
     void locate_soi_marker();
     void locate_sof_marker();
     int locate_sos_marker();
-    void init(jpeg_decoder_stream * pStream);
+    void init(JNIEnv* env, jobject is);
     void create_look_ups();
     void fix_in_buffer();
     void transform_mcu(int mcu_row);
@@ -257,7 +262,7 @@ namespace jpgd
     void init_progressive();
     void init_sequential();
     void decode_start();
-    void decode_init(jpeg_decoder_stream * pStream);
+    void decode_init(JNIEnv* env, jobject is);
     void H2V2Convert();
     void H2V1Convert();
     void H1V2Convert();
