@@ -1,7 +1,7 @@
 package agu.scaling;
 
-import static agu.ResourcePool.PAINT;
-import static agu.ResourcePool.RECT;
+import static agu.caching.ResourcePool.PAINT;
+import static agu.caching.ResourcePool.RECT;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;

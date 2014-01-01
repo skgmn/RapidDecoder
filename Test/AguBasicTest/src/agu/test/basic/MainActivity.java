@@ -7,6 +7,7 @@ import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -22,10 +23,9 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
-
+		
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
-				.region(100, 100, 400, 400)
-				.scale(200, 500, false)
+				.scaleByRatio(0.5)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		

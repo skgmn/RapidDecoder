@@ -18,6 +18,8 @@ import android.os.Build;
 public class AguDecoder {
 	private static final int MARK_READ_LIMIT = 16384;
 	
+	private static final String MESSAGE_INVALID_REGION = "rectangle is outside the image";
+	
 	private InputStream in;
 	private Rect region;
 	private Resampler resampler;
@@ -58,24 +60,23 @@ public class AguDecoder {
 		}
 		
 		final String mimeType = opts.outMimeType;
-		
-		Bitmap bitmap;
-		
-		if (mimeType == null) {
-			bitmap = decodePng(opts);
-			if (bitmap == null) {
-				try {
+		Bitmap bitmap = null;
+		try {
+			if (mimeType == null) {
+				in.reset();
+				bitmap = decodePng(opts);
+				if (bitmap == null) {
 					in.reset();
 					bitmap = decodeJpeg(opts);
-				} catch (IOException e) {
 				}
+			} else if (mimeType.equals("image/png")) {
+				in.reset();
+				bitmap = decodePng(opts);
+			} else if (mimeType.equals("image/jpeg")) {
+				in.reset();
+				bitmap = decodeJpeg(opts);
 			}
-		} else if (mimeType.equals("image/png")) {
-			bitmap = decodePng(opts);
-		} else if (mimeType.equals("image/jpeg")) {
-			bitmap = decodeJpeg(opts);
-		} else {
-			bitmap = null;
+		} catch (IOException e1) {
 		}
 
 		return bitmap;
@@ -101,6 +102,14 @@ public class AguDecoder {
 		}
 	}
 	
+	private void validateRegion(int width, int height) {
+		if (region != null &&
+				(region.left < 0 || region.top < 0 || region.right > width || region.bottom > height)) {
+			
+			throw new IllegalArgumentException(MESSAGE_INVALID_REGION);
+		}
+	}
+	
 	private Bitmap decodeJpeg(Options opts) {
 		final JpegDecoder d = new JpegDecoder(in);
 		try {
@@ -112,11 +121,13 @@ public class AguDecoder {
 			
 			final int width = d.getWidth();
 			final int height = d.getHeight();
+
+			validateRegion(width, height);
 			
-			final int left = (region == null ? 0 : Math.max(0, region.left));
-			final int top = (region == null ? 0 : Math.max(0, region.top));
-			final int right = (region == null ? width : Math.min(Math.max(left, region.right), width));
-			final int bottom = (region == null ? height : Math.min(Math.max(top, region.bottom), height));
+			final int left = (region == null ? 0 : region.left);
+			final int top = (region == null ? 0 : region.top);
+			final int right = (region == null ? width : region.right);
+			final int bottom = (region == null ? height : region.bottom);
 			
 			final int w = right - left;
 			final int h = bottom - top;
@@ -181,10 +192,12 @@ public class AguDecoder {
 		final int width = pr.imgInfo.cols;
 		final int height = pr.imgInfo.rows;
 		
-		final int left = (region == null ? 0 : Math.max(0, region.left));
-		final int top = (region == null ? 0 : Math.max(0, region.top));
-		final int right = (region == null ? width : Math.min(Math.max(left, region.right), width));
-		final int bottom = (region == null ? height : Math.min(Math.max(top, region.bottom), height));
+		validateRegion(width, height);
+		
+		final int left = (region == null ? 0 : region.left);
+		final int top = (region == null ? 0 : region.top);
+		final int right = (region == null ? width : region.right);
+		final int bottom = (region == null ? height : region.bottom);
 		
 		final int sampleSize = resampler.getSampleSize();
 		

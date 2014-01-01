@@ -1,5 +1,9 @@
 package agu.bitmap;
 
+import static agu.caching.ResourcePool.OPTIONS;
+import static agu.caching.ResourcePool.PAINT;
+import static agu.caching.ResourcePool.RECT;
+
 import java.io.FileDescriptor;
 import java.io.InputStream;
 
@@ -13,20 +17,25 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
-import static agu.ResourcePool.*;
 
 public abstract class BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
+
+	private static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 	
-	private Options opts;
-	private Rect region;
+	Options opts;
+	Rect region;
 	protected boolean mutable;
+	private boolean scaleFilter = true;
+	private boolean useOwnDecoder = false;
 	
 	private int width;
 	private int height;
 	private int targetWidth;
 	private int targetHeight;
-	private boolean scaleFilter = true;
+	private double ratioWidth = 1;
+	private double ratioHeight = 1;
+	private double densityRatio;
 	
 	protected BitmapDecoder() {
 		opts = OPTIONS.obtain();
@@ -49,53 +58,96 @@ public abstract class BitmapDecoder {
 		super.finalize();
 	}
 	
-	private void decodeSize() {
+	protected void decodeBounds() {
 		opts.inJustDecodeBounds = true;
 		decode(opts);
 		opts.inJustDecodeBounds = false;
+
+		width = opts.outWidth;
+		height = opts.outHeight;
+
+		if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
+			densityRatio = (double) opts.inTargetDensity / opts.inDensity;
+		} else {
+			densityRatio = 1;
+		}
 	}
 	
-	public int width() {
+	public int sourceWidth() {
 		if (width == 0) {
-			decodeSize();
-			width = opts.outWidth;
+			decodeBounds();
 		}
 		return width;
 	}
 	
-	public int height() {
+	public int sourceHeight() {
 		if (height == 0) {
-			decodeSize();
-			height = opts.outHeight;
+			decodeBounds();
 		}
 		return height;
+	}
+	
+	public int width() {
+		if (targetWidth != 0) {
+			return targetWidth;
+		} else if (region != null) {
+			return (int) (region.width() * ratioWidth);
+		} else {
+			return (int) (sourceWidth() * getDensityRatio() * ratioWidth);
+		}
+	}
+
+	public int height() {
+		if (targetHeight != 0) {
+			return targetHeight;
+		} else if (region != null) {
+			return (int) (region.height() * ratioHeight);
+		} else {
+			return (int) (sourceHeight() * getDensityRatio() * ratioHeight);
+		}
 	}
 	
 	public Bitmap decode() {
 		opts.mCancel = false;
 		
-		// Calculate sample size in advance when it should be scaled.
+		final int targetWidth;
+		final int targetHeight;
+		
+		// Setup target size.
+		
+		if (this.targetWidth != 0 && this.targetHeight != 0) {
+			targetWidth = this.targetWidth;
+			targetHeight = this.targetHeight;
+		} else if (region != null) {
+			targetWidth = (int) (region.width() * ratioWidth);
+			targetHeight = (int) (region.height() * ratioHeight);
+		} else if (ratioWidth != 1 || ratioHeight != 1) {
+			final double densityRatio = getDensityRatio();
+			targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
+			targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
+		} else {
+			targetWidth = targetHeight = 0;
+		}
+		
+		// Setup sample size.
 		
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
-		
 		if (postScale) {
+			opts.inScaled = false;
 			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 					targetWidth, targetHeight);
-			opts.inScaled = false;
 		} else {
-			opts.inSampleSize = 1;
 			opts.inScaled = true;
+			opts.inSampleSize = 1;
 		}
-
+		
 		// Execute actual decoding
 		
 		final Bitmap bitmap = executeDecoding();
 		
 		// Scale it finally.
 		
-		if (postScale &&
-				(bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
-
+		if (postScale && (bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
 			bitmap.setDensity(Bitmap.DENSITY_NONE);
 			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
 			
@@ -110,7 +162,7 @@ public abstract class BitmapDecoder {
 		}
 	}
 	
-	public Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
+	private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
 		opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 				targetWidth, targetHeight);
 		opts.inScaled = false;
@@ -118,42 +170,94 @@ public abstract class BitmapDecoder {
 		return executeDecoding();
 	}
 	
+	/**
+	 * Simulate native decoding.
+	 * @param ctx
+	 * @return
+	 */
 	@SuppressLint("NewApi")
 	private Bitmap executeDecoding() {
+		// Adjust region.
+		
+		final Rect region;
+		final boolean recycleRegion;
+		
+		final double densityRatio = getDensityRatio();
+		if (this.region != null && densityRatio != 1) {
+			region = RECT.obtain(false);
+			
+			region.left = (int) (this.region.left / densityRatio);
+			region.top = (int) (this.region.top / densityRatio);
+			region.right = (int) (this.region.right / densityRatio);
+			region.bottom = (int) (this.region.bottom / densityRatio);
+			
+			recycleRegion = true;
+		} else {
+			region = this.region;
+			recycleRegion = false;
+		}
+		
+		//
+		
 		final boolean useOwnDecoder =
+				this.useOwnDecoder ||
 				(mutable && Build.VERSION.SDK_INT < 11) ||
 				(opts.inSampleSize > 1 && !scaleFilter);
-
-		if (useOwnDecoder) {
-			return aguDecode(openInputStream(), opts, region);
-		} else {
-			if (region != null &&
-					!(region.left == 0 && region.top == 0 &&
-					region.width() == width() && region.height() == height())) {
-				
-				return decodePartial(opts, region);
+		
+		final Bitmap bitmap;
+		try {
+			if (useOwnDecoder) {
+				bitmap = aguDecode();
 			} else {
-				if (Build.VERSION.SDK_INT >= 11) {
-					opts.inMutable = mutable;
+				if (region != null &&
+						!(region.left == 0 && region.top == 0 &&
+						region.width() == sourceWidth() && region.height() == sourceHeight())) {
+					
+					bitmap = decodeRegional(opts, region);
+				} else {
+					if (Build.VERSION.SDK_INT >= 11) {
+						opts.inMutable = mutable;
+					}
+					return decode(opts);
 				}
-				return decode(opts);
 			}
+		} finally {
+			if (recycleRegion) {
+				RECT.recycle(region);
+			}
+		}
+		
+		// Scale corresponds to the desired density.
+		
+		if (opts.inScaled) {
+			final int newWidth = (int) Math.round(bitmap.getWidth() * densityRatio);
+			final int newHeight = (int) Math.round(bitmap.getHeight() * densityRatio);
+			
+			bitmap.setDensity(Bitmap.DENSITY_NONE);
+			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, scaleFilter);
+			
+			bitmap2.setDensity(opts.inTargetDensity);
+			bitmap.recycle();
+			
+			return bitmap2;
+		} else {
+			return bitmap;
 		}
 	}
 	
 	private int regionWidth() {
-		if (region == null) {
-			return width();
-		} else {
+		if (region != null) {
 			return region.width();
+		} else {
+			return sourceWidth();
 		}
 	}
 	
 	private int regionHeight() {
-		if (region == null) {
-			return height();
-		} else {
+		if (region != null) {
 			return region.height();
+		} else {
+			return sourceHeight();
 		}
 	}
 	
@@ -162,21 +266,59 @@ public abstract class BitmapDecoder {
 	}
 	
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
-		if (width == SIZE_AUTO || height == SIZE_AUTO) {
-			if (width == SIZE_AUTO) {
-				targetWidth = AspectRatioCalculator.fitHeight(width(), height(), height);
-				targetHeight = height;
-			} else {
-				targetHeight = AspectRatioCalculator.fitWidth(width(), height(), width);
-				targetWidth = width;
-			}
-		} else {
+		if (width < 0 || height < 0) {
+			throw new IllegalArgumentException("Both width and height should be positive.");
+		}
+
+		if ((width == SIZE_AUTO && height == SIZE_AUTO) ||
+				(width != SIZE_AUTO && height != SIZE_AUTO)) {
+			
 			targetWidth = width;
 			targetHeight = height;
+		} else {
+			if (width == SIZE_AUTO) {
+				targetWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), height);
+				targetHeight = height;
+			} else {
+				targetHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), width);
+				targetWidth = width;
+			}
 		}
+		
+		ratioWidth = ratioHeight = 1;
 		
 		this.scaleFilter = scaleFilter;
 		return this;
+	}
+
+	public BitmapDecoder scaleByRatio(double ratio) {
+		return scaleByRatio(ratio, ratio, true);
+	}
+	
+	public BitmapDecoder scaleByRatio(double ratio, boolean scaleFilter) {
+		return scaleByRatio(ratio, ratio, scaleFilter);
+	}
+
+	public BitmapDecoder scaleByRatio(double widthRatio, double heightRatio) {
+		return scaleByRatio(widthRatio, heightRatio, true);
+	}
+	
+	public BitmapDecoder scaleByRatio(double widthRatio, double heightRatio, boolean scaleFilter) {
+		if (widthRatio <= 0 || heightRatio <= 0) {
+			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
+		}
+		
+		if (targetWidth != 0 && targetHeight != 0) {
+			return scale(
+					(int) (targetWidth * widthRatio),
+					(int) (targetHeight * heightRatio),
+					scaleFilter);
+		} else {
+			this.ratioWidth = widthRatio;
+			this.ratioHeight = heightRatio;
+			this.scaleFilter = scaleFilter;
+			return this;
+		}
 	}
 	
 	public BitmapDecoder region(Rect region) {
@@ -192,13 +334,8 @@ public abstract class BitmapDecoder {
 	}
 	
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
-		left = Math.max(0, left);
-		top = Math.max(0, top);
-		right = Math.max(left, Math.min(right, left + width()));
-		bottom = Math.max(top, Math.min(bottom, top + height()));
-		
 		if (this.region == null) {
-			this.region = RECT.obtain();
+			this.region = RECT.obtain(false);
 		}
 		this.region.set(left, top, right, bottom);
 		
@@ -219,27 +356,19 @@ public abstract class BitmapDecoder {
 	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 	
 	@SuppressLint("NewApi")
-	protected Bitmap decodePartial(Options opts, Rect region) {
-		final AguBitmapProcessor processor = createBitmapProcessor(opts, region);
-		processor.preProcess();
-		
-		if (Build.VERSION.SDK_INT >= 10) {
+	protected Bitmap decodeRegional(Options opts, Rect region) {
+		if (Build.VERSION.SDK_INT >= 10 && !useOwnDecoder) {
 			final BitmapRegionDecoder d = createBitmapRegionDecoder();
 			if (d == null) {
 				return null;
 			} else {
-				final Bitmap bitmap = d.decodeRegion(region, opts);
-				return processor.postProcess(bitmap, scaleFilter);
+				return d.decodeRegion(region, opts);
 			}
 		} else {
-			return aguDecodePreProcessed(openInputStream(), region, processor);
+			return aguDecode();
 		}
 	}
 	
-	protected AguBitmapProcessor createBitmapProcessor(Options opts, Rect region) {
-		return new AguBitmapProcessor(opts, region);
-	}
-
 	private static int calculateInSampleSize(int width, int height, int reqWidth, int reqHeight) {
 	    // Raw height and width of image
 	    int inSampleSize = 1;
@@ -283,14 +412,8 @@ public abstract class BitmapDecoder {
 		return new StreamDecoder(in);
 	}
 
-	protected Bitmap aguDecode(InputStream in, Options opts, Rect region) {
-		return aguDecodePreProcessed(in, region,
-				createBitmapProcessor(opts, region).preProcess());
-	}
-	
-	protected Bitmap aguDecodePreProcessed(InputStream in, Rect region,
-			AguBitmapProcessor processor) {
-		
+	protected Bitmap aguDecode() {
+		final InputStream in = openInputStream();
 		if (in == null) return null;
 		
 		final AguDecoder d = new AguDecoder(in);
@@ -302,7 +425,7 @@ public abstract class BitmapDecoder {
 		final Bitmap bitmap = d.decode(opts);
 		d.close();
 		
-		return processor.postProcess(bitmap, scaleFilter);
+		return bitmap;
 	}
 	
 	public void cancel() {
@@ -331,5 +454,21 @@ public abstract class BitmapDecoder {
 		}
 		
 		bitmap.recycle();
+	}
+
+	public BitmapDecoder forceUseOwnDecoder() {
+		return forceUseOwnDecoder(true);
+	}
+	
+	public BitmapDecoder forceUseOwnDecoder(boolean force) {
+		this.useOwnDecoder = force;
+		return this;
+	}
+
+	public double getDensityRatio() {
+		if (densityRatio == 0) {
+			decodeBounds();
+		}
+		return densityRatio;
 	}
 }

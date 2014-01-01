@@ -1,7 +1,4 @@
-package agu;
-
-import java.util.EmptyStackException;
-import java.util.Stack;
+package agu.caching;
 
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory.Options;
@@ -13,7 +10,10 @@ import android.graphics.RectF;
 import android.os.Build;
 
 public abstract class ResourcePool<T> {
-	private Stack<T> stack;
+	private static final int DEFAULT_CAPACITY = 4;
+	
+	private Object[] stack;
+	private int top = 0;
 	
 	public static final ResourcePool<Paint> PAINT = new ResourcePool<Paint>() {
 		@Override
@@ -114,10 +114,6 @@ public abstract class ResourcePool<T> {
 		}
 	};
 	
-	public ResourcePool() {
-		this.stack = new Stack<T>();
-	}
-	
 	protected abstract T newInstance();
 	
 	protected void reset(T obj) {
@@ -127,18 +123,33 @@ public abstract class ResourcePool<T> {
 		return obtain(true);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public T obtain(boolean reset) {
-		try {
-			final T obj = stack.pop();
-			if (reset) reset(obj);
-			return obj;
-		} catch (EmptyStackException e) {
-			return newInstance();
+		synchronized (this) {
+			if (stack == null || top == 0) {
+				return newInstance();
+			} else {
+				final T obj = (T) stack[--top];
+				if (reset) reset(obj);
+				return obj;
+			}
 		}
 	}
 	
 	public void recycle(T obj) {
 		if (obj == null) return;
-		stack.push(obj);
+		
+		synchronized (this) {
+			if (stack == null) {
+				stack = new Object [DEFAULT_CAPACITY];
+			}
+			if (top >= stack.length) {
+				final Object[] newStack = new Object [stack.length * 2];
+				System.arraycopy(stack, 0, newStack, 0, stack.length);
+				stack = newStack;
+			}
+			
+			stack[top++] = obj;
+		}
 	}
 }
