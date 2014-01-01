@@ -129,7 +129,7 @@ public class AguDecoder {
 			
 			final Resampler resampler;
 			if (sampleSize > 1) {
-				resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
+				resampler = new OpaqueDownsizeResampler(sampledWidth, sampleSize, useFilter);
 			} else {
 				resampler = new IdentityResampler();
 			}
@@ -205,7 +205,11 @@ public class AguDecoder {
 		
 		final Resampler resampler;
 		if (sampleSize > 1) {
-			resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
+			if (pr.imgInfo.alpha) {
+				resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
+			} else {
+				resampler = new OpaqueDownsizeResampler(sampledWidth, sampleSize, useFilter);
+			}
 		} else {
 			resampler = new IdentityResampler();
 		}

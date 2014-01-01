@@ -1,8 +1,7 @@
 package agu.bitmap;
 
 
-public class DownsizeResampler extends Resampler {
-	private int[] a;
+public class OpaqueDownsizeResampler extends Resampler {
 	private int[] r;
 	private int[] g;
 	private int[] b;
@@ -14,7 +13,7 @@ public class DownsizeResampler extends Resampler {
 	private int width;
 	private int rows;
 	
-	public DownsizeResampler(int sampledWidth, int sampleSize, boolean filter) {
+	public OpaqueDownsizeResampler(int sampledWidth, int sampleSize, boolean filter) {
 		this.sampleSize = sampleSize;
 		this.shiftCount = Integer.SIZE - Integer.numberOfLeadingZeros(sampleSize) - 1;
 		this.shiftCount2 = shiftCount * 2;
@@ -22,7 +21,6 @@ public class DownsizeResampler extends Resampler {
 		this.rows = 0;
 		this.filter = filter;
 		
-		this.a = new int [width];
 		this.r = new int [width];
 		this.g = new int [width];
 		this.b = new int [width];
@@ -38,7 +36,6 @@ public class DownsizeResampler extends Resampler {
 				
 				final int pixel = pixels[offset + i];
 				 
-				a[col] += ((pixel & 0xff000000) >> 24);
 				r[col] += ((pixel & 0x00ff0000) >> 16);
 				g[col] += ((pixel & 0x0000ff00) >> 8);
 				b[col] += (pixel & 0x000000ff);
@@ -73,11 +70,11 @@ public class DownsizeResampler extends Resampler {
 	
 	private void calculateAverage() {
 		for (int i = 0; i < width; ++i) {
-			output[i] = ((a[i] >>> shiftCount2) << 24) |
+			output[i] = 0xff000000 |
 					((r[i] >>> shiftCount2) << 16) |
 					((g[i] >>> shiftCount2) << 8) |
 					(b[i] >>> shiftCount2);
-			a[i] = r[i] = g[i] = b[i] = 0;
+			r[i] = g[i] = b[i] = 0;
 		}
 	}
 
