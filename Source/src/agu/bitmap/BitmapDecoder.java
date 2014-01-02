@@ -177,6 +177,8 @@ public abstract class BitmapDecoder {
 	 */
 	@SuppressLint("NewApi")
 	private Bitmap executeDecoding() {
+		// TODO adjust sample size
+		
 		// Adjust region.
 		
 		final Rect region;

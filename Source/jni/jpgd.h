@@ -8,6 +8,8 @@
 #include <setjmp.h>
 #include <jni.h>
 
+#include "pixelcomposer.h"
+
 #ifdef _MSC_VER
   #define JPGD_NORETURN __declspec(noreturn) 
 #elif defined(__GNUC__)
@@ -106,6 +108,10 @@ namespace jpgd
     // Returns the total number of bytes actually consumed by the decoder (which should equal the actual size of the JPEG file).
     inline int get_total_bytes_read() const { return m_total_bytes_read; }
 
+    inline int get_dest_bytes_per_pixel() const { return m_dest_bytes_per_pixel; }
+
+    inline void set_output_pixel_format(const pixel_format& format) { m_composer = format.composer; m_dest_bytes_per_pixel = format.bpp; }
+
   private:
     jpeg_decoder(const jpeg_decoder &);
     jpeg_decoder &operator =(const jpeg_decoder &);
@@ -137,15 +143,16 @@ namespace jpgd
       char m_data[1];
     };
 
-    // Added by Nirvan Fallacy
+    // Java related
     JNIEnv* m_env;
     jmethodID InputStream_close;
     jmethodID InputStream_read3;
-    jobject m_in;
-    bool m_little_endian;
+    
+    jobject m_in;                                 // input stream from java
+
     int m_col_offset;
     int m_col_length;
-    ////
+    pixel_composer m_composer;
 
     jmp_buf m_jmp_state;
     mem_block *m_pMem_blocks;

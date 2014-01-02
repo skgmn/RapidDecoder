@@ -2,22 +2,19 @@ package agu.bitmap.jpeg;
 
 import java.io.InputStream;
 
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory.Options;
+import android.graphics.Rect;
+
 public class JpegDecoder {
-	static {
-		System.loadLibrary("jpgd");
-		init();
-	}
-	
-	private static native void init();
 	private static native long createNativeDecoder(InputStream in);
 	private static native void destroyNativeDecoder(long decoder);
 	private static native boolean nativeBegin(long decoder);
 	private static native int nativeGetBytesPerPixel(long decoder);
 	private static native int nativeGetWidth(long decoder);
 	private static native int nativeGetHeight(long decoder);
-	private static native int nativeDecode(long decoder, int[] outPixels);
-	private static native int nativeSkipLine(long decoder);
-	private static native int nativeSliceColumn(long decoder, int offset, int length);
+	private static native Bitmap nativeDecode(long decoder, int left, int top, int right, int bottom, Config config, Options opts);
 	
 	private long decoder;
 	private boolean eof = false;
@@ -61,18 +58,17 @@ public class JpegDecoder {
 		return eof;
 	}
 	
-	public void readLine(int[] buffer) {
+	public Bitmap decode(Rect bounds, Config config, Options opts) {
 		if (decoder == 0) {
 			throw new IllegalStateException();
 		}
 
-		final int bytesRead = nativeDecode(decoder, buffer);
-		if (bytesRead < 0)
-		{
-			throw new UnknownError();
+		if (bounds == null) {
+			return nativeDecode(decoder, -1, -1, -1, -1, config, opts);
+		} else {
+			return nativeDecode(decoder,
+					bounds.left, bounds.top, bounds.right, bounds.bottom, config, opts);
 		}
-
-		eof = (bytesRead == 0);
 	}
 	
 	public int getBytesPerPixel() {
@@ -81,31 +77,6 @@ public class JpegDecoder {
 		}
 		
 		return nativeGetBytesPerPixel(decoder);
-	}
-	
-	public void skipLine() {
-		if (decoder == 0) {
-			throw new IllegalStateException();
-		}
-
-		final int bytesRead = nativeSkipLine(decoder);
-		switch (bytesRead) {
-		case -1: throw new UnknownError();
-		}
-
-		eof = (bytesRead == 0);
-	}
-	
-	public void cancelSlice() {
-		sliceColumn(0, -1);
-	}
-	
-	public void sliceColumn(int offset, int length) {
-		if (decoder == 0) {
-			throw new IllegalStateException();
-		}
-
-		nativeSliceColumn(decoder, offset, length);
 	}
 	
 	@Override

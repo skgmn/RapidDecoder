@@ -17,9 +17,9 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_DEFAULT_CPP_EXTENSION := cpp    
-LOCAL_MODULE := jpgd
-#LOCAL_LDLIBS += -llog
-LOCAL_SRC_FILES := jpgd.cpp jpgdapi.cpp
+LOCAL_MODULE := decoder
+LOCAL_LDLIBS += -ljnigraphics #-llog
+LOCAL_SRC_FILES := jpgd.cpp decoder.cpp pixelcomposer.cpp
 LOCAL_CFLAGS += -DNDEBUG
 
 include $(BUILD_SHARED_LIBRARY)

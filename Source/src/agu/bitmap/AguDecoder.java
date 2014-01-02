@@ -16,6 +16,11 @@ import android.graphics.Rect;
 import android.os.Build;
 
 public class AguDecoder {
+	static {
+		System.loadLibrary("decoder");
+		init();
+	}
+	
 	private static final int MARK_READ_LIMIT = 16384;
 	
 	private static final String MESSAGE_INVALID_REGION = "rectangle is outside the image";
@@ -25,6 +30,8 @@ public class AguDecoder {
 	private Config config;
 	private boolean useFilter = true;
 	private int sampleSize;
+	
+	private static native void init();
 	
 	public AguDecoder(InputStream in) {
 		this.in = in;
@@ -115,56 +122,57 @@ public class AguDecoder {
 			final int height = d.getHeight();
 
 			validateRegion(width, height);
-			
-			final int left = (region == null ? 0 : region.left);
-			final int top = (region == null ? 0 : region.top);
-			final int right = (region == null ? width : region.right);
-			final int bottom = (region == null ? height : region.bottom);
-			
-			final int w = right - left;
-			final int h = bottom - top;
-			
-			final int sampledWidth = w / sampleSize;
-			final int sampledHeight = h / sampleSize;
-			
-			final Resampler resampler;
-			if (sampleSize > 1) {
-				resampler = new OpaqueDownsizeResampler(sampledWidth, sampleSize, useFilter);
-			} else {
-				resampler = new IdentityResampler();
-			}
-			
+
 			final Config config = (this.config != null ? this.config : getDefaultConfig(false));
-			final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
 			
-			final int[] scanline = new int [w];
-	
-			int y = 0;
-			
-			d.sliceColumn(left, w);
-			for (int i = 0; i < top; ++i) {
-				if (opts.mCancel) return null;
-				d.skipLine();
-			}
-			
-			for (int i = top; i < bottom; ++i) {
-				d.readLine(scanline);
-				
-				if (opts.mCancel) return null;
-				
-				final int[] sampled = resampler.resample(scanline, 0, w);
-				if (sampled != null) {
-					bitmap.setPixels(sampled, 0, sampledWidth, 0, y, sampledWidth, 1);
-					++y;
-				}
-			}
-			
-			final int[] remain = resampler.finish();
-			if (remain != null && y < sampledHeight) {
-				bitmap.setPixels(remain, 0, sampledWidth, 0, y, sampledWidth, 1);
-			}
-			
-			return bitmap;
+//			final int left = (region == null ? 0 : region.left);
+//			final int top = (region == null ? 0 : region.top);
+//			final int right = (region == null ? width : region.right);
+//			final int bottom = (region == null ? height : region.bottom);
+//			
+//			final int w = right - left;
+//			final int h = bottom - top;
+//			
+//			final int sampledWidth = w / sampleSize;
+//			final int sampledHeight = h / sampleSize;
+//			
+//			final Resampler resampler;
+//			if (sampleSize > 1) {
+//				resampler = new OpaqueDownsizeResampler(sampledWidth, sampleSize, useFilter);
+//			} else {
+//				resampler = new IdentityResampler();
+//			}
+//			
+//			final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
+//			
+//			final int[] scanline = new int [w];
+//	
+//			int y = 0;
+//			
+//			d.sliceColumn(left, w);
+//			for (int i = 0; i < top; ++i) {
+//				if (opts.mCancel) return null;
+//				d.skipLine();
+//			}
+//			
+//			for (int i = top; i < bottom; ++i) {
+//				d.readLine(scanline);
+//				
+//				if (opts.mCancel) return null;
+//				
+//				final int[] sampled = resampler.resample(scanline, 0, w);
+//				if (sampled != null) {
+//					bitmap.setPixels(sampled, 0, sampledWidth, 0, y, sampledWidth, 1);
+//					++y;
+//				}
+//			}
+//			
+//			final int[] remain = resampler.finish();
+//			if (remain != null && y < sampledHeight) {
+//				bitmap.setPixels(remain, 0, sampledWidth, 0, y, sampledWidth, 1);
+//			}
+
+			return d.decode(region, config, opts);
 		} finally {
 			d.close();
 		}

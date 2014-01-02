@@ -1376,6 +1376,8 @@ int jpeg_decoder::locate_sos_marker()
 // Reset everything to default/uninitialized state.
 void jpeg_decoder::init(JNIEnv* env, jobject is)
 {
+    // Added by Nirvan Fallacy
+
     m_env = env;
     m_in = env->NewGlobalRef(is);
 
@@ -1383,11 +1385,11 @@ void jpeg_decoder::init(JNIEnv* env, jobject is)
     InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read3 = env->GetMethodID(InputStream, "read", "([BII)I");
 
-  // Added by Nirvan Fallacy
-  int temp = 1;
-  m_little_endian = (*((char*)&temp) == 1);
-  m_col_offset = 0;
-  m_col_length = -1;
+    m_col_offset = 0;
+    m_col_length = -1;
+    set_output_pixel_format(ARGB);
+
+    ////
 
   m_pMem_blocks = NULL;
   m_error_code = JPGD_SUCCESS;
@@ -1918,25 +1920,15 @@ void jpeg_decoder::H1V1Convert()
       if (col >= col_end) break;
       if (col >= m_col_offset)
       {
-          int y = s[j];
-          int cb = s[64+j];
-          int cr = s[128+j];
+            int y = s[j];
+            int cb = s[64+j];
+            int cr = s[128+j];
 
-          if (m_little_endian)
-          {
-            d[0] = clamp(y + m_cbb[cb]);
-            d[1] = clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16));
-            d[2] = clamp(y + m_crr[cr]);
-            d[3] = 255;
-          }
-          else
-          {
-            d[0] = 255;
-            d[1] = clamp(y + m_crr[cr]);
-            d[2] = clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16));
-            d[3] = clamp(y + m_cbb[cb]);
-          }
-          d += 4;
+            m_composer(d,
+                255,
+                clamp(y + m_crr[cr]),
+                clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16)),
+                clamp(y + m_cbb[cb]));
       }
 
       ++col;
@@ -1974,41 +1966,22 @@ void jpeg_decoder::H2V1Convert()
             int bc = m_cbb[cb];
 
             int yy = y[j<<1];
-            if (m_little_endian)
-            {
-              d0[0] = clamp(yy+bc);
-              d0[1] = clamp(yy+gc);
-              d0[2] = clamp(yy+rc);
-              d0[3] = 255;
-            }
-            else
-            {
-              d0[0] = 255;
-              d0[1] = clamp(yy+rc);
-              d0[2] = clamp(yy+gc);
-              d0[3] = clamp(yy+bc);
-            }
+
+            m_composer(d0,
+              255,
+              clamp(yy+rc),
+              clamp(yy+gc),
+              clamp(yy+bc));
 
             if (++col >= col_end) break;
             if (col >= m_col_offset)
             {
                 yy = y[(j<<1)+1];
-                if (m_little_endian)
-                {
-                  d0[7] = 255;
-                  d0[6] = clamp(yy+rc);
-                  d0[5] = clamp(yy+gc);
-                  d0[4] = clamp(yy+bc);
-                }
-                else
-                {
-                  d0[4] = 255;
-                  d0[5] = clamp(yy+rc);
-                  d0[6] = clamp(yy+gc);
-                  d0[7] = clamp(yy+bc);
-                }
-
-                d0 += 8;
+                m_composer(d0,
+                  255,
+                  clamp(yy+rc),
+                  clamp(yy+gc),
+                  clamp(yy+bc));
             }
         }
 
@@ -2057,39 +2030,18 @@ void jpeg_decoder::H1V2Convert()
           int bc = m_cbb[cb];
 
           int yy = y[j];
-          if (m_little_endian)
-          {
-            d0[3] = 255;
-            d0[2] = clamp(yy+rc);
-            d0[1] = clamp(yy+gc);
-            d0[0] = clamp(yy+bc);
-          }
-          else
-          {
-            d0[0] = 255;
-            d0[1] = clamp(yy+rc);
-            d0[2] = clamp(yy+gc);
-            d0[3] = clamp(yy+bc);
-          }
+          m_composer(d0,
+            255,
+            clamp(yy+rc),
+            clamp(yy+gc),
+            clamp(yy+bc));
 
           yy = y[8+j];
-          if (m_little_endian)
-          {
-            d1[3] = 255;
-            d1[2] = clamp(yy+rc);
-            d1[1] = clamp(yy+gc);
-            d1[0] = clamp(yy+bc);
-          }
-          else
-          {
-            d1[0] = 255;
-            d1[1] = clamp(yy+rc);
-            d1[2] = clamp(yy+gc);
-            d1[3] = clamp(yy+bc);
-          }
-
-          d0 += 4;
-          d1 += 4;
+          m_composer(d1,
+            255,
+            clamp(yy+rc),
+            clamp(yy+gc),
+            clamp(yy+bc));
       }
 
       ++col;
@@ -2136,74 +2088,35 @@ void jpeg_decoder::H2V2Convert()
                     int bc = m_cbb[cb];
 
                     int yy = y[j];
-                    if (m_little_endian)
-                    {
-                      d0[3] = 255;
-                      d0[2] = clamp(yy+rc);
-                      d0[1] = clamp(yy+gc);
-                      d0[0] = clamp(yy+bc);
-                    }
-                    else
-                    {
-                      d0[0] = 255;
-                      d0[1] = clamp(yy+rc);
-                      d0[2] = clamp(yy+gc);
-                      d0[3] = clamp(yy+bc);
-                    }
+                    m_composer(d0,
+                      255,
+                      clamp(yy+rc),
+                      clamp(yy+gc),
+                      clamp(yy+bc));
 
                     yy = y[j+8];
-                    if (m_little_endian)
-                    {
-                      d1[3] = 255;
-                      d1[2] = clamp(yy+rc);
-                      d1[1] = clamp(yy+gc);
-                      d1[0] = clamp(yy+bc);
-                    }
-                    else
-                    {
-                      d1[0] = 255;
-                      d1[1] = clamp(yy+rc);
-                      d1[2] = clamp(yy+gc);
-                      d1[3] = clamp(yy+bc);
-                    }
+                    m_composer(d1,
+                      255,
+                      clamp(yy+rc),
+                      clamp(yy+gc),
+                      clamp(yy+bc));
 
                     if (++col >= col_end) break;
                     if (col >= m_col_offset)
                     {
                         yy = y[j+1];
-                        if (m_little_endian)
-                        {
-                          d0[7] = 255;
-                          d0[6] = clamp(yy+rc);
-                          d0[5] = clamp(yy+gc);
-                          d0[4] = clamp(yy+bc);
-                        }
-                        else
-                        {
-                          d0[4] = 255;
-                          d0[5] = clamp(yy+rc);
-                          d0[6] = clamp(yy+gc);
-                          d0[7] = clamp(yy+bc);
-                        }
+                        m_composer(d0,
+                          255,
+                          clamp(yy+rc),
+                          clamp(yy+gc),
+                          clamp(yy+bc));
 
                         yy = y[j+8+1];
-                        if (m_little_endian)
-                        {
-                          d1[7] = 255;
-                          d1[6] = clamp(yy+rc);
-                          d1[5] = clamp(yy+gc);
-                          d1[4] = clamp(yy+bc);
-                        }
-                        else
-                        {
-                          d1[4] = 255;
-                          d1[5] = clamp(yy+rc);
-                          d1[6] = clamp(yy+gc);
-                          d1[7] = clamp(yy+bc);
-                        }
-
-				        d0 += 8;
-				        d1 += 8;
+                        m_composer(d1,
+                          255,
+                          clamp(yy+rc),
+                          clamp(yy+gc),
+                          clamp(yy+bc));
                     }
                 }
 
@@ -2235,17 +2148,7 @@ void jpeg_decoder::gray_convert()
           if (col >= col_end) break;
           if (col >= m_col_offset)
           {
-              if (m_little_endian)
-              {
-                  d[3] = 255;
-                  d[2] = d[1] = d[0] = s[j];
-              }
-              else
-              {
-                  d[0] = 255;
-                  d[1] = d[2] = d[3] = s[j];
-              }
-              ++d;
+              m_composer(d, 255, s[j], s[j], s[j]);
           }
           ++col;
       }
@@ -2286,22 +2189,11 @@ void jpeg_decoder::expanded_convert()
             int cb = Py[Cb_ofs + j];
             int cr = Py[Cr_ofs + j];
 
-            if (m_little_endian)
-            {
-              d[3] = 255;
-              d[2] = clamp(y + m_crr[cr]);
-              d[1] = clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16));
-              d[0] = clamp(y + m_cbb[cb]);
-            }
-            else
-            {
-              d[0] = 255;
-              d[1] = clamp(y + m_crr[cr]);
-              d[2] = clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16));
-              d[3] = clamp(y + m_cbb[cb]);
-            }
-
-            d += 4;
+            m_composer(d,
+              255,
+              clamp(y + m_crr[cr]),
+              clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16)),
+              clamp(y + m_cbb[cb]));
         }
 
         ++col;
@@ -2768,21 +2660,23 @@ void jpeg_decoder::init_frame()
   m_max_mcus_per_col = (m_image_y_size + (m_max_mcu_y_size - 1)) / m_max_mcu_y_size;
 
   // These values are for the *destination* pixels: after conversion.
-  if (m_scan_type == JPGD_GRAYSCALE)
+  /*if (m_scan_type == JPGD_GRAYSCALE)
     m_dest_bytes_per_pixel = 1;
   else
-    m_dest_bytes_per_pixel = 4;
-
-  m_dest_bytes_per_scan_line = ((m_image_x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
+    m_dest_bytes_per_pixel = 4;*/
 
   int x_size = (m_col_length >= 0 ? m_col_length : m_image_x_size);
+  m_dest_bytes_per_scan_line = ((x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
   m_real_dest_bytes_per_scan_line = x_size * m_dest_bytes_per_pixel;
+//  m_dest_bytes_per_scan_line = ((m_image_x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
   //m_real_dest_bytes_per_scan_line = (x_size * m_dest_bytes_per_pixel);
 
   // Initialize two scan line buffers.
   m_pScan_line_0 = (uint8 *)alloc(m_dest_bytes_per_scan_line, true);
   if ((m_scan_type == JPGD_YH1V2) || (m_scan_type == JPGD_YH2V2))
     m_pScan_line_1 = (uint8 *)alloc(m_dest_bytes_per_scan_line, true);
+
+  memset(m_pScan_line_0, 0, m_dest_bytes_per_scan_line);
 
   m_max_blocks_per_row = m_max_mcus_per_row * m_max_blocks_per_mcu;
 
@@ -3217,104 +3111,5 @@ void jpeg_decoder::set_column_length(int length)
     if (length < 0) length = m_image_x_size;
     m_real_dest_bytes_per_scan_line = (length * m_dest_bytes_per_pixel);
 }
-
-/*unsigned char *decompress_jpeg_image_from_stream(jpeg_decoder_stream *pStream, int *width, int *height, int *actual_comps, int req_comps)
-{
-  if (!actual_comps)
-    return NULL;
-  *actual_comps = 0;
-
-  if ((!pStream) || (!width) || (!height) || (!req_comps))
-    return NULL;
-
-  if ((req_comps != 1) && (req_comps != 3) && (req_comps != 4))
-    return NULL;
-
-  jpeg_decoder decoder(pStream);
-  if (decoder.get_error_code() != JPGD_SUCCESS)
-    return NULL;
-
-  const int image_width = decoder.get_width(), image_height = decoder.get_height();
-  *width = image_width;
-  *height = image_height;
-  *actual_comps = decoder.get_num_components();
-
-  if (decoder.begin_decoding() != JPGD_SUCCESS)
-    return NULL;
-
-  const int dst_bpl = image_width * req_comps;
-
-  uint8 *pImage_data = (uint8*)jpgd_malloc(dst_bpl * image_height);
-  if (!pImage_data)
-    return NULL;
-
-  for (int y = 0; y < image_height; y++)
-  {
-    const uint8* pScan_line;
-    uint scan_line_len;
-    if (decoder.decode((const void**)&pScan_line, &scan_line_len) != JPGD_SUCCESS)
-    {
-      jpgd_free(pImage_data);
-      return NULL;
-    }
-
-    uint8 *pDst = pImage_data + y * dst_bpl;
-
-    if (((req_comps == 1) && (decoder.get_num_components() == 1)) || ((req_comps == 4) && (decoder.get_num_components() == 3)))
-      memcpy(pDst, pScan_line, dst_bpl);
-    else if (decoder.get_num_components() == 1)
-    {
-      if (req_comps == 3)
-      {
-        for (int x = 0; x < image_width; x++)
-        {
-          uint8 luma = pScan_line[x];
-          pDst[0] = luma;
-          pDst[1] = luma;
-          pDst[2] = luma;
-          pDst += 3;
-        }
-      }
-      else
-      {
-        for (int x = 0; x < image_width; x++)
-        {
-          uint8 luma = pScan_line[x];
-          pDst[0] = luma;
-          pDst[1] = luma;
-          pDst[2] = luma;
-          pDst[3] = 255;
-          pDst += 4;
-        }
-      }
-    }
-    else if (decoder.get_num_components() == 3)
-    {
-      if (req_comps == 1)
-      {
-        const int YR = 19595, YG = 38470, YB = 7471;
-        for (int x = 0; x < image_width; x++)
-        {
-          int r = pScan_line[x*4+0];
-          int g = pScan_line[x*4+1];
-          int b = pScan_line[x*4+2];
-          *pDst++ = static_cast<uint8>((r * YR + g * YG + b * YB + 32768) >> 16);
-        }
-      }
-      else
-      {
-        for (int x = 0; x < image_width; x++)
-        {
-          pDst[0] = pScan_line[x*4+0];
-          pDst[1] = pScan_line[x*4+1];
-          pDst[2] = pScan_line[x*4+2];
-          pDst += 3;
-        }
-      }
-    }
-  }
-
-  return pImage_data;
-}*/
 
 } // namespace jpgd
