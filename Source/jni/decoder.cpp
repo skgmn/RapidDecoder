@@ -94,9 +94,9 @@ jobject JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeDecode(JNIEnv* env, jclas
 
     switch (info.format)
     {
-    case ANDROID_BITMAP_FORMAT_RGBA_8888: decoder->set_output_pixel_format(RGBA); break;
-    case ANDROID_BITMAP_FORMAT_RGBA_4444: decoder->set_output_pixel_format(ARGB4444); break;
-    case ANDROID_BITMAP_FORMAT_RGB_565: decoder->set_output_pixel_format(RGB565); break;
+    case ANDROID_BITMAP_FORMAT_RGBA_8888: decoder->set_pixel_format(RGBA); break;
+    case ANDROID_BITMAP_FORMAT_RGBA_4444: decoder->set_pixel_format(ARGB4444); break;
+    case ANDROID_BITMAP_FORMAT_RGB_565: decoder->set_pixel_format(RGB565); break;
     default:
         env->CallVoidMethod(bitmap, Bitmap_recycle);
         return NULL;
@@ -124,7 +124,7 @@ jobject JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeDecode(JNIEnv* env, jclas
 
     pixels += top * info.stride;
 
-    dest_bypp = decoder->get_dest_bytes_per_pixel();
+    dest_bypp = decoder->get_bytes_per_pixel();
     dest_stride = w * dest_bypp;
     offset = left * dest_bypp;
 

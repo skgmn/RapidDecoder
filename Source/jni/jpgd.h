@@ -108,9 +108,7 @@ namespace jpgd
     // Returns the total number of bytes actually consumed by the decoder (which should equal the actual size of the JPEG file).
     inline int get_total_bytes_read() const { return m_total_bytes_read; }
 
-    inline int get_dest_bytes_per_pixel() const { return m_dest_bytes_per_pixel; }
-
-    inline void set_output_pixel_format(const pixel_format& format) { m_composer = format.composer; m_dest_bytes_per_pixel = format.bpp; }
+    inline void set_pixel_format(const pixel_format& format) { m_composer = format.composer; m_dest_bytes_per_pixel = format.bpp; }
 
   private:
     jpeg_decoder(const jpeg_decoder &);
@@ -190,7 +188,7 @@ namespace jpgd
     int m_mcu_lines_left;                         // total # lines left in this MCU
     int m_real_dest_bytes_per_scan_line;
     int m_dest_bytes_per_scan_line;               // rounded up
-    int m_dest_bytes_per_pixel;                   // 4 (RGB) or 1 (Y)
+    int m_dest_bytes_per_pixel;
     huff_tables* m_pHuff_tabs[JPGD_MAX_HUFF_TABLES];
     coeff_buf* m_dc_coeffs[JPGD_MAX_COMPONENTS];
     coeff_buf* m_ac_coeffs[JPGD_MAX_COMPONENTS];

@@ -12,12 +12,16 @@
 #include "jpgd.h"
 #include <string.h>
 
+#include <android/log.h>
+
 #include <assert.h>
 #define JPGD_ASSERT(x) assert(x)
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4611) // warning C4611: interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
+
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "libnav", __VA_ARGS__) 
 
 // Set to 1 to enable freq. domain chroma upsampling on images using H2V2 subsampling (0=faster nearest neighbor sampling).
 // This is slower, but results in higher quality on images with highly saturated colors.
@@ -1376,8 +1380,6 @@ int jpeg_decoder::locate_sos_marker()
 // Reset everything to default/uninitialized state.
 void jpeg_decoder::init(JNIEnv* env, jobject is)
 {
-    // Added by Nirvan Fallacy
-
     m_env = env;
     m_in = env->NewGlobalRef(is);
 
@@ -1385,11 +1387,11 @@ void jpeg_decoder::init(JNIEnv* env, jobject is)
     InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read3 = env->GetMethodID(InputStream, "read", "([BII)I");
 
-    m_col_offset = 0;
-    m_col_length = -1;
-    set_output_pixel_format(ARGB);
+    set_pixel_format(RGBA);
 
-    ////
+  // Added by Nirvan Fallacy
+  m_col_offset = 0;
+  m_col_length = -1;
 
   m_pMem_blocks = NULL;
   m_error_code = JPGD_SUCCESS;
@@ -1438,7 +1440,6 @@ void jpeg_decoder::init(JNIEnv* env, jobject is)
   m_mcu_lines_left = 0;
   m_real_dest_bytes_per_scan_line = 0;
   m_dest_bytes_per_scan_line = 0;
-  m_dest_bytes_per_pixel = 0;
 
   memset(m_pHuff_tabs, 0, sizeof(m_pHuff_tabs));
 
@@ -1920,9 +1921,9 @@ void jpeg_decoder::H1V1Convert()
       if (col >= col_end) break;
       if (col >= m_col_offset)
       {
-            int y = s[j];
-            int cb = s[64+j];
-            int cr = s[128+j];
+          int y = s[j];
+          int cb = s[64+j];
+          int cr = s[128+j];
 
             m_composer(d,
                 255,
@@ -2668,15 +2669,12 @@ void jpeg_decoder::init_frame()
   int x_size = (m_col_length >= 0 ? m_col_length : m_image_x_size);
   m_dest_bytes_per_scan_line = ((x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
   m_real_dest_bytes_per_scan_line = x_size * m_dest_bytes_per_pixel;
-//  m_dest_bytes_per_scan_line = ((m_image_x_size + 15) & 0xFFF0) * m_dest_bytes_per_pixel;
   //m_real_dest_bytes_per_scan_line = (x_size * m_dest_bytes_per_pixel);
 
   // Initialize two scan line buffers.
   m_pScan_line_0 = (uint8 *)alloc(m_dest_bytes_per_scan_line, true);
   if ((m_scan_type == JPGD_YH1V2) || (m_scan_type == JPGD_YH2V2))
     m_pScan_line_1 = (uint8 *)alloc(m_dest_bytes_per_scan_line, true);
-
-  memset(m_pScan_line_0, 0, m_dest_bytes_per_scan_line);
 
   m_max_blocks_per_row = m_max_mcus_per_row * m_max_blocks_per_mcu;
 
