@@ -16,6 +16,11 @@ public:
         this->composer = composer;
         this->bpp = bpp;
     }
+
+    inline bool operator==(const pixel_format& rhs)
+    {
+        return composer == rhs.composer;
+    }
 };
 
 extern pixel_format RGB565;

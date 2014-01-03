@@ -27,7 +27,6 @@ public class AguDecoder {
 	
 	private InputStream in;
 	private Rect region;
-	private Config config;
 	private boolean useFilter = true;
 	private int sampleSize;
 	
@@ -55,10 +54,6 @@ public class AguDecoder {
 	
 	public void setRegion(Rect region) {
 		this.region = region;
-	}
-	
-	public void setConfig(Config config) {
-		this.config = config;
 	}
 	
 	public void setUseFilter(boolean filter) {
@@ -123,7 +118,7 @@ public class AguDecoder {
 
 			validateRegion(width, height);
 
-			final Config config = (this.config != null ? this.config : getDefaultConfig(false));
+			final Config config = (opts.inPreferredConfig != null ? opts.inPreferredConfig : getDefaultConfig(false));
 			
 //			final int left = (region == null ? 0 : region.left);
 //			final int top = (region == null ? 0 : region.top);
@@ -222,7 +217,7 @@ public class AguDecoder {
 			resampler = new IdentityResampler();
 		}
 		
-		final Config config = (this.config != null ? this.config : getDefaultConfig(alpha));
+		final Config config = (opts.inPreferredConfig != null ? opts.inPreferredConfig : getDefaultConfig(alpha));
 		
 		final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
 		final int[] pixels = new int [w];

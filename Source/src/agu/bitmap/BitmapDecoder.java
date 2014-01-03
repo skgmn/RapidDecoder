@@ -11,6 +11,7 @@ import agu.scaling.AspectRatioCalculator;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
@@ -422,7 +423,6 @@ public abstract class BitmapDecoder {
 		d.setRegion(region);
 		d.setUseFilter(scaleFilter);
 		d.setSampleSize(opts.inSampleSize);
-		d.setConfig(opts.inPreferredConfig);
 		
 		final Bitmap bitmap = d.decode(opts);
 		d.close();
@@ -472,5 +472,10 @@ public abstract class BitmapDecoder {
 			decodeBounds();
 		}
 		return densityRatio;
+	}
+	
+	public BitmapDecoder config(Config config) {
+		opts.inPreferredConfig = config;
+		return this;
 	}
 }

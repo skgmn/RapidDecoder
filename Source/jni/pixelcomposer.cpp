@@ -11,10 +11,10 @@ void rgb565_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
     dest += 2;
 }
 
-void argb4444_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
+void rgba4444_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
 {
     uint16* p = (uint16*)dest;
-    *p = (uint16)(((a & 0xf0) << 8) | (r >> 4) | (g & 0xf0) | ((b & 0xf0) << 4));
+    *p = (uint16)(((r & 0xf0) << 8) | ((g & 0xf0) << 4) | (b & 0xf0) | (a >> 4));
     dest += 2;
 }
 
@@ -41,7 +41,7 @@ void rgba_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
 }
 
 pixel_format RGB565(rgb565_composer, 2);
-pixel_format RGBA4444(argb4444_composer, 2);
+pixel_format RGBA4444(rgba4444_composer, 2);
 pixel_format RGB888(rgb888_composer, 3);
 pixel_format ARGB8888(argb_composer, 4);
 pixel_format RGBA8888(rgba_composer, 4);
