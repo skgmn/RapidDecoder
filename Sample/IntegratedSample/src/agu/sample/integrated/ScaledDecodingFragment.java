@@ -38,7 +38,6 @@ public class ScaledDecodingFragment extends Fragment {
 		// Jpeg
 		
 		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda);
-//		decoder = BitmapDecoder.from(getResources().openRawResource(R.drawable.amanda));
 		sourceWidth = decoder.width();
 		sourceHeight = decoder.height();
 		

@@ -14,7 +14,8 @@ public class JpegDecoder {
 	private static native int nativeGetBytesPerPixel(long decoder);
 	private static native int nativeGetWidth(long decoder);
 	private static native int nativeGetHeight(long decoder);
-	private static native Bitmap nativeDecode(long decoder, int left, int top, int right, int bottom, Config config, Options opts);
+	private static native Bitmap nativeDecode(long decoder, int left, int top, int right, int bottom, boolean filter,
+			Config config, Options opts);
 	
 	private long decoder;
 	private boolean eof = false;
@@ -58,16 +59,17 @@ public class JpegDecoder {
 		return eof;
 	}
 	
-	public Bitmap decode(Rect bounds, Config config, Options opts) {
+	public Bitmap decode(Rect bounds, boolean filter, Config config, Options opts) {
 		if (decoder == 0) {
 			throw new IllegalStateException();
 		}
 
 		if (bounds == null) {
-			return nativeDecode(decoder, -1, -1, -1, -1, config, opts);
+			return nativeDecode(decoder, -1, -1, -1, -1, filter, config, opts);
 		} else {
 			return nativeDecode(decoder,
-					bounds.left, bounds.top, bounds.right, bounds.bottom, config, opts);
+					bounds.left, bounds.top, bounds.right, bounds.bottom,
+					filter, config, opts);
 		}
 	}
 	

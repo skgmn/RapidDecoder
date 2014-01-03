@@ -172,7 +172,7 @@ public class AguDecoder {
 //				bitmap.setPixels(remain, 0, sampledWidth, 0, y, sampledWidth, 1);
 //			}
 
-			return d.decode(region, config, opts);
+			return d.decode(region, useFilter, config, opts);
 		} finally {
 			d.close();
 		}

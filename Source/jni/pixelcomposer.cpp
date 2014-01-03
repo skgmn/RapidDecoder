@@ -41,7 +41,7 @@ void rgba_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
 }
 
 pixel_format RGB565(rgb565_composer, 2);
-pixel_format ARGB4444(argb4444_composer, 2);
+pixel_format RGBA4444(argb4444_composer, 2);
 pixel_format RGB888(rgb888_composer, 3);
-pixel_format ARGB(argb_composer, 4);
-pixel_format RGBA(rgba_composer, 4);
+pixel_format ARGB8888(argb_composer, 4);
+pixel_format RGBA8888(rgba_composer, 4);

@@ -12,7 +12,7 @@
 #include "jpgd.h"
 #include <string.h>
 
-#include <android/log.h>
+//#include <android/log.h>
 
 #include <assert.h>
 #define JPGD_ASSERT(x) assert(x)
@@ -1387,7 +1387,7 @@ void jpeg_decoder::init(JNIEnv* env, jobject is)
     InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read3 = env->GetMethodID(InputStream, "read", "([BII)I");
 
-    set_pixel_format(RGBA);
+    set_pixel_format(RGBA8888);
 
   // Added by Nirvan Fallacy
   m_col_offset = 0;

@@ -9,7 +9,9 @@ public:
     pixel_composer composer;
     int bpp;
 
-    pixel_format(pixel_composer composer, int bpp)
+    inline pixel_format() {}
+
+    inline pixel_format(pixel_composer composer, int bpp)
     {
         this->composer = composer;
         this->bpp = bpp;
@@ -17,9 +19,9 @@ public:
 };
 
 extern pixel_format RGB565;
-extern pixel_format ARGB4444;
+extern pixel_format RGBA4444;
 extern pixel_format RGB888;
-extern pixel_format ARGB;
-extern pixel_format RGBA;
+extern pixel_format ARGB8888;
+extern pixel_format RGBA8888;
 
 #endif // PIXELCOMPOSER_H
