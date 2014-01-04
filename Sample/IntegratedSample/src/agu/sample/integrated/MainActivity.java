@@ -74,6 +74,7 @@ public class MainActivity extends FragmentActivity {
 		case 1: fragment = new RegionalDecodingFragment(); break;
 		case 2: fragment = new MutableDecodingFragment(); break;
 		case 3: fragment = new FrameFragment(); break;
+		case 4: fragment = new AnimatingGifFragment(); break;
 		default: return;
 		}
 		
