@@ -7,5 +7,11 @@
 
     <string name="jpeg">Jpeg</string>
     <string name="png">Png</string>
+    <string name="fit_in_left">Fit in - Left</string>
+    <string name="fit_in_center">Fit in - Center</string>
+    <string name="fit_in_right">Fit in - Right</string>
+    <string name="cut_out_top">Cut out - Top</string>
+    <string name="cut_out_center">Cut out - Center</string>
+    <string name="cut_out_bottom">Cut out - Bottom</string>
     
 </resources>

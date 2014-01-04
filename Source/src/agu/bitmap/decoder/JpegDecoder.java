@@ -7,19 +7,19 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
 
-public class PngDecoder {
+public class JpegDecoder {
 	private static native long createNativeDecoder(InputStream in);
 	private static native void destroyNativeDecoder(long decoder);
 	private static native boolean nativeBegin(long decoder);
 	private static native int nativeGetWidth(long decoder);
 	private static native int nativeGetHeight(long decoder);
-	private static native boolean nativeHasAlpha(long decoder);
 	private static native Bitmap nativeDecode(long decoder, int left, int top, int right, int bottom, boolean filter,
 			Config config, Options opts);
 	
 	private long decoder;
+	private boolean eof = false;
 	
-	public PngDecoder(InputStream in) {
+	public JpegDecoder(InputStream in) {
 		decoder = createNativeDecoder(in);
 	}
 	
@@ -54,6 +54,10 @@ public class PngDecoder {
 		return nativeGetHeight(decoder);
 	}
 	
+	public boolean isEndOfStream() {
+		return eof;
+	}
+	
 	public Bitmap decode(Rect bounds, boolean filter, Config config, Options opts) {
 		if (decoder == 0) {
 			throw new IllegalStateException();
@@ -72,13 +76,5 @@ public class PngDecoder {
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();
-	}
-	
-	public boolean hasAlpha() {
-		if (decoder == 0) {
-			throw new IllegalStateException();
-		}
-		
-		return nativeHasAlpha(decoder);
 	}
 }

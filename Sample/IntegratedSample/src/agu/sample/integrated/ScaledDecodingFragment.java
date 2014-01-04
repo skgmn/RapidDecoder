@@ -51,16 +51,16 @@ public class ScaledDecodingFragment extends Fragment {
 
 		// Png
 		
-//		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda2);
-//		sourceWidth = decoder.width();
-//		sourceHeight = decoder.height();
-//		
-//		bitmap = decoder
-//				.forceUseOwnDecoder()
-//				.scale(width, height).decode();
-//		imagePng.setImageBitmap(bitmap);
-//		
-//		textPngInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
-//				"Bitmap width = " + bitmap.getWidth() + ", Bitmap height = " + bitmap.getHeight());
+		decoder = BitmapDecoder.from(getResources(), R.drawable.amanda2);
+		sourceWidth = decoder.width();
+		sourceHeight = decoder.height();
+		
+		bitmap = decoder
+				.forceUseOwnDecoder()
+				.scale(width, height).decode();
+		imagePng.setImageBitmap(bitmap);
+		
+		textPngInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
+				"Bitmap width = " + bitmap.getWidth() + ", Bitmap height = " + bitmap.getHeight());
 	}
 }

@@ -7,6 +7,7 @@ import static agu.caching.ResourcePool.RECT;
 import java.io.FileDescriptor;
 import java.io.InputStream;
 
+import agu.bitmap.decoder.AguDecoder;
 import agu.scaling.AspectRatioCalculator;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
@@ -19,7 +20,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 
-public abstract class BitmapDecoder {
+public abstract class BitmapDecoder implements Decoder {
 	public static final int SIZE_AUTO = 0;
 
 	private static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
@@ -296,19 +297,20 @@ public abstract class BitmapDecoder {
 		return this;
 	}
 
-	public BitmapDecoder scaleByRatio(double ratio) {
-		return scaleByRatio(ratio, ratio, true);
+	public BitmapDecoder scaleBy(double ratio) {
+		return scaleBy(ratio, ratio, true);
 	}
 	
-	public BitmapDecoder scaleByRatio(double ratio, boolean scaleFilter) {
-		return scaleByRatio(ratio, ratio, scaleFilter);
+	public BitmapDecoder scaleBy(double ratio, boolean scaleFilter) {
+		return scaleBy(ratio, ratio, scaleFilter);
 	}
 
-	public BitmapDecoder scaleByRatio(double widthRatio, double heightRatio) {
-		return scaleByRatio(widthRatio, heightRatio, true);
+	public BitmapDecoder scaleBy(double widthRatio, double heightRatio) {
+		return scaleBy(widthRatio, heightRatio, true);
 	}
 	
-	public BitmapDecoder scaleByRatio(double widthRatio, double heightRatio, boolean scaleFilter) {
+	@Override
+	public BitmapDecoder scaleBy(double widthRatio, double heightRatio, boolean scaleFilter) {
 		if (widthRatio <= 0 || heightRatio <= 0) {
 			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
 		}

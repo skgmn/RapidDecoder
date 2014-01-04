@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.DrawerLayout.DrawerListener;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -16,6 +17,7 @@ public class MainActivity extends FragmentActivity {
 	private DrawerLayout drawer;
 	private ListView listDrawerMenu;
 	private ArrayAdapter<String> adapterDrawerMenu;
+	private int nextContent = -1;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +36,30 @@ public class MainActivity extends FragmentActivity {
 			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
 					long arg3) {
 				
-				loadContent(position);
+				nextContent = position;
+				drawer.closeDrawers();
+			}
+		});
+		
+		drawer.setDrawerListener(new DrawerListener() {
+			@Override
+			public void onDrawerStateChanged(int arg0) {
+			}
+			
+			@Override
+			public void onDrawerSlide(View arg0, float arg1) {
+			}
+			
+			@Override
+			public void onDrawerOpened(View arg0) {
+			}
+			
+			@Override
+			public void onDrawerClosed(View arg0) {
+				if (nextContent >= 0) {
+					loadContent(nextContent);
+					nextContent = -1;
+				}
 			}
 		});
 		
@@ -47,12 +72,13 @@ public class MainActivity extends FragmentActivity {
 		switch (index) {
 		case 0: fragment = new ScaledDecodingFragment(); break;
 		case 1: fragment = new RegionalDecodingFragment(); break;
+		case 2: fragment = new FrameFragment(); break;
 		default: return;
 		}
 		
 		setTitle(adapterDrawerMenu.getItem(index));
 		getSupportFragmentManager().beginTransaction().replace(R.id.content, fragment).commit();
-		
+
 		drawer.closeDrawers();
 	}
 	

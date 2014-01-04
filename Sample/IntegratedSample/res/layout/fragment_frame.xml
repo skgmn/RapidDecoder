@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/frame_builder_sample_grid_height"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+    
+		<LinearLayout
+		    android:layout_width="0dp"
+		    android:layout_height="match_parent"
+		    android:layout_weight="1"
+		    android:gravity="center"
+		    android:orientation="vertical"
+		    tools:ignore="UseCompoundDrawables" >
+		    
+		    <ImageView
+		        android:id="@+id/image_fit_in_left"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="#ff000000"
+		        tools:ignore="ContentDescription" />
+		
+		 <TextView
+		     android:layout_width="wrap_content"
+		     android:layout_height="wrap_content"
+		     android:text="@string/fit_in_left" />
+		    
+		</LinearLayout>
+		
+		<LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+		    android:gravity="center"
+		    android:orientation="vertical"
+		    tools:ignore="UseCompoundDrawables" >
+		    
+		    <ImageView
+		        android:id="@+id/image_fit_in_center"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="#ff000000"
+		        tools:ignore="ContentDescription" />
+		
+		    <TextView
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="@string/fit_in_center" />
+		    
+		</LinearLayout>
+		
+		<LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+		    android:gravity="center"
+		    android:orientation="vertical"
+		    tools:ignore="UseCompoundDrawables" >
+		    
+		    <ImageView
+		        android:id="@+id/image_fit_in_right"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:background="#ff000000"
+		        tools:ignore="ContentDescription" />
+		
+		    <TextView
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="@string/fit_in_right" />
+		    
+		</LinearLayout>
+	
+	</LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/frame_builder_sample_grid_height"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+    
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            tools:ignore="UseCompoundDrawables" >
+            
+            <ImageView
+                android:id="@+id/image_cut_out_top"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#ff000000"
+                tools:ignore="ContentDescription" />
+        
+         <TextView
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/cut_out_top" />
+            
+        </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            tools:ignore="UseCompoundDrawables" >
+            
+            <ImageView
+                android:id="@+id/image_cut_out_center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#ff000000"
+                tools:ignore="ContentDescription" />
+        
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cut_out_center" />
+            
+        </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            tools:ignore="UseCompoundDrawables" >
+            
+            <ImageView
+                android:id="@+id/image_cut_out_bottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#ff000000"
+                tools:ignore="ContentDescription" />
+        
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cut_out_bottom" />
+            
+        </LinearLayout>
+    
+    </LinearLayout>
+    
+</LinearLayout>

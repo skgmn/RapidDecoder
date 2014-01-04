@@ -2,6 +2,8 @@ package agu.scaling;
 
 import static agu.caching.ResourcePool.PAINT;
 import static agu.caching.ResourcePool.RECT;
+import agu.bitmap.Decoder;
+import agu.bitmap.SimulatedDecoder;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -10,7 +12,7 @@ import android.graphics.Region.Op;
 import android.graphics.drawable.Drawable;
 
 public class BitmapFrameBuilder {
-	private Bitmap bitmap;
+	private Decoder decoder;
 	private int frameWidth;
 	private int frameHeight;
 	private ScaleAlignment align = ScaleAlignment.CENTER;
@@ -18,22 +20,26 @@ public class BitmapFrameBuilder {
 	private Drawable background;
 	
 	public BitmapFrameBuilder(Bitmap bitmap, int frameWidth, int frameHeight) {
-		this.bitmap = bitmap;
+		this(new SimulatedDecoder(bitmap), frameWidth, frameHeight);
+	}
+
+	public BitmapFrameBuilder(Decoder decoder, int frameWidth, int frameHeight) {
+		this.decoder = decoder;
 		this.frameWidth = frameWidth;
 		this.frameHeight = frameHeight;
 	}
 	
-	public BitmapFrameBuilder setScaleAlignment(ScaleAlignment align) {
+	public BitmapFrameBuilder scaleAlignment(ScaleAlignment align) {
 		this.align = align;
 		return this;
 	}
 	
-	public BitmapFrameBuilder setScaleOnlyWhenOverflowed(boolean on) {
+	public BitmapFrameBuilder scaleOnlyWhenOverflowed(boolean on) {
 		this.onlyWhenOverflowed = on;
 		return this;
 	}
 	
-	public BitmapFrameBuilder setBackground(Drawable d) {
+	public BitmapFrameBuilder background(Drawable d) {
 		this.background = d;
 		return this;
 	}
@@ -47,11 +53,11 @@ public class BitmapFrameBuilder {
 	}
 	
 	private Bitmap scale(boolean fitIn) {
-		final int width = bitmap.getWidth();
-		final int height = bitmap.getHeight();
+		final int width = decoder.sourceWidth();
+		final int height = decoder.sourceHeight();
 		
 		if (width == frameWidth && height == frameHeight) {
-			return bitmap;
+			return decoder.decode();
 		}
 		
 		final Rect bounds = RECT.obtain(false);
@@ -93,6 +99,8 @@ public class BitmapFrameBuilder {
 					bounds.right = bounds.left + width;
 				}
 				
+				final Bitmap bitmap = decoder.scale(bounds.width(), bounds.height(), true).decode();
+				
 				final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 				final Canvas cv = new Canvas(bitmap2);
 				
@@ -109,30 +117,32 @@ public class BitmapFrameBuilder {
 				final Paint p = PAINT.obtain();
 				try {
 					p.setFilterBitmap(true);
-					cv.drawBitmap(bitmap2, null, bounds, p);
+					cv.drawBitmap(bitmap, bounds.left, bounds.top, p);
 				} finally {
 					PAINT.recycle(p);
 				}
 				
 				return bitmap2;
 			} else {
-				AspectRatioCalculator.frame(bitmap.getWidth(), bitmap.getHeight(),
+				AspectRatioCalculator.frame(width, height,
 						frameWidth, frameHeight, align, fitIn, bounds);
 				
 				final int w = bounds.width();
 				final int h = bounds.height();
 				
-				if (bitmap.getWidth() == w && bitmap.getHeight() == h) {
-					return bitmap;
+				if (frameWidth == w && frameHeight == h) {
+					return decoder.scale(frameWidth, frameHeight, true).decode();
 				} else {
-					final Bitmap bitmap2 = Bitmap.createBitmap(w, h, bitmap.getConfig());
+					final Bitmap bitmap = decoder.scale(w, h, true).decode();
+					
+					final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 					final Canvas canvas = new Canvas(bitmap2);
 					
 					if (background != null) {
 						canvas.save(Canvas.CLIP_SAVE_FLAG);
 						canvas.clipRect(bounds, Op.DIFFERENCE);
 						
-						background.setBounds(0, 0, w, h);
+						background.setBounds(0, 0, frameWidth, frameHeight);
 						background.draw(canvas);
 						
 						canvas.restore();
@@ -141,7 +151,7 @@ public class BitmapFrameBuilder {
 					final Paint p = PAINT.obtain();
 					try {
 						p.setFilterBitmap(true);
-						canvas.drawBitmap(bitmap, null, bounds, p);
+						canvas.drawBitmap(bitmap, bounds.left, bounds.top, p);
 					} finally {
 						PAINT.recycle(p);
 					}

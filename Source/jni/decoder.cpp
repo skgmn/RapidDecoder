@@ -20,7 +20,7 @@ jfieldID Options_mCancel;
 // Java apis
 
 extern "C" JNIEXPORT
-void JNICALL Java_agu_bitmap_AguDecoder_init(JNIEnv* env, jclass clazz)
+void JNICALL Java_agu_bitmap_decoder_AguDecoder_init(JNIEnv* env, jclass clazz)
 {
     Bitmap = (jclass) env->NewGlobalRef(env->FindClass("android/graphics/Bitmap"));
     Bitmap_createBitmap1 = env->GetStaticMethodID(Bitmap, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
@@ -34,7 +34,7 @@ void JNICALL Java_agu_bitmap_AguDecoder_init(JNIEnv* env, jclass clazz)
 // JpegDecoder
 
 extern "C" JNIEXPORT
-jlong JNICALL Java_agu_bitmap_jpeg_JpegDecoder_createNativeDecoder(JNIEnv* env, jclass clazz,
+jlong JNICALL Java_agu_bitmap_decoder_JpegDecoder_createNativeDecoder(JNIEnv* env, jclass clazz,
 	jobject in)
 {
     jpeg_decoder* decoder = new jpeg_decoder(env, in);
@@ -42,7 +42,7 @@ jlong JNICALL Java_agu_bitmap_jpeg_JpegDecoder_createNativeDecoder(JNIEnv* env, 
 }
 
 extern "C" JNIEXPORT
-void JNICALL Java_agu_bitmap_jpeg_JpegDecoder_destroyNativeDecoder(JNIEnv* env, jclass clazz,
+void JNICALL Java_agu_bitmap_decoder_JpegDecoder_destroyNativeDecoder(JNIEnv* env, jclass clazz,
 	jlong decoderPtr)
 {
     jpeg_decoder* decoder = (jpeg_decoder*)decoderPtr;
@@ -50,7 +50,7 @@ void JNICALL Java_agu_bitmap_jpeg_JpegDecoder_destroyNativeDecoder(JNIEnv* env, 
 }
 
 extern "C" JNIEXPORT
-jboolean JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeBegin(JNIEnv* env, jclass clazz,
+jboolean JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeBegin(JNIEnv* env, jclass clazz,
 	jlong decoderPtr)
 {
     jpeg_decoder* decoder = (jpeg_decoder*)decoderPtr;
@@ -58,7 +58,7 @@ jboolean JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeBegin(JNIEnv* env, jclas
 }
 
 extern "C" JNIEXPORT
-jint JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeGetWidth(JNIEnv* env, jclass clazz,
+jint JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeGetWidth(JNIEnv* env, jclass clazz,
 	jlong decoderPtr)
 {
     jpeg_decoder* decoder = (jpeg_decoder*)decoderPtr;
@@ -66,7 +66,7 @@ jint JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeGetWidth(JNIEnv* env, jclass
 }
 
 extern "C" JNIEXPORT
-jint JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeGetHeight(JNIEnv* env, jclass clazz,
+jint JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeGetHeight(JNIEnv* env, jclass clazz,
 	jlong decoderPtr)
 {
     jpeg_decoder* decoder = (jpeg_decoder*)decoderPtr;
@@ -74,7 +74,7 @@ jint JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeGetHeight(JNIEnv* env, jclas
 }
 
 extern "C" JNIEXPORT
-jobject JNICALL Java_agu_bitmap_jpeg_JpegDecoder_nativeDecode(JNIEnv* env, jclass clazz,
+jobject JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeDecode(JNIEnv* env, jclass clazz,
 	jlong decoderPtr, jint left, jint top, jint right, jint bottom, jboolean filter, jobject config, jobject opts)
 {
     jpeg_decoder* decoder = (jpeg_decoder*)decoderPtr;
@@ -222,6 +222,14 @@ jint JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeGetHeight(JNIEnv* env, jcl
 {
     png_decoder* decoder = (png_decoder*)decoderPtr;
     return decoder->get_height();
+}
+
+extern "C" JNIEXPORT
+jboolean JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeHasAlpha(JNIEnv* env, jclass clazz,
+	jlong decoderPtr)
+{
+    png_decoder* decoder = (png_decoder*)decoderPtr;
+    return decoder->has_alpha() ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT
