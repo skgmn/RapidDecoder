@@ -41,6 +41,7 @@ public class FrameFragment extends Fragment {
 		Drawable transparentBackground = getResources().getDrawable(R.drawable.transparent_background);
 
 		BitmapDecoder amanda = BitmapDecoder.from(getResources(), R.drawable.amanda);
+//		SimulatedDecoder amanda = new SimulatedDecoder(BitmapDecoder.from(getResources(), R.drawable.amanda).decode());
 		Bitmap bitmap;
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)

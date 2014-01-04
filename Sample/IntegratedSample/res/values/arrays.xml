@@ -4,6 +4,7 @@
     <string-array name="drawer_menu_items">
         <item>Scaled decoding sample</item>
         <item>Regional decoding sample</item>
+        <item>Mutable decoding sample</item>
         <item>Frame builder sample</item>
     </string-array>
     

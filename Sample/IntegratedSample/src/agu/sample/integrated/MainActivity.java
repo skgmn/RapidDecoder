@@ -72,7 +72,8 @@ public class MainActivity extends FragmentActivity {
 		switch (index) {
 		case 0: fragment = new ScaledDecodingFragment(); break;
 		case 1: fragment = new RegionalDecodingFragment(); break;
-		case 2: fragment = new FrameFragment(); break;
+		case 2: fragment = new MutableDecodingFragment(); break;
+		case 3: fragment = new FrameFragment(); break;
 		default: return;
 		}
 		

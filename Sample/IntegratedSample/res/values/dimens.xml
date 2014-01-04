@@ -9,4 +9,9 @@
     
     <dimen name="frame_builder_sample_grid_height">150dp</dimen>
     
+    <dimen name="ribbon_x">40dp</dimen>
+    <dimen name="ribbon_y">20dp</dimen>
+    <dimen name="ribbon_width">68dp</dimen>
+    <dimen name="ribbon_height">54dp</dimen>
+    
 </resources>

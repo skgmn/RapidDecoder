@@ -13,5 +13,6 @@
     <string name="cut_out_top">Cut out - Top</string>
     <string name="cut_out_center">Cut out - Center</string>
     <string name="cut_out_bottom">Cut out - Bottom</string>
+    <string name="ribbon_has_been_added">Ribbon has been added right on the decoded image.</string>
     
 </resources>

@@ -437,6 +437,10 @@ public abstract class BitmapDecoder implements Decoder {
 	public void cancel() {
 		opts.requestCancelDecode();
 	}
+
+	public void draw(Canvas cv, int left, int top) {
+		draw(cv, left, top, left + width(), top + height());
+	}
 	
 	public void draw(Canvas cv, int left, int top, int right, int bottom) {
 		final Rect bounds = RECT.obtain(false);
