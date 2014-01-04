@@ -1,6 +1,12 @@
+#include <stdlib.h>
+
 #include "pngdecoder.h"
 
+#define PNGSIGSIZE 8
+
 using namespace agu;
+
+typedef unsigned char uint8;
 
 png_decoder::png_decoder(JNIEnv* env, jobject in)
 {
@@ -10,15 +16,22 @@ png_decoder::png_decoder(JNIEnv* env, jobject in)
     jclass InputStream = env->FindClass("java/io/InputStream");
     InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read1 = env->GetMethodID(InputStream, "read", "([BII)I");
+
+    m_interlace_loaded = false;
+    m_in_buf = NULL;
+    m_png = NULL;
+    m_scanline_buffer = NULL;
+    m_rowbytes = 0;
+    m_col_offset = 0;
+    m_col_length = -1;
 }
 
 bool png_decoder::begin()
 {
     //Allocate a buffer of 8 bytes, where we can put the file signature.
-    jobject pngsig = m_env->NewByteArray(PNGSIGSIZE);
-    int is_png = 0;
+    jbyteArray pngsig = m_env->NewByteArray(PNGSIGSIZE);
 
-    jint bytesRead = m_env->CallIntMethod(m_in, InputStream_read1, 0, PNGSIGSIZE);
+    jint bytesRead = m_env->CallIntMethod(m_in, InputStream_read1, pngsig, 0, PNGSIGSIZE);
     if (m_env->ExceptionOccurred() != NULL)
     {
         m_env->ExceptionClear();
@@ -32,7 +45,7 @@ bool png_decoder::begin()
     jbyte* pngsig_bytes = m_env->GetByteArrayElements(pngsig, NULL);
 
     //Let LibPNG check the sig. If this function returns 0, everything is OK.
-    bool is_png = (png_sig_cmp(pngsig, 0, PNGSIGSIZE) == 0);
+    bool is_png = (png_sig_cmp((png_const_bytep)pngsig_bytes, 0, PNGSIGSIZE) == 0);
     m_env->ReleaseByteArrayElements(pngsig, pngsig_bytes, JNI_ABORT);
 
     if (!is_png)
@@ -62,14 +75,16 @@ bool png_decoder::begin()
     png_uint_32 bit_depth   = png_get_bit_depth(m_png, m_info);
     png_uint_32 channels   = png_get_channels(m_png, m_info);
     m_color_type = png_get_color_type(m_png, m_info);
+    m_interlace_type = png_get_interlace_type(m_png, m_info);
+    m_rowbytes = png_get_rowbytes(m_png, m_info);
 
     if (m_color_type == PNG_COLOR_TYPE_PALETTE)
         png_set_palette_to_rgb(m_png);
 
     if (m_color_type == PNG_COLOR_TYPE_GRAY &&
-        bit_depth < 8) png_set_gray_1_2_4_to_8(m_png);
+        bit_depth < 8) png_set_expand_gray_1_2_4_to_8(m_png);
 
-    if (png_get_valid(m_png, info_ptr,
+    if (png_get_valid(m_png, m_info,
         PNG_INFO_tRNS)) png_set_tRNS_to_alpha(m_png);
 
     if (bit_depth == 16)
@@ -87,78 +102,34 @@ bool png_decoder::begin()
 
 void png_decoder::set_pixel_format(const pixel_format& format)
 {
-    if (format == RGB565)
+    if (m_format == format) return;
+    m_format = format;
+
+    if (m_scanline_buffer)
     {
-        if (color_type & PNG_COLOR_MASK_ALPHA)
-            png_set_strip_alpha(png_ptr);
-        png_set_read_user_transform_fn(m_png, rgb565_transform);
-        png_set_user_transform_info(m_png, this, 8, 2);
+        delete [] m_scanline_buffer;
+        m_scanline_buffer = NULL;
     }
-    else if (format == RGB888)
+
+    if (format == RGB888 || format == RGB565)
     {
-        if (color_type & PNG_COLOR_MASK_ALPHA)
-            png_set_strip_alpha(png_ptr);
+        // RGB888
+        if (m_color_type & PNG_COLOR_MASK_ALPHA)
+            png_set_strip_alpha(m_png);
     }
-    else if (format == RGBA4444)
+    else if (format == RGBA8888 || format == RGBA4444)
     {
-        if (!(color_type & PNG_COLOR_MASK_ALPHA))
-            png_set_filler(m_png, 0xff, PNG_FILL_AFTER);
-        png_set_read_user_transform_fn(m_png, rgba4444_transform);
-        png_set_user_transform_info(m_png, this, 8, 2);
-    }
-    else if (format == RGBA8888)
-    {
-        if (!(color_type & PNG_COLOR_MASK_ALPHA))
-            png_set_filler(m_png, 0xff, PNG_FILL_AFTER);
+        // RGBA888
+        if (!(m_color_type & PNG_COLOR_MASK_ALPHA))
+            png_set_filler(m_png, 0xff, PNG_FILLER_AFTER);
     }
     else if (format == ARGB8888)
     {
-        if (!(color_type & PNG_COLOR_MASK_ALPHA))
-            png_set_filler(m_png, 0xff, PNG_FILL_BEFORE);
-        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
+        if (!(m_color_type & PNG_COLOR_MASK_ALPHA))
+            png_set_filler(m_png, 0xff, PNG_FILLER_BEFORE);
+        if (m_color_type == PNG_COLOR_TYPE_RGB_ALPHA)
             png_set_swap_alpha(m_png);
     }
-}
-
-void png_decoder::rgb565_transform(png_ptr png, row_info_ptr row_info, png_bytep data)
-{
-    // rgb888 -> rgb565
-
-    png_decoder* d = (png_decoder*)png_get_user_transform_ptr(png);
-
-    uint8* out = data;
-    for (int i = 0; i < row_info.width; ++i)
-    {
-        uint8 r = data[i];
-        uint8 g = data[i + 1];
-        uint8 b = data[i + 2];
-
-        RGB565.composer(out, 0xff, r, g, b);
-        data += 3;
-    }
-}
-
-void png_decoder::rgba4444_transform(png_ptr png, row_info_ptr row_info, png_bytep data)
-{
-    // rgba8888 -> rgba4444
-
-    png_decoder* d = (png_decoder*)png_get_user_transform_ptr(png);
-
-    uint8* out = data;
-    for (int i = 0; i < row_info.width; ++i)
-    {
-        uint8 r = data[i];
-        uint8 g = data[i + 1];
-        uint8 b = data[i + 2];
-        uint8 a = data[i + 3];
-
-        RGBA4444.composer(out, a, r, g, b);
-        data += 4;
-    }
-}
-
-void png_decoder::rgba4444_transform(png_ptr ptr, row_info_ptr row_info, png_bytep data)
-{
 }
 
 void png_decoder::input_stream_reader(png_structp png, png_bytep data, png_size_t length)
@@ -174,25 +145,147 @@ void png_decoder::input_stream_reader(png_structp png, png_bytep data, png_size_
     }
 
     jobject in = decoder->m_in;
-
-    jint bytesRead = env->CallIntMethod(in, decoder->InputStream_read1, buf, 0, length);
-    if (env->ExceptionOccurred() != NULL)
+    int offset = 0;
+    do
     {
-        env->ExceptionClear();
-        png_error();
+        jint bytesRead = env->CallIntMethod(in, decoder->InputStream_read1, buf, offset, length);
+        if (env->ExceptionOccurred() != NULL)
+        {
+            env->ExceptionClear();
+            png_error(png, "");
+        }
+        else if (bytesRead < 0)
+        {
+            png_error(png, "");
+        }
+
+        offset += bytesRead;
+        length -= bytesRead;
     }
-    else if (bytesRead < 0)
+    while (length > 0);
+
+    env->GetByteArrayRegion(buf, 0, offset, (jbyte*)data);
+}
+
+bool png_decoder::read_row(uint8* out)
+{
+    if (setjmp(png_jmpbuf(m_png)))
     {
-        png_error();
+        return false;
     }
 
-    env->GetByteArrayRegion(buf, 0, length, data);
+    if (m_interlace_type != 0 && !m_interlace_loaded)
+    {
+        unsigned char* scanline_buffer = get_scanline_buffer();
+        int number_of_passes = png_set_interlace_handling(m_png);
+
+        for (int i = 0; i < number_of_passes; ++i)
+        {
+            for (int j = 0; j < m_height; ++j)
+            {
+                png_read_row(m_png, scanline_buffer, NULL);
+            }
+        }
+
+        m_interlace_loaded = true;
+    }
+
+    unsigned int col_length = (m_col_length >= 0 ? m_col_length : m_width);
+
+    if (m_format == RGB565)
+    {
+        // RGB888 to RGB565
+
+        unsigned char* scanline_buffer = get_scanline_buffer();
+        png_read_row(m_png, scanline_buffer, NULL);
+
+        if (out)
+        {
+            scanline_buffer += m_col_offset * 3;
+            for (int i = 0; i < col_length; ++i)
+            {
+                m_format.composer(out, 0xff, scanline_buffer[0], scanline_buffer[1], scanline_buffer[2]);
+                scanline_buffer += 3;
+            }
+        }
+    }
+    else if (m_format == RGBA4444)
+    {
+        // RGBA888 to RGBA4444
+
+        unsigned char* scanline_buffer = get_scanline_buffer();
+        png_read_row(m_png, scanline_buffer, NULL);
+
+        if (out)
+        {
+            scanline_buffer += m_col_offset * 4;
+            for (int i = 0; i < col_length; ++i)
+            {
+                m_format.composer(out, scanline_buffer[3], scanline_buffer[0], scanline_buffer[1], scanline_buffer[2]);
+                scanline_buffer += 4;
+            }
+        }
+    }
+    else
+    {
+        if (m_col_offset == 0 && col_length >= m_width)
+        {
+            if (out)
+            {
+                png_read_row(m_png, out, NULL);
+            }
+            else
+            {
+                png_read_row(m_png, get_scanline_buffer(), NULL);
+            }
+        }
+        else
+        {
+            unsigned int bytes_per_pixel = (m_format == RGB888 ? 3 : 4);
+            unsigned char* scanline_buffer = get_scanline_buffer();
+            png_read_row(m_png, scanline_buffer, NULL);
+
+            if (out)
+            {
+                memcpy(out, &scanline_buffer[m_col_offset * bytes_per_pixel], col_length * bytes_per_pixel);
+            }
+        }
+    }
+
+    return true;
+}
+
+unsigned char* png_decoder::get_scanline_buffer()
+{
+    if (!m_scanline_buffer)
+    {
+        unsigned int rowbytes;
+        if (m_format.alpha)
+        {
+            rowbytes = m_width * 4;
+        }
+        else
+        {
+            rowbytes = m_width * 3;
+        }
+
+        m_scanline_buffer = new unsigned char [rowbytes];
+    }
+    return m_scanline_buffer;
 }
 
 png_decoder::~png_decoder()
 {
-    m_env->DeleteGlobalRef(m_in_buf);
+    if (m_in_buf)
+    {
+        m_env->DeleteGlobalRef(m_in_buf);
+    }
     m_env->DeleteGlobalRef(m_in);
+
+    if (m_scanline_buffer)
+    {
+        delete [] m_scanline_buffer;
+    }
 
     if (m_png)
     {

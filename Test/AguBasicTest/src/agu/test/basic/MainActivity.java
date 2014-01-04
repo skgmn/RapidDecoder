@@ -25,9 +25,9 @@ public class MainActivity extends Activity {
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
 		
-		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
+		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
 				.forceUseOwnDecoder()
-				.config(Config.ARGB_4444)
+				.config(Config.ARGB_8888)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		

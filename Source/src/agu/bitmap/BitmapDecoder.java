@@ -232,6 +232,8 @@ public abstract class BitmapDecoder {
 		
 		// Scale corresponds to the desired density.
 		
+		if (bitmap == null) return null;
+		
 		if (opts.inScaled) {
 			final int newWidth = (int) Math.round(bitmap.getWidth() * densityRatio);
 			final int newHeight = (int) Math.round(bitmap.getHeight() * densityRatio);

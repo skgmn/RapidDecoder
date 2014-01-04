@@ -1,4 +1,4 @@
-package agu.bitmap.jpeg;
+package agu.bitmap.decoder;
 
 import java.io.InputStream;
 
@@ -7,7 +7,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
 
-public class JpegDecoder {
+public class PngDecoder {
 	private static native long createNativeDecoder(InputStream in);
 	private static native void destroyNativeDecoder(long decoder);
 	private static native boolean nativeBegin(long decoder);
@@ -17,9 +17,8 @@ public class JpegDecoder {
 			Config config, Options opts);
 	
 	private long decoder;
-	private boolean eof = false;
 	
-	public JpegDecoder(InputStream in) {
+	public PngDecoder(InputStream in) {
 		decoder = createNativeDecoder(in);
 	}
 	
@@ -52,10 +51,6 @@ public class JpegDecoder {
 		}
 
 		return nativeGetHeight(decoder);
-	}
-	
-	public boolean isEndOfStream() {
-		return eof;
 	}
 	
 	public Bitmap decode(Rect bounds, boolean filter, Config config, Options opts) {

@@ -913,37 +913,33 @@ void jpeg_decoder::word_clear(void *p, uint16 c, uint n)
 void jpeg_decoder::prep_in_buffer()
 {
     m_in_buf_left = 0;
-    m_pIn_buf_ofs = m_in_buf;
 
     if (m_eof_flag)
+    {
+        m_pIn_buf_ofs = m_in_buf;
         return;
+    }
 
     m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
 
-    jint bytes_read = m_env->CallIntMethod(m_in, InputStream_read3, m_in_buf_java, 0, JPGD_IN_BUF_SIZE);
-    if (m_env->ExceptionOccurred() != NULL)
+    do
     {
-        m_env->ExceptionClear();
-        stop_decoding(JPGD_STREAM_READ);
-    }
+        jint bytes_read = m_env->CallIntMethod(m_in, InputStream_read3, m_in_buf_java, m_in_buf_left, JPGD_IN_BUF_SIZE - m_in_buf_left);
+        if (m_env->ExceptionOccurred() != NULL)
+        {
+            m_env->ExceptionClear();
+            stop_decoding(JPGD_STREAM_READ);
+        }
 
-    m_eof_flag = (bytes_read < 0);
-    m_in_buf_left += bytes_read;
+        m_eof_flag = (bytes_read < 0);
+
+        m_in_buf_left += bytes_read;
+    } while ((m_in_buf_left < JPGD_IN_BUF_SIZE) && (!m_eof_flag));
+
     m_total_bytes_read += m_in_buf_left;
 
     m_in_buf = (uint8*)m_env->GetByteArrayElements(m_in_buf_java, NULL);
     m_pIn_buf_ofs = m_in_buf;
-
-/*  do
-  {
-    int bytes_read = m_pStream->read(m_in_buf + m_in_buf_left, JPGD_IN_BUF_SIZE - m_in_buf_left, &m_eof_flag);
-    if (bytes_read == -1)
-      stop_decoding(JPGD_STREAM_READ);
-
-    m_in_buf_left += bytes_read;
-  } while ((m_in_buf_left < JPGD_IN_BUF_SIZE) && (!m_eof_flag));
-
-  m_total_bytes_read += m_in_buf_left;*/
 
   // Pad the end of the block with M_EOI (prevents the decompressor from going off the rails if the stream is invalid).
   // (This dates way back to when this decompressor was written in C/asm, and the all-asm Huffman decoder did some fancy things to increase perf.)

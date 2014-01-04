@@ -7,17 +7,24 @@ class pixel_format
 {
 public:
     pixel_composer composer;
-    int bpp;
+    int bytes_per_pixel;
+    bool alpha;
 
-    inline pixel_format() {}
-
-    inline pixel_format(pixel_composer composer, int bpp)
+    inline pixel_format()
     {
-        this->composer = composer;
-        this->bpp = bpp;
+        composer = 0;
+        bytes_per_pixel = 0;
+        alpha = false;
     }
 
-    inline bool operator==(const pixel_format& rhs)
+    inline pixel_format(pixel_composer composer, int bytes_per_pixel, bool alpha)
+    {
+        this->composer = composer;
+        this->bytes_per_pixel = bytes_per_pixel;
+        this->alpha = alpha;
+    }
+
+    inline bool operator==(const pixel_format& rhs) const
     {
         return composer == rhs.composer;
     }

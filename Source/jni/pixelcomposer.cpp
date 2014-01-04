@@ -40,8 +40,8 @@ void rgba_composer(uint8*& dest, uint8 a, uint8 r, uint8 g, uint8 b)
     dest += 4;
 }
 
-pixel_format RGB565(rgb565_composer, 2);
-pixel_format RGBA4444(rgba4444_composer, 2);
-pixel_format RGB888(rgb888_composer, 3);
-pixel_format ARGB8888(argb_composer, 4);
-pixel_format RGBA8888(rgba_composer, 4);
+pixel_format RGB565(rgb565_composer, 2, false);
+pixel_format RGBA4444(rgba4444_composer, 2, true);
+pixel_format RGB888(rgb888_composer, 3, false);
+pixel_format ARGB8888(argb_composer, 4, true);
+pixel_format RGBA8888(rgba_composer, 4, true);

@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import agu.bitmap.decoder.PngDecoder;
 import agu.bitmap.jpeg.JpegDecoder;
 import agu.bitmap.png.ImageLineByte;
 import agu.bitmap.png.PngReaderByte;
@@ -174,97 +175,25 @@ public class AguDecoder {
 	}
 	
 	private Bitmap decodePng(Options opts) {
-		final PngReaderByte pr;
+		final PngDecoder d = new PngDecoder(in);
 		try {
-			pr = new PngReaderByte(in);
-		} catch (PngjException e) {
-			return null;
-		}
-		
-		if (opts.mCancel) return null;
-		
-		final int channels = pr.imgInfo.channels;
-		final boolean alpha = pr.imgInfo.alpha;
-		
-		if (channels != 1 && channels != 3 && channels != 4) {
-			return null;
-		}
-		
-		final int width = pr.imgInfo.cols;
-		final int height = pr.imgInfo.rows;
-		
-		validateRegion(width, height);
-		
-		final int left = (region == null ? 0 : region.left);
-		final int top = (region == null ? 0 : region.top);
-		final int right = (region == null ? width : region.right);
-		final int bottom = (region == null ? height : region.bottom);
-		
-		final int w = right - left;
-		final int h = bottom - top;
-
-		final int sampledWidth = w / sampleSize;
-		final int sampledHeight = h / sampleSize;
-		
-		final Resampler resampler;
-		if (sampleSize > 1) {
-			if (pr.imgInfo.alpha) {
-				resampler = new DownsizeResampler(sampledWidth, sampleSize, useFilter);
-			} else {
-				resampler = new OpaqueDownsizeResampler(sampledWidth, sampleSize, useFilter);
-			}
-		} else {
-			resampler = new IdentityResampler();
-		}
-		
-		final Config config = (opts.inPreferredConfig != null ? opts.inPreferredConfig : getDefaultConfig(alpha));
-		
-		final Bitmap bitmap = Bitmap.createBitmap(sampledWidth, sampledHeight, config);
-		final int[] pixels = new int [w];
-		
-		int y = 0;
-		
-		for (int i = top; i < bottom; ++i) {
-			final ImageLineByte row = (ImageLineByte) pr.readRow(i);
-			final byte[] scanline = row.getScanline();
-			
-			for (int j = left; j < right; ++j) {
-				final int offset = j * channels;
-
-				switch (channels) {
-				case 1: {
-					final int pixel = scanline[offset];
-					pixels[j - left] = Color.argb(0xff, pixel, pixel, pixel);
-					break;
-				}
-					
-				case 3:
-					pixels[j - left] = 0xff000000 | ((scanline[offset] & 0xff) << 16)
-							| ((scanline[offset + 1] & 0xff) << 8) | ((scanline[offset + 2] & 0xff));
-					break;
-					
-				case 4:
-					pixels[j - left] = (((scanline[offset + 3] & 0xff) << 24) | ((scanline[offset] & 0xff) << 16)
-							| ((scanline[offset + 1] & 0xff) << 8) | ((scanline[offset + 2] & 0xff)));
-					break;
-				}
+			if (!d.begin()) {
+				return null;
 			}
 			
 			if (opts.mCancel) return null;
+			
+			final int width = d.getWidth();
+			final int height = d.getHeight();
 
-			final int[] sampled = resampler.resample(pixels, 0, pixels.length);
-			if (sampled != null) {
-				bitmap.setPixels(sampled, 0, sampledWidth, 0, y, sampledWidth, 1);
-				++y;
-			}
+			validateRegion(width, height);
+
+			final Config config = (opts.inPreferredConfig != null ? opts.inPreferredConfig : getDefaultConfig(false));
+			
+			return d.decode(region, useFilter, config, opts);
+		} finally {
+			d.close();
 		}
-		
-		final int[] remain = resampler.finish();
-		if (remain != null && y < sampledHeight) {
-			bitmap.setPixels(remain, 0, sampledWidth, 0, y, sampledWidth, 1);
-		}
-		
-		return bitmap;
 	}
 	
 	public void close() {

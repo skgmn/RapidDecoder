@@ -108,7 +108,7 @@ namespace jpgd
     // Returns the total number of bytes actually consumed by the decoder (which should equal the actual size of the JPEG file).
     inline int get_total_bytes_read() const { return m_total_bytes_read; }
 
-    inline void set_pixel_format(const pixel_format& format) { m_composer = format.composer; m_dest_bytes_per_pixel = format.bpp; }
+    inline void set_pixel_format(const pixel_format& format) { m_composer = format.composer; m_dest_bytes_per_pixel = format.bytes_per_pixel; }
 
   private:
     jpeg_decoder(const jpeg_decoder &);

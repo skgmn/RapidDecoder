@@ -19,9 +19,9 @@ include $(CLEAR_VARS)
 LOCAL_DEFAULT_CPP_EXTENSION := cpp    
 LOCAL_MODULE := decoder
 LOCAL_LDLIBS += -ljnigraphics -llog -lz
-LOCAL_SRC_FILES := jpgd.cpp decoder.cpp pixelcomposer.cpp sampler.cpp \
+LOCAL_SRC_FILES := jpgd.cpp decoder.cpp pixelcomposer.cpp sampler.cpp pngdecoder.cpp \
     libpng/png.c libpng/pngerror.c libpng/pngget.c libpng/pngmem.c libpng/pngpread.c libpng/pngread.c libpng/pngrio.c libpng/pngrtran.c libpng/pngrutil.c libpng/pngset.c \
     libpng/pngtrans.c
-LOCAL_CFLAGS += -DNDEBUG -Wunused-function
+LOCAL_CFLAGS += -DNDEBUG -DLOG
 
 include $(BUILD_SHARED_LIBRARY)
