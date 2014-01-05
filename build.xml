@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="AndroidGraphicsUtility">
+	<property name="author" value="Nirvan Fallacy" />
+
     <property environment="env" />
     <property name="android.sdk" value="${env.ANDROID_HOME}" />
 	<property name="android.ndk" value="${env.ANDROID_NDK_HOME}" />
@@ -10,7 +12,8 @@
     <property name="dir.bin" value="Binary" />
     <property name="dir.bin.temp" value="${dir.bin}/Temp" />
     <property name="output.jar" value="${dir.bin.temp}/agu.jar" />
-	<property name="output.zip" value="${dir.bin}/agu-${manifest.android:versionName}.zip" />
+	<property name="output.zip" value="${dir.bin}/agu.zip" />
+	<property name="output.jar.manifest" value="${dir.bin.temp}/MANIFEST.MF" />
 
 	<condition property="android.ndk.build" value="${android.ndk}/ndk-build.cmd">
 		<os family="windows" />
@@ -66,11 +69,23 @@
 
 		<mkdir dir="${dir.bin}" />
 		<mkdir dir="${dir.bin.temp}" />
+
+		<delete file="${output.jar.manifest}" />
+		<manifest file="${output.jar.manifest}">
+			<attribute name="Implementation-Version"
+					value="${manifest.android:versionName}" />
+			<attribute name="Created-By"
+					value="${author}" />
+		</manifest>
         
-		<jar destfile="${output.jar}">
+		<jar destfile="${output.jar}"
+				manifest="${output.jar.manifest}">
+
             <fileset dir="${dir.classes}">
             </fileset>
         </jar>
+
+		<delete file="${output.jar.manifest}" />
 
 		<copy todir="${dir.bin.temp}">
 			<fileset dir="${dir.src}">
