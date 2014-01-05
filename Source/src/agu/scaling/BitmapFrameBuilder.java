@@ -29,7 +29,7 @@ public class BitmapFrameBuilder {
 		this.frameHeight = frameHeight;
 	}
 	
-	public BitmapFrameBuilder scaleAlignment(ScaleAlignment align) {
+	public BitmapFrameBuilder align(ScaleAlignment align) {
 		this.align = align;
 		return this;
 	}

@@ -45,32 +45,32 @@ public class FrameFragment extends Fragment {
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
-				.scaleAlignment(ScaleAlignment.LEFT_OR_TOP)
+				.align(ScaleAlignment.LEFT_OR_TOP)
 				.fitIn();
 		imageFitInLeft.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
-				.scaleAlignment(ScaleAlignment.CENTER)
+				.align(ScaleAlignment.CENTER)
 				.fitIn();
 		imageFitInCenter.setImageBitmap(bitmap);
 
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
-				.scaleAlignment(ScaleAlignment.RIGHT_OR_BOTTOM)
+				.align(ScaleAlignment.RIGHT_OR_BOTTOM)
 				.fitIn();
 		imageFitInRight.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.scaleAlignment(ScaleAlignment.LEFT_OR_TOP).cutOut();
+				.align(ScaleAlignment.LEFT_OR_TOP).cutOut();
 		imageCutOutTop.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.scaleAlignment(ScaleAlignment.CENTER).cutOut();
+				.align(ScaleAlignment.CENTER).cutOut();
 		imageCutOutCenter.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.scaleAlignment(ScaleAlignment.RIGHT_OR_BOTTOM).cutOut();
+				.align(ScaleAlignment.RIGHT_OR_BOTTOM).cutOut();
 		imageCutOutBottom.setImageBitmap(bitmap);
 	}
 }
