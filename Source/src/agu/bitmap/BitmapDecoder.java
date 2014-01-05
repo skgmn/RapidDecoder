@@ -36,6 +36,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 	private double ratioWidth = 1;
 	private double ratioHeight = 1;
 	private double densityRatio;
+	private double adjustedDensityRatio;
 	
 	protected BitmapDecoder() {
 		opts = OPTIONS.obtain();
@@ -113,7 +114,12 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 	
 	public Bitmap decode() {
+		// reset
+		
 		opts.mCancel = false;
+		adjustedDensityRatio = 0;
+
+		//
 		
 		final int targetWidth;
 		final int targetHeight;
@@ -123,13 +129,15 @@ public abstract class BitmapDecoder implements BitmapSource {
 		if (this.targetWidth != 0 && this.targetHeight != 0) {
 			targetWidth = this.targetWidth;
 			targetHeight = this.targetHeight;
-		} else if (region != null) {
-			targetWidth = (int) (region.width() * ratioWidth);
-			targetHeight = (int) (region.height() * ratioHeight);
 		} else if (ratioWidth != 1 || ratioHeight != 1) {
-			final double densityRatio = getDensityRatio();
-			targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
-			targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
+			if (region != null) {
+				targetWidth = (int) (region.width() * ratioWidth);
+				targetHeight = (int) (region.height() * ratioHeight);
+			} else {
+				final double densityRatio = getDensityRatio();
+				targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
+				targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
+			}
 		} else {
 			targetWidth = targetHeight = 0;
 		}
@@ -149,6 +157,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		// Execute actual decoding
 		
 		final Bitmap bitmap = executeDecoding();
+		if (bitmap == null) return null;
 		
 		// Scale it finally.
 		
@@ -182,20 +191,14 @@ public abstract class BitmapDecoder implements BitmapSource {
 	 */
 	@SuppressLint("NewApi")
 	private Bitmap executeDecoding() {
-		final double densityRatio = getDensityRatio();
-		
-		double adjustedDensityRatio = densityRatio;
-		while (adjustedDensityRatio <= 0.5) {
-			opts.inSampleSize *= 2;
-			adjustedDensityRatio *= 2;
-		}
-		
 		// Adjust region.
 		
 		final Rect region;
 		final boolean recycleRegion;
 		
-		if (this.region != null && densityRatio != 1) {
+		if (this.region != null && getDensityRatio() != 1) {
+			final double densityRatio = getDensityRatio();
+			
 			region = RECT.obtain(false);
 			
 			region.left = (int) (this.region.left / densityRatio);
@@ -375,6 +378,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 	@SuppressLint("NewApi")
 	protected Bitmap decodeRegional(Options opts, Rect region) {
 		if (Build.VERSION.SDK_INT >= 10 && !useBuiltInDecoder) {
+			adjustDensityRatio();
+			
 			final BitmapRegionDecoder d = createBitmapRegionDecoder();
 			if (d == null) {
 				return null;
@@ -433,6 +438,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 		final InputStream in = openInputStream();
 		if (in == null) return null;
 		
+		adjustDensityRatio();
+		
 		final AguDecoder d = new AguDecoder(in);
 		d.setRegion(region);
 		d.setUseFilter(scaleFilter);
@@ -485,7 +492,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return this;
 	}
 
-	public double getDensityRatio() {
+	private double getDensityRatio() {
 		if (densityRatio == 0) {
 			decodeBounds();
 		}
@@ -495,5 +502,16 @@ public abstract class BitmapDecoder implements BitmapSource {
 	public BitmapDecoder config(Config config) {
 		opts.inPreferredConfig = config;
 		return this;
+	}
+	
+	private void adjustDensityRatio() {
+		if (adjustedDensityRatio == 0) {
+			adjustedDensityRatio = getDensityRatio();
+			
+			while (adjustedDensityRatio <= 0.5) {
+				opts.inSampleSize *= 2;
+				adjustedDensityRatio *= 2;
+			}
+		}
 	}
 }

@@ -1,9 +1,12 @@
 package agu.test.basic;
 
+import java.io.File;
+
 import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
@@ -19,9 +22,9 @@ public class MainActivity extends Activity {
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
 
-		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
+		Bitmap bitmap = BitmapDecoder.from(new File(Environment.getExternalStorageDirectory(), "lb.png").getPath())
 				.useBuiltInDecoder()
-				.scaleBy(0.2, true)
+				.region(647, 221, 647 + 168, 221 + 143)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		

@@ -28,8 +28,6 @@ public class AguDecoder {
 	private static native void init();
 	
 	public AguDecoder(InputStream in) {
-		this.in = in;
-		
 		if (!in.markSupported()) {
 			in = new BufferedInputStream(in, MARK_READ_LIMIT + 1);
 		} else {
@@ -41,6 +39,8 @@ public class AguDecoder {
 		}
 
 		in.mark(MARK_READ_LIMIT);
+
+		this.in = in;
 	}
 
 	public InputStream getInputStream() {
