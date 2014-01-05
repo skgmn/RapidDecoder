@@ -1,6 +1,6 @@
 Features
 ========
-- Simplified bitmap decoding
+- Facilitated bitmap decoding
 - Simplified bitmap scaling
 - Decoding bitmap regionally with built-in decoder (Supports down to Froyo)
 - Decoding bitmap as mutable with built-in decoder (Supports down to Froyo)
