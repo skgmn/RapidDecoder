@@ -11,7 +11,7 @@
 
     <property name="dir.bin" value="Binary" />
     <property name="dir.bin.temp" value="${dir.bin}/Temp" />
-    <property name="output.jar" value="${dir.bin.temp}/agu.jar" />
+    <property name="output.jar" value="${dir.bin.temp}/agu-${manifest.android:versionName}.jar" />
 	<property name="output.zip" value="${dir.bin}/agu.zip" />
 	<property name="output.jar.manifest" value="${dir.bin.temp}/MANIFEST.MF" />
 
@@ -23,10 +23,11 @@
 	</condition>
     
     <target name="clean">
-        <delete includeemptydirs="true">
-            <fileset dir="${dir.bin}/../" includes="**/*" />
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${dir.bin}" includes="**/*" />
 			<fileset dir="${dir.classes}" includes="**/*" />
 			<fileset dir="${dir.src}/libs" includes="**/*" />
+			<fileset dir="${dir.src}/obj" includes="**/*" />
         </delete>
     </target>
     
