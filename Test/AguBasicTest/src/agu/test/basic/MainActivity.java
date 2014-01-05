@@ -1,14 +1,9 @@
 package agu.test.basic;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory.Options;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -31,7 +26,7 @@ public class MainActivity extends Activity {
 //		Bitmap bitmap = BitmapDecoder.from(getResources().openRawResource(R.drawable.amanda2))
 //		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
 		Bitmap bitmap = d
-				.forceUseOwnDecoder()
+				.useBuiltInDecoder()
 				.config(Config.ARGB_8888)
 				.decode();
 		imageView.setImageBitmap(bitmap);

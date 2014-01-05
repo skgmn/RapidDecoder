@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="agu.test"
+    package="agu.library"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -8,16 +8,4 @@
         android:minSdkVersion="8"
         android:targetSdkVersion="19" />
     
-    <instrumentation
-        android:name="android.test.InstrumentationTestRunner"
-        android:targetPackage="agu.test" />
-
-    <application
-        android:allowBackup="false"
-        android:icon="@drawable/ic_launcher" >
-        
-        <uses-library android:name="android.test.runner" />
-
-    </application>
-
 </manifest>

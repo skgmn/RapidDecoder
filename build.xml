@@ -3,10 +3,14 @@
     <property environment="env" />
     <property name="android.sdk" value="${env.ANDROID_HOME}" />
 	<property name="android.ndk" value="${env.ANDROID_NDK_HOME}" />
-    <property name="dir.bin" value="Binary" />
 	<property name="dir.src" value="Source" />
     <property name="dir.classes" value="${dir.src}/bin/classes" />
-    <property name="output.jar" value="${dir.bin}/agu.jar" />
+	<xmlproperty file="${dir.src}/AndroidManifest.xml" collapseAttributes="true" />
+
+    <property name="dir.bin" value="Binary" />
+    <property name="dir.bin.temp" value="${dir.bin}/Temp" />
+    <property name="output.jar" value="${dir.bin.temp}/agu.jar" />
+	<property name="output.zip" value="${dir.bin}/agu-${manifest.android:versionName}.zip" />
 
 	<condition property="android.ndk.build" value="${android.ndk}/ndk-build.cmd">
 		<os family="windows" />
@@ -17,7 +21,7 @@
     
     <target name="clean">
         <delete includeemptydirs="true">
-            <fileset dir="${dir.bin}" includes="**/*" />
+            <fileset dir="${dir.bin}/../" includes="**/*" />
 			<fileset dir="${dir.classes}" includes="**/*" />
 			<fileset dir="${dir.src}/libs" includes="**/*" />
         </delete>
@@ -59,17 +63,25 @@
 	</target>
     
     <target name="build" depends="compile.java, compile.jni">
+
+		<mkdir dir="${dir.bin}" />
+		<mkdir dir="${dir.bin.temp}" />
         
 		<jar destfile="${output.jar}">
             <fileset dir="${dir.classes}">
             </fileset>
         </jar>
 
-		<copy todir="${dir.bin}">
+		<copy todir="${dir.bin.temp}">
 			<fileset dir="${dir.src}">
 				<include name="libs/" />
 			</fileset>
 		</copy>
+
+		<zip destfile="${output.zip}"
+				basedir="${dir.bin.temp}" />
+
+		<delete dir="${dir.bin.temp}" />
 
     </target>
     
