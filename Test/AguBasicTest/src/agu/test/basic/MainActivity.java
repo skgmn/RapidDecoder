@@ -3,7 +3,6 @@ package agu.test.basic;
 import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,14 +19,9 @@ public class MainActivity extends Activity {
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
 
-		BitmapDecoder d = BitmapDecoder.from(getResources().openRawResource(R.drawable.amanda));
-		d.width();
-		
-//		Bitmap bitmap = BitmapDecoder.from(getResources().openRawResource(R.drawable.amanda2))
-//		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
-		Bitmap bitmap = d
+		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
 				.useBuiltInDecoder()
-				.config(Config.ARGB_8888)
+				.scaleBy(0.2, true)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		

@@ -182,14 +182,19 @@ public abstract class BitmapDecoder implements BitmapSource {
 	 */
 	@SuppressLint("NewApi")
 	private Bitmap executeDecoding() {
-		// TODO adjust sample size
+		final double densityRatio = getDensityRatio();
+		
+		double adjustedDensityRatio = densityRatio;
+		while (adjustedDensityRatio <= 0.5) {
+			opts.inSampleSize *= 2;
+			adjustedDensityRatio *= 2;
+		}
 		
 		// Adjust region.
 		
 		final Rect region;
 		final boolean recycleRegion;
 		
-		final double densityRatio = getDensityRatio();
 		if (this.region != null && densityRatio != 1) {
 			region = RECT.obtain(false);
 			
@@ -239,15 +244,17 @@ public abstract class BitmapDecoder implements BitmapSource {
 		if (bitmap == null) return null;
 		
 		if (opts.inScaled) {
-			final int newWidth = (int) Math.round(bitmap.getWidth() * densityRatio);
-			final int newHeight = (int) Math.round(bitmap.getHeight() * densityRatio);
+			final int newWidth = (int) Math.round(bitmap.getWidth() * adjustedDensityRatio);
+			final int newHeight = (int) Math.round(bitmap.getHeight() * adjustedDensityRatio);
 			
 			bitmap.setDensity(Bitmap.DENSITY_NONE);
 			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, scaleFilter);
 			
 			bitmap2.setDensity(opts.inTargetDensity);
-			bitmap.recycle();
 			
+			if (bitmap != bitmap2) {
+				bitmap.recycle();
+			}
 			return bitmap2;
 		} else {
 			return bitmap;
