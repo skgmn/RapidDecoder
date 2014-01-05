@@ -6,14 +6,14 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import static agu.caching.ResourcePool.*;
 
-public class SimulatedDecoder implements Decoder {
+public class LoadedBitmap implements BitmapSource {
 	private Bitmap bitmap;
 	private int targetWidth;
 	private int targetHeight;
 	private boolean scaleFilter;
 	private Rect region;
 	
-	public SimulatedDecoder(Bitmap bitmap) {
+	public LoadedBitmap(Bitmap bitmap) {
 		this.bitmap = bitmap;
 	}
 
@@ -28,7 +28,7 @@ public class SimulatedDecoder implements Decoder {
 	}
 
 	@Override
-	public Bitmap decode() {
+	public Bitmap bitmap() {
 		final Bitmap regionalBitmap = (region == null ? bitmap :
 			Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height()));
 		final Bitmap scaledBitmap = (targetWidth == 0 && targetHeight == 0 ? regionalBitmap :
@@ -38,7 +38,7 @@ public class SimulatedDecoder implements Decoder {
 	}
 
 	@Override
-	public Decoder scale(int width, int height, boolean scaleFilter) {
+	public BitmapSource scale(int width, int height, boolean scaleFilter) {
 		this.targetWidth = width;
 		this.targetHeight = height;
 		this.scaleFilter = scaleFilter;
@@ -47,18 +47,28 @@ public class SimulatedDecoder implements Decoder {
 	}
 
 	@Override
-	public Decoder scaleBy(double widthRatio, double heightRatio,
+	public BitmapSource scaleBy(double widthRatio, double heightRatio,
 			boolean scaleFilter) {
 		
-		this.targetWidth = (int) (bitmap.getWidth() * widthRatio);
-		this.targetHeight = (int) (bitmap.getHeight() * heightRatio);
-		this.scaleFilter = scaleFilter;
+		if (widthRatio <= 0 || heightRatio <= 0) {
+			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
+		}
 		
-		return this;
+		if (targetWidth != 0 && targetHeight != 0) {
+			return scale(
+					(int) (targetWidth * widthRatio),
+					(int) (targetHeight * heightRatio),
+					scaleFilter);
+		} else {
+			return scale(
+					(int) (sourceWidth() * widthRatio),
+					(int) (sourceHeight() * heightRatio),
+					scaleFilter);
+		}
 	}
 
 	@Override
-	public Decoder region(int left, int top, int right, int bottom) {
+	public BitmapSource region(int left, int top, int right, int bottom) {
 		if (region == null) {
 			region = RECT.obtain(false);
 		}

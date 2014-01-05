@@ -2,8 +2,8 @@ package agu.scaling;
 
 import static agu.caching.ResourcePool.PAINT;
 import static agu.caching.ResourcePool.RECT;
-import agu.bitmap.Decoder;
-import agu.bitmap.SimulatedDecoder;
+import agu.bitmap.BitmapSource;
+import agu.bitmap.LoadedBitmap;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -12,7 +12,7 @@ import android.graphics.Region.Op;
 import android.graphics.drawable.Drawable;
 
 public class BitmapFrameBuilder {
-	private Decoder decoder;
+	private BitmapSource decoder;
 	private int frameWidth;
 	private int frameHeight;
 	private ScaleAlignment align = ScaleAlignment.CENTER;
@@ -20,10 +20,10 @@ public class BitmapFrameBuilder {
 	private Drawable background;
 	
 	public BitmapFrameBuilder(Bitmap bitmap, int frameWidth, int frameHeight) {
-		this(new SimulatedDecoder(bitmap), frameWidth, frameHeight);
+		this(new LoadedBitmap(bitmap), frameWidth, frameHeight);
 	}
 
-	public BitmapFrameBuilder(Decoder decoder, int frameWidth, int frameHeight) {
+	public BitmapFrameBuilder(BitmapSource decoder, int frameWidth, int frameHeight) {
 		this.decoder = decoder;
 		this.frameWidth = frameWidth;
 		this.frameHeight = frameHeight;
@@ -57,7 +57,7 @@ public class BitmapFrameBuilder {
 		final int height = decoder.sourceHeight();
 		
 		if (width == frameWidth && height == frameHeight) {
-			return decoder.decode();
+			return decoder.bitmap();
 		}
 		
 		final Rect bounds = RECT.obtain(false);
@@ -99,7 +99,7 @@ public class BitmapFrameBuilder {
 					bounds.right = bounds.left + width;
 				}
 				
-				final Bitmap bitmap = decoder.scale(bounds.width(), bounds.height(), true).decode();
+				final Bitmap bitmap = decoder.scale(bounds.width(), bounds.height(), true).bitmap();
 				
 				final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 				final Canvas cv = new Canvas(bitmap2);
@@ -131,9 +131,9 @@ public class BitmapFrameBuilder {
 				final int h = bounds.height();
 				
 				if (frameWidth == w && frameHeight == h) {
-					return decoder.scale(frameWidth, frameHeight, true).decode();
+					return decoder.scale(frameWidth, frameHeight, true).bitmap();
 				} else {
-					final Bitmap bitmap = decoder.scale(w, h, true).decode();
+					final Bitmap bitmap = decoder.scale(w, h, true).bitmap();
 					
 					final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 					final Canvas canvas = new Canvas(bitmap2);

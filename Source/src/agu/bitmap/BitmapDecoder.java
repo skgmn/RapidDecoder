@@ -20,11 +20,9 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 
-public abstract class BitmapDecoder implements Decoder {
+public abstract class BitmapDecoder implements BitmapSource {
 	public static final int SIZE_AUTO = 0;
 
-	private static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
-	
 	Options opts;
 	Rect region;
 	protected boolean mutable;
@@ -107,6 +105,11 @@ public abstract class BitmapDecoder implements Decoder {
 		} else {
 			return (int) (sourceHeight() * getDensityRatio() * ratioHeight);
 		}
+	}
+	
+	@Override
+	public Bitmap bitmap() {
+		return decode();
 	}
 	
 	public Bitmap decode() {

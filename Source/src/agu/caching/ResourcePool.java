@@ -1,5 +1,7 @@
 package agu.caching;
 
+import java.util.ArrayList;
+
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Matrix;
@@ -11,6 +13,8 @@ import android.os.Build;
 
 public abstract class ResourcePool<T> {
 	private static final int DEFAULT_CAPACITY = 4;
+	
+	private static ArrayList<ResourcePool<?>> pools;
 	
 	private Object[] stack;
 	private int top = 0;
@@ -114,7 +118,26 @@ public abstract class ResourcePool<T> {
 		}
 	};
 	
+	public static void clearPools() {
+		synchronized (ResourcePool.class) {
+			if (pools != null) {
+				for (ResourcePool<?> pool: pools) {
+					pool.clear();
+				}
+			}
+		}
+	}
+	
 	protected abstract T newInstance();
+	
+	public ResourcePool() {
+		synchronized (ResourcePool.class) {
+			if (pools == null) {
+				pools = new ArrayList<ResourcePool<?>>();
+			}
+			pools.add(this);
+		}
+	}
 	
 	protected void reset(T obj) {
 	}
@@ -150,6 +173,12 @@ public abstract class ResourcePool<T> {
 			}
 			
 			stack[top++] = obj;
+		}
+	}
+	
+	public void clear() {
+		synchronized (this) {
+			stack = null;
 		}
 	}
 }
