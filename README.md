@@ -10,7 +10,7 @@ Features
 
 Installation
 ============
-1. Download the [zip file](https://github.com/nirvanfallacy/AndroidGraphicsUtility/blob/master/Binary/agu.zip).
+1. Download the [zip file](https://github.com/nirvanfallacy/AndroidGraphicsUtility/blob/master/Binary/agu.zip?raw=true).
 2. Extract all the files and folders into your project's **libs/** folder.
 
 Basic decoding
