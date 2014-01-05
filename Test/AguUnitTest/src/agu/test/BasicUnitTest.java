@@ -2,7 +2,7 @@ package agu.test;
 
 import agu.bitmap.BitmapDecoder;
 import agu.scaling.AspectRatioCalculator;
-import agu.scaling.ScaleAlignment;
+import agu.scaling.FrameAlignment;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -33,30 +33,30 @@ public class BasicUnitTest extends AndroidTestCase {
 		AspectRatioCalculator.frame(300, 300, 200, 200, null, true, rect);
 		assertEquals(rect, 0, 0, 200, 200);
 		
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.LEFT_OR_TOP, true, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.LEFT_OR_TOP, true, rect);
 		assertEquals(rect, 0, 0, 100, 200);
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.CENTER, true, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.CENTER, true, rect);
 		assertEquals(rect, 50, 0, 150, 200);
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.RIGHT_OR_BOTTOM, true, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.RIGHT_OR_BOTTOM, true, rect);
 		assertEquals(rect, 100, 0, 200, 200);
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.LEFT_OR_TOP, false, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.LEFT_OR_TOP, false, rect);
 		assertEquals(rect, 0, 0, 200, 400);
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.CENTER, false, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.CENTER, false, rect);
 		assertEquals(rect, 0, -100, 200, 300);
-		AspectRatioCalculator.frame(50, 100, 200, 200, ScaleAlignment.RIGHT_OR_BOTTOM, false, rect);
+		AspectRatioCalculator.frame(50, 100, 200, 200, FrameAlignment.RIGHT_OR_BOTTOM, false, rect);
 		assertEquals(rect, 0, -200, 200, 200);
 		
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.LEFT_OR_TOP, true, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.LEFT_OR_TOP, true, rect);
 		assertEquals(rect, 0, 0, 200, 100);
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.CENTER, true, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.CENTER, true, rect);
 		assertEquals(rect, 0, 50, 200, 150);
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.RIGHT_OR_BOTTOM, true, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.RIGHT_OR_BOTTOM, true, rect);
 		assertEquals(rect, 0, 100, 200, 200);
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.LEFT_OR_TOP, false, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.LEFT_OR_TOP, false, rect);
 		assertEquals(rect, 0, 0, 400, 200);
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.CENTER, false, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.CENTER, false, rect);
 		assertEquals(rect, -100, 0, 300, 200);
-		AspectRatioCalculator.frame(100, 50, 200, 200, ScaleAlignment.RIGHT_OR_BOTTOM, false, rect);
+		AspectRatioCalculator.frame(100, 50, 200, 200, FrameAlignment.RIGHT_OR_BOTTOM, false, rect);
 		assertEquals(rect, -200, 0, 200, 200);
 	}
 	

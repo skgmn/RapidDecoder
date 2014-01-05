@@ -15,7 +15,7 @@ public class BitmapFrameBuilder {
 	private BitmapSource decoder;
 	private int frameWidth;
 	private int frameHeight;
-	private ScaleAlignment align = ScaleAlignment.CENTER;
+	private FrameAlignment align = FrameAlignment.CENTER;
 	private boolean onlyWhenOverflowed = false;
 	private Drawable background;
 	
@@ -29,7 +29,7 @@ public class BitmapFrameBuilder {
 		this.frameHeight = frameHeight;
 	}
 	
-	public BitmapFrameBuilder align(ScaleAlignment align) {
+	public BitmapFrameBuilder align(FrameAlignment align) {
 		this.align = align;
 		return this;
 	}
@@ -75,9 +75,9 @@ public class BitmapFrameBuilder {
 					bounds.left = (frameWidth - width) / 2;
 					bounds.right = bounds.left + width;
 					
-					if (align == ScaleAlignment.LEFT_OR_TOP) {
+					if (align == FrameAlignment.LEFT_OR_TOP) {
 						bounds.top = 0;
-					} else if (align == ScaleAlignment.RIGHT_OR_BOTTOM) {
+					} else if (align == FrameAlignment.RIGHT_OR_BOTTOM) {
 						bounds.top = frameHeight - height;
 					} else {
 						bounds.top = (frameHeight - height) / 2;
@@ -88,9 +88,9 @@ public class BitmapFrameBuilder {
 					bounds.top = (frameHeight - height) / 2;
 					bounds.bottom = bounds.top + height;
 					
-					if (align == ScaleAlignment.LEFT_OR_TOP) {
+					if (align == FrameAlignment.LEFT_OR_TOP) {
 						bounds.left = 0;
-					} else if (align == ScaleAlignment.RIGHT_OR_BOTTOM) {
+					} else if (align == FrameAlignment.RIGHT_OR_BOTTOM) {
 						bounds.left = frameWidth - width;
 					} else {
 						bounds.left = (frameWidth - width) / 2;

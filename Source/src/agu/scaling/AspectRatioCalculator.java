@@ -14,7 +14,7 @@ public class AspectRatioCalculator {
 	 * @param out A Rect instance to retrieve the scaled size and adjusted position. 
 	 */
 	public static void frame(int width, int height, int frameWidth, int frameHeight,
-			ScaleAlignment align, boolean fitIn, Rect out) {
+			FrameAlignment align, boolean fitIn, Rect out) {
 		
 		double ratio = (double) height / width;
 		
@@ -29,10 +29,10 @@ public class AspectRatioCalculator {
 			out.left = 0;
 			out.right = frameWidth;
 			
-			if (align == ScaleAlignment.LEFT_OR_TOP) {
+			if (align == FrameAlignment.LEFT_OR_TOP) {
 				out.top = 0;
 				out.bottom = height2;
-			} else if (align == ScaleAlignment.RIGHT_OR_BOTTOM) {
+			} else if (align == FrameAlignment.RIGHT_OR_BOTTOM) {
 				out.top = frameHeight - height2;
 				out.bottom = frameHeight;
 			} else {
@@ -46,10 +46,10 @@ public class AspectRatioCalculator {
 			out.top = 0;
 			out.bottom = frameHeight;
 			
-			if (align == ScaleAlignment.LEFT_OR_TOP) {
+			if (align == FrameAlignment.LEFT_OR_TOP) {
 				out.left = 0;
 				out.right = width2;
-			} else if (align == ScaleAlignment.RIGHT_OR_BOTTOM) {
+			} else if (align == FrameAlignment.RIGHT_OR_BOTTOM) {
 				out.left = frameWidth - width2;
 				out.right = frameWidth;
 			} else {
