@@ -42,7 +42,6 @@ public class ScaledDecodingFragment extends Fragment {
 		sourceHeight = decoder.height();
 		
 		bitmap = decoder
-				.forceUseOwnDecoder()
 				.scale(width, height).decode();
 		imageJpeg.setImageBitmap(bitmap);
 		
@@ -56,7 +55,6 @@ public class ScaledDecodingFragment extends Fragment {
 		sourceHeight = decoder.height();
 		
 		bitmap = decoder
-				.forceUseOwnDecoder()
 				.scale(width, height).decode();
 		imagePng.setImageBitmap(bitmap);
 		

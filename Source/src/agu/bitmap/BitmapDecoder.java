@@ -29,7 +29,7 @@ public abstract class BitmapDecoder implements Decoder {
 	Rect region;
 	protected boolean mutable;
 	private boolean scaleFilter = true;
-	private boolean useOwnDecoder = false;
+	private boolean useBuiltInDecoder = false;
 	
 	private int width;
 	private int height;
@@ -203,14 +203,14 @@ public abstract class BitmapDecoder implements Decoder {
 		
 		//
 		
-		final boolean useOwnDecoder =
-				this.useOwnDecoder ||
+		final boolean useBuiltInDecoder =
+				this.useBuiltInDecoder ||
 				(mutable && Build.VERSION.SDK_INT < 11) ||
 				(opts.inSampleSize > 1 && !scaleFilter);
 		
 		final Bitmap bitmap;
 		try {
-			if (useOwnDecoder) {
+			if (useBuiltInDecoder) {
 				bitmap = aguDecode();
 			} else {
 				if (region != null &&
@@ -364,7 +364,7 @@ public abstract class BitmapDecoder implements Decoder {
 	
 	@SuppressLint("NewApi")
 	protected Bitmap decodeRegional(Options opts, Rect region) {
-		if (Build.VERSION.SDK_INT >= 10 && !useOwnDecoder) {
+		if (Build.VERSION.SDK_INT >= 10 && !useBuiltInDecoder) {
 			final BitmapRegionDecoder d = createBitmapRegionDecoder();
 			if (d == null) {
 				return null;
@@ -466,12 +466,12 @@ public abstract class BitmapDecoder implements Decoder {
 		bitmap.recycle();
 	}
 
-	public BitmapDecoder forceUseOwnDecoder() {
-		return forceUseOwnDecoder(true);
+	public BitmapDecoder useBuiltInDecoder() {
+		return useBuiltInDecoder(true);
 	}
 	
-	public BitmapDecoder forceUseOwnDecoder(boolean force) {
-		this.useOwnDecoder = force;
+	public BitmapDecoder useBuiltInDecoder(boolean force) {
+		this.useBuiltInDecoder = force;
 		return this;
 	}
 

@@ -39,11 +39,28 @@ public class AnimatingGifDrawable extends Drawable {
 				try { in.close(); } catch (IOException e) {}
 			}
 		}
-			
+
+		init();
+	}
+	
+	public AnimatingGifDrawable(byte[] data) {
+		this(data, 0, data.length);
+	}
+	
+	public AnimatingGifDrawable(byte[] data, int offset, int length) {
+		movie = Movie.decodeByteArray(data, offset, length);
+		init();
+	}
+	
+	public AnimatingGifDrawable(String pathName) {
+		movie = Movie.decodeFile(pathName);
+		init();
+	}
+	
+	private void init() {
 		if (movie == null) {
 			throw new IllegalArgumentException("Not an animated gif file.");
 		}
-		
 		movie.setTime(0);
 	}
 	
@@ -60,8 +77,6 @@ public class AnimatingGifDrawable extends Drawable {
 		}
 		
 		final Rect bounds = getBounds();
-		
-		cv.drawColor(0xff000000);
 		
 		final boolean scale = (movie.width() != bounds.width() || movie.height() != bounds.height());
 		

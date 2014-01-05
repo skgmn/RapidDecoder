@@ -12,6 +12,6 @@
     <agu.widget.AnimatingGifView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/surprised_dog" />    
+        android:src="@drawable/surprised_dog" />
 
 </LinearLayout>
