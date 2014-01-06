@@ -11,7 +11,7 @@
 
     <property name="dir.bin" value="Binary" />
     <property name="dir.bin.temp" value="${dir.bin}/Temp" />
-    <property name="output.jar" value="${dir.bin.temp}/agu-${manifest.android:versionName}.jar" />
+    <property name="output.jar" value="${dir.bin.temp}/libs/agu-${manifest.android:versionName}.jar" />
 	<property name="output.zip" value="${dir.bin}/agu.zip" />
 	<property name="output.jar.manifest" value="${dir.bin.temp}/MANIFEST.MF" />
 
