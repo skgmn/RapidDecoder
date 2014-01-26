@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -22,7 +23,7 @@ public abstract class ResourcePool<T> {
 	private Object[] stack;
 	private int top = 0;
 	
-	public static final ResourcePool<Paint> PAINT = new ResourcePool<Paint>() {
+	public static class PaintPool extends ResourcePool<Paint> {
 		@Override
 		protected Paint newInstance() {
 			return new Paint();
@@ -32,9 +33,16 @@ public abstract class ResourcePool<T> {
 		protected void onReset(Paint obj) {
 			obj.reset();
 		}
-	};
+		
+		public Paint obtain(int flags) {
+			final Paint p = obtainImpl(true);
+			p.setFlags(flags);
+			return p;
+		}
+	}
+	public static final PaintPool PAINT = new PaintPool();
 	
-	public static final ResourcePool<Rect> RECT = new ResourcePool<Rect>() {
+	public static class RectPool extends ResourcePool<Rect> {
 		@Override
 		protected Rect newInstance() {
 			return new Rect();
@@ -44,9 +52,16 @@ public abstract class ResourcePool<T> {
 		protected void onReset(Rect obj) {
 			obj.set(0, 0, 0, 0);
 		}
-	};
+		
+		public Rect obtain(int left, int top, int right, int bottom) {
+			final Rect rect = obtainImpl(false);
+			rect.set(left, top, right, bottom);
+			return rect;
+		}
+	}
+	public static final RectPool RECT = new RectPool();
 	
-	public static final ResourcePool<RectF> RECTF = new ResourcePool<RectF>() {
+	public static class RectFPool extends ResourcePool<RectF> {
 		@Override
 		protected RectF newInstance() {
 			return new RectF();
@@ -56,9 +71,16 @@ public abstract class ResourcePool<T> {
 		protected void onReset(RectF obj) {
 			obj.set(0, 0, 0, 0);
 		}
-	};
+
+		public RectF obtain(float left, float top, float right, float bottom) {
+			final RectF rect = obtainImpl(false);
+			rect.set(left, top, right, bottom);
+			return rect;
+		}
+	}
+	public static final RectFPool RECTF = new RectFPool();
 	
-	public static final ResourcePool<Point> POINT = new ResourcePool<Point>() {
+	public static class PointPool extends ResourcePool<Point> {
 		@Override
 		protected Point newInstance() {
 			return new Point();
@@ -68,7 +90,14 @@ public abstract class ResourcePool<T> {
 		protected void onReset(Point obj) {
 			obj.set(0, 0);
 		}
-	};
+		
+		public Point obtain(int x, int y) {
+			final Point p = obtainImpl(false);
+			p.set(x, y);
+			return p;
+		}
+	}
+	public static final PointPool POINT = new PointPool();
 	
 	public static final ResourcePool<Matrix> MATRIX = new ResourcePool<Matrix>() {
 		@Override
@@ -131,7 +160,7 @@ public abstract class ResourcePool<T> {
 		}
 	};
 	
-	public static final ResourcePool<Canvas> CANVAS = new ResourcePool<Canvas>() {
+	public static class CanvasPool extends ResourcePool<Canvas> {
 		private Field Canvas_mNativeCanvas;
 		private Field Canvas_mBitmap;
 		private Method Canvas_native_setBitmap;
@@ -139,10 +168,6 @@ public abstract class ResourcePool<T> {
 		@Override
 		protected Canvas newInstance() {
 			return new Canvas();
-		}
-		
-		@Override
-		protected void onReset(Canvas obj) {
 		}
 		
 		@Override
@@ -174,7 +199,14 @@ public abstract class ResourcePool<T> {
 				}
 			}
 		}
-	};
+		
+		public Canvas obtain(Bitmap bitmap) {
+			final Canvas cv = obtainImpl(false);
+			cv.setBitmap(bitmap);
+			return cv;
+		}
+	}
+	public static final CanvasPool CANVAS = new CanvasPool();
 	
 	public static void clearPools() {
 		synchronized (ResourcePool.class) {
@@ -205,11 +237,15 @@ public abstract class ResourcePool<T> {
 	}
 
 	public T obtain() {
-		return obtain(true);
+		return obtainImpl(true);
+	}
+	
+	public T obtainNotReset() {
+		return obtainImpl(false);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public T obtain(boolean reset) {
+	T obtainImpl(boolean reset) {
 		synchronized (this) {
 			if (stack == null || top == 0) {
 				return newInstance();

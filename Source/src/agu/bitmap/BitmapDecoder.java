@@ -199,7 +199,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		if (this.region != null && getDensityRatio() != 1) {
 			final double densityRatio = getDensityRatio();
 			
-			region = RECT.obtain(false);
+			region = RECT.obtainNotReset();
 			
 			region.left = (int) (this.region.left / densityRatio);
 			region.top = (int) (this.region.top / densityRatio);
@@ -355,7 +355,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 	
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (this.region == null) {
-			this.region = RECT.obtain(false);
+			this.region = RECT.obtainNotReset();
 		}
 		this.region.set(left, top, right, bottom);
 		
@@ -460,25 +460,17 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 	
 	public void draw(Canvas cv, int left, int top, int right, int bottom) {
-		final Rect bounds = RECT.obtain(false);
-		try {
-			bounds.set(left, top, right, bottom);
-			draw(cv, bounds);
-		} finally {
-			RECT.recycle(bounds);
-		}
+		final Rect bounds = RECT.obtain(left, top, right, bottom);
+		draw(cv, bounds);
+		RECT.recycle(bounds);
 	}
 	
 	public void draw(Canvas cv, Rect rectDest) {
 		final Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
 		
-		final Paint p = PAINT.obtain();
-		try {
-			p.setFilterBitmap(true);
-			cv.drawBitmap(bitmap, null, rectDest, p);
-		} finally {
-			PAINT.recycle(p);
-		}
+		final Paint p = PAINT.obtain(Paint.FILTER_BITMAP_FLAG);
+		cv.drawBitmap(bitmap, null, rectDest, p);
+		PAINT.recycle(p);
 		
 		bitmap.recycle();
 	}

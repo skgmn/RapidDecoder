@@ -70,7 +70,7 @@ public class LoadedBitmap implements BitmapSource {
 	@Override
 	public BitmapSource region(int left, int top, int right, int bottom) {
 		if (region == null) {
-			region = RECT.obtain(false);
+			region = RECT.obtainNotReset();
 		}
 		region.set(left, top, right, bottom);
 		
