@@ -24,7 +24,7 @@ public class MainActivity extends Activity {
 
 		Bitmap bitmap = BitmapDecoder.from(new File(Environment.getExternalStorageDirectory(), "lb.png").getPath())
 				.useBuiltInDecoder()
-				.region(647, 221, 647 + 168, 221 + 143)
+				.region(145, 192, 145 + 200, 192 + 400)
 				.decode();
 		imageView.setImageBitmap(bitmap);
 		
