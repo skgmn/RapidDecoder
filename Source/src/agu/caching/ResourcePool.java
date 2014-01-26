@@ -94,7 +94,6 @@ public abstract class ResourcePool<T> {
 			if (Build.VERSION.SDK_INT >= 10) {
 				obj.inPreferQualityOverSpeed = false;
 				if (Build.VERSION.SDK_INT >= 11) {
-					obj.inBitmap = null;
 					obj.inMutable = false;
 					
 					if (Build.VERSION.SDK_INT >= 19) {
@@ -107,17 +106,28 @@ public abstract class ResourcePool<T> {
 			obj.inDither = true;
 			obj.inInputShareable = false;
 			obj.inJustDecodeBounds = false;
-			obj.inPreferredConfig = null;
 			obj.inPurgeable = false;
 			obj.inSampleSize = 0;
 			obj.inScaled = true;
 			obj.inScreenDensity = 0;
 			obj.inTargetDensity = 0;
-			obj.inTempStorage = null;
 			obj.mCancel = false;
 			obj.outHeight = 0;
-			obj.outMimeType = null;
 			obj.outWidth = 0;
+		}
+		
+		@SuppressLint("NewApi")
+		@Override
+		protected boolean onRecycle(Options obj) {
+			if (Build.VERSION.SDK_INT >= 11) {
+				obj.inBitmap = null;
+			}
+			
+			obj.inPreferredConfig = null;
+			obj.inTempStorage = null;
+			obj.outMimeType = null;
+			
+			return true;
 		}
 	};
 	
