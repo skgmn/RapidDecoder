@@ -79,13 +79,9 @@ public class LoadedBitmap implements BitmapSource {
 
 	@Override
 	public void draw(Canvas cv, Rect rectDest) {
-		final Paint p = PAINT.obtain();
-		try {
-			p.setFilterBitmap(true);
-			cv.drawBitmap(bitmap, region, rectDest, p);
-		} finally {
-			PAINT.recycle(p);
-		}
+		final Paint p = PAINT.obtain(Paint.FILTER_BITMAP_FLAG);
+		cv.drawBitmap(bitmap, region, rectDest, p);
+		PAINT.recycle(p);
 	}
 	
 	@Override
