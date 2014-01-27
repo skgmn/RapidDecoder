@@ -60,7 +60,7 @@ public class BitmapFrameBuilder {
 			return decoder.bitmap();
 		}
 		
-		final Rect bounds = RECT.obtain(false);
+		final Rect bounds = RECT.obtainNotReset();
 		try {
 			if (onlyWhenOverflowed && 
 					((!fitIn && (width <= frameWidth || height <= frameHeight)) ||

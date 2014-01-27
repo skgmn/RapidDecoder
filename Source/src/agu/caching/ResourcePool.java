@@ -1,9 +1,13 @@
 package agu.caching;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -19,53 +23,81 @@ public abstract class ResourcePool<T> {
 	private Object[] stack;
 	private int top = 0;
 	
-	public static final ResourcePool<Paint> PAINT = new ResourcePool<Paint>() {
+	public static class PaintPool extends ResourcePool<Paint> {
 		@Override
 		protected Paint newInstance() {
 			return new Paint();
 		}
 
 		@Override
-		protected void reset(Paint obj) {
+		protected void onReset(Paint obj) {
 			obj.reset();
 		}
-	};
+		
+		public Paint obtain(int flags) {
+			final Paint p = obtainImpl(true);
+			p.setFlags(flags);
+			return p;
+		}
+	}
+	public static final PaintPool PAINT = new PaintPool();
 	
-	public static final ResourcePool<Rect> RECT = new ResourcePool<Rect>() {
+	public static class RectPool extends ResourcePool<Rect> {
 		@Override
 		protected Rect newInstance() {
 			return new Rect();
 		}
 		
 		@Override
-		protected void reset(Rect obj) {
+		protected void onReset(Rect obj) {
 			obj.set(0, 0, 0, 0);
 		}
-	};
+		
+		public Rect obtain(int left, int top, int right, int bottom) {
+			final Rect rect = obtainImpl(false);
+			rect.set(left, top, right, bottom);
+			return rect;
+		}
+	}
+	public static final RectPool RECT = new RectPool();
 	
-	public static final ResourcePool<RectF> RECTF = new ResourcePool<RectF>() {
+	public static class RectFPool extends ResourcePool<RectF> {
 		@Override
 		protected RectF newInstance() {
 			return new RectF();
 		}
 
 		@Override
-		protected void reset(RectF obj) {
+		protected void onReset(RectF obj) {
 			obj.set(0, 0, 0, 0);
 		}
-	};
+
+		public RectF obtain(float left, float top, float right, float bottom) {
+			final RectF rect = obtainImpl(false);
+			rect.set(left, top, right, bottom);
+			return rect;
+		}
+	}
+	public static final RectFPool RECTF = new RectFPool();
 	
-	public static final ResourcePool<Point> POINT = new ResourcePool<Point>() {
+	public static class PointPool extends ResourcePool<Point> {
 		@Override
 		protected Point newInstance() {
 			return new Point();
 		}
 		
 		@Override
-		protected void reset(Point obj) {
+		protected void onReset(Point obj) {
 			obj.set(0, 0);
 		}
-	};
+		
+		public Point obtain(int x, int y) {
+			final Point p = obtainImpl(false);
+			p.set(x, y);
+			return p;
+		}
+	}
+	public static final PointPool POINT = new PointPool();
 	
 	public static final ResourcePool<Matrix> MATRIX = new ResourcePool<Matrix>() {
 		@Override
@@ -74,7 +106,7 @@ public abstract class ResourcePool<T> {
 		}
 		
 		@Override
-		protected void reset(Matrix obj) {
+		protected void onReset(Matrix obj) {
 			obj.reset();
 		}
 	};
@@ -87,11 +119,10 @@ public abstract class ResourcePool<T> {
 		
 		@SuppressLint("NewApi")
 		@Override
-		protected void reset(Options obj) {
+		protected void onReset(Options obj) {
 			if (Build.VERSION.SDK_INT >= 10) {
 				obj.inPreferQualityOverSpeed = false;
 				if (Build.VERSION.SDK_INT >= 11) {
-					obj.inBitmap = null;
 					obj.inMutable = false;
 					
 					if (Build.VERSION.SDK_INT >= 19) {
@@ -104,19 +135,78 @@ public abstract class ResourcePool<T> {
 			obj.inDither = true;
 			obj.inInputShareable = false;
 			obj.inJustDecodeBounds = false;
-			obj.inPreferredConfig = null;
 			obj.inPurgeable = false;
 			obj.inSampleSize = 0;
 			obj.inScaled = true;
 			obj.inScreenDensity = 0;
 			obj.inTargetDensity = 0;
-			obj.inTempStorage = null;
 			obj.mCancel = false;
 			obj.outHeight = 0;
-			obj.outMimeType = null;
 			obj.outWidth = 0;
 		}
+		
+		@SuppressLint("NewApi")
+		@Override
+		protected boolean onRecycle(Options obj) {
+			if (Build.VERSION.SDK_INT >= 11) {
+				obj.inBitmap = null;
+			}
+			
+			obj.inPreferredConfig = null;
+			obj.inTempStorage = null;
+			obj.outMimeType = null;
+			
+			return true;
+		}
 	};
+	
+	public static class CanvasPool extends ResourcePool<Canvas> {
+		private Field Canvas_mNativeCanvas;
+		private Field Canvas_mBitmap;
+		private Method Canvas_native_setBitmap;
+		
+		@Override
+		protected Canvas newInstance() {
+			return new Canvas();
+		}
+		
+		@Override
+		protected boolean onRecycle(Canvas obj) {
+			if (Build.VERSION.SDK_INT >= 11) {
+				obj.setBitmap(null);
+				return true;
+			} else {
+				// Canvas.setBitmap(null) throws an NullPointerException before API Level 11.
+				
+				try {
+					if (Canvas_mNativeCanvas == null) {
+						Canvas_mNativeCanvas = Canvas.class.getDeclaredField("mNativeCanvas");
+					}
+					if (Canvas_mBitmap == null) {
+						Canvas_mBitmap = Canvas.class.getDeclaredField("mBitmap");
+					}
+					if (Canvas_native_setBitmap == null) {
+						Canvas_native_setBitmap = Canvas.class.getDeclaredMethod("native_setBitmap", Integer.TYPE, Integer.TYPE);
+					}
+					
+					final int nativeCanvas = Canvas_mNativeCanvas.getInt(obj);
+					Canvas_native_setBitmap.invoke(null, nativeCanvas, 0);
+					Canvas_mBitmap.set(obj, null);
+					
+					return true;
+				} catch (Exception e) {
+					return false;
+				}
+			}
+		}
+		
+		public Canvas obtain(Bitmap bitmap) {
+			final Canvas cv = obtainImpl(false);
+			cv.setBitmap(bitmap);
+			return cv;
+		}
+	}
+	public static final CanvasPool CANVAS = new CanvasPool();
 	
 	public static void clearPools() {
 		synchronized (ResourcePool.class) {
@@ -139,28 +229,36 @@ public abstract class ResourcePool<T> {
 		}
 	}
 	
-	protected void reset(T obj) {
+	protected void onReset(T obj) {
+	}
+	
+	protected boolean onRecycle(T obj) {
+		return true;
 	}
 
 	public T obtain() {
-		return obtain(true);
+		return obtainImpl(true);
+	}
+	
+	public T obtainNotReset() {
+		return obtainImpl(false);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public T obtain(boolean reset) {
+	T obtainImpl(boolean reset) {
 		synchronized (this) {
 			if (stack == null || top == 0) {
 				return newInstance();
 			} else {
 				final T obj = (T) stack[--top];
-				if (reset) reset(obj);
+				if (reset) onReset(obj);
 				return obj;
 			}
 		}
 	}
 	
 	public void recycle(T obj) {
-		if (obj == null) return;
+		if (obj == null || !onRecycle(obj)) return;
 		
 		synchronized (this) {
 			if (stack == null) {
