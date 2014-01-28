@@ -17,6 +17,9 @@ public final class DrawableUtils {
 			throw new IllegalArgumentException("Cannot get the size of drawable.");
 		}
 		
+		if (right == 0) right = left + rectSrc.width();
+		if (bottom == 0) bottom = top + rectSrc.height();
+
 		if (rectSrc == null || rectSrc.contains(0, 0, width, height)) {
 			d.setBounds(left, top, right, bottom);
 			d.draw(cv);
@@ -30,14 +33,11 @@ public final class DrawableUtils {
 			cv.clipRect(left, top, right, bottom);
 		}
 		
-		if (right == 0) right = left + rectSrc.width();
-		if (bottom == 0) bottom = top + rectSrc.height();
-		
 		final float zoomH = (float) (right - left) / rectSrc.width();
 		final float zoomV = (float) (bottom - top) / rectSrc.height();
 		
-		final int l = (int) (-rectSrc.left * zoomH);
-		final int t = (int) (-rectSrc.top * zoomV);
+		final int l = (int) (left - rectSrc.left * zoomH);
+		final int t = (int) (top - rectSrc.top * zoomV);
 		final int r = l + (int) (width * zoomH);
 		final int b = t + (int) (height * zoomV);
 		
