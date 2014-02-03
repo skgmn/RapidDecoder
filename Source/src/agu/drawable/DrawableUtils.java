@@ -36,8 +36,8 @@ public final class DrawableUtils {
 		final float zoomH = (float) (right - left) / rectSrc.width();
 		final float zoomV = (float) (bottom - top) / rectSrc.height();
 		
-		final int l = (int) (left - rectSrc.left * zoomH);
-		final int t = (int) (top - rectSrc.top * zoomV);
+		final int l = left + (int) (-rectSrc.left * zoomH);
+		final int t = top + (int) (-rectSrc.top * zoomV);
 		final int r = l + (int) (width * zoomH);
 		final int b = t + (int) (height * zoomV);
 		
