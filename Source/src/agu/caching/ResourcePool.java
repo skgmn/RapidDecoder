@@ -200,8 +200,15 @@ public abstract class ResourcePool<T> {
 			}
 		}
 		
+		@Override
+		protected void onReset(Canvas obj) {
+			obj.clipRect(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
+			obj.setDrawFilter(null);
+			obj.setMatrix(null);
+		}
+		
 		public Canvas obtain(Bitmap bitmap) {
-			final Canvas cv = obtainImpl(false);
+			final Canvas cv = obtainImpl(true);
 			cv.setBitmap(bitmap);
 			return cv;
 		}
