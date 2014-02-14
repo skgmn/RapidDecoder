@@ -284,6 +284,7 @@ public abstract class ResourcePool<T> {
 	public void clear() {
 		synchronized (this) {
 			stack = null;
+			top = 0;
 		}
 	}
 }
