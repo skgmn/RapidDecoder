@@ -37,6 +37,7 @@ class TwoPhaseBufferedInputStream extends InputStream {
 	private void ensureCapacity(int extraLength) {
 		int requiredLength = mBufferLength + extraLength;
 		if (requiredLength > mBuffer.length) {
+			// TODO: Decrease the size of the new buffer by discarding old data
 			expandBuffer(requiredLength * 2);
 		}
 	}
