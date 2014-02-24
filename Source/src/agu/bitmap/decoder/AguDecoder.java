@@ -1,9 +1,9 @@
 package agu.bitmap.decoder;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import agu.bitmap.TwoPhaseBufferedInputStream;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
@@ -16,11 +16,9 @@ public class AguDecoder {
 		init();
 	}
 	
-	private static final int MARK_READ_LIMIT = 16384;
-	
 	private static final String MESSAGE_INVALID_REGION = "rectangle is outside the image";
 	
-	private InputStream in;
+	private TwoPhaseBufferedInputStream in;
 	private Rect region;
 	private boolean useFilter = true;
 	private int sampleSize;
@@ -28,19 +26,13 @@ public class AguDecoder {
 	private static native void init();
 	
 	public AguDecoder(InputStream in) {
-		if (!in.markSupported()) {
-			in = new BufferedInputStream(in, MARK_READ_LIMIT + 1);
+		if (in instanceof TwoPhaseBufferedInputStream &&
+				!((TwoPhaseBufferedInputStream) in).isSecondPhase()) {
+			
+			this.in = (TwoPhaseBufferedInputStream) in;
 		} else {
-			try {
-				in.reset();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+			this.in = new TwoPhaseBufferedInputStream(in);
 		}
-
-		in.mark(MARK_READ_LIMIT);
-
-		this.in = in;
 	}
 
 	public InputStream getInputStream() {
@@ -58,22 +50,18 @@ public class AguDecoder {
 	public Bitmap decode(Options opts) {
 		final String mimeType = opts.outMimeType;
 		Bitmap bitmap = null;
-		try {
-			if (mimeType == null) {
-				in.reset();
-				bitmap = decodePng(opts);
-				if (bitmap == null && !opts.mCancel) {
-					in.reset();
-					bitmap = decodeJpeg(opts);
-				}
-			} else if (mimeType.equals("image/png")) {
-				in.reset();
-				bitmap = decodePng(opts);
-			} else if (mimeType.equals("image/jpeg")) {
-				in.reset();
+		if (mimeType == null) {
+			bitmap = decodePng(opts);
+			if (bitmap == null && !opts.mCancel) {
+				in.seekToFirst();
 				bitmap = decodeJpeg(opts);
 			}
-		} catch (IOException e1) {
+		} else if (mimeType.equals("image/png")) {
+			in.seekToFirst();
+			bitmap = decodePng(opts);
+		} else if (mimeType.equals("image/jpeg")) {
+			in.seekToFirst();
+			bitmap = decodeJpeg(opts);
 		}
 
 		return bitmap;
@@ -108,6 +96,8 @@ public class AguDecoder {
 			
 			if (opts.mCancel) return null;
 			
+			in.startSecondPhase();
+			
 			final int width = d.getWidth();
 			final int height = d.getHeight();
 
@@ -130,6 +120,8 @@ public class AguDecoder {
 			
 			if (opts.mCancel) return null;
 			
+			in.startSecondPhase();
+			
 			final int width = d.getWidth();
 			final int height = d.getHeight();
 
@@ -144,9 +136,6 @@ public class AguDecoder {
 	}
 	
 	public void close() {
-		try {
-			in.close();
-		} catch (IOException e) {
-		}
+		try { in.close(); } catch (IOException e) {}
 	}
 }

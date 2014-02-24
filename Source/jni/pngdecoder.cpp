@@ -14,7 +14,6 @@ png_decoder::png_decoder(JNIEnv* env, jobject in)
     m_in = env->NewGlobalRef(in);
 
     jclass InputStream = env->FindClass("java/io/InputStream");
-    InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read1 = env->GetMethodID(InputStream, "read", "([BII)I");
 
     m_interlace_loaded = false;

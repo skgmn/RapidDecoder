@@ -143,7 +143,6 @@ namespace jpgd
 
     // Java related
     JNIEnv* m_env;
-    jmethodID InputStream_close;
     jmethodID InputStream_read3;
     
     jobject m_in;                                 // input stream from java

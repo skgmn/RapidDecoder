@@ -8,7 +8,7 @@ using namespace agu;
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "libnav", __VA_ARGS__) 
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "libnav", __VA_ARGS__) 
 
 jclass Bitmap;
 jmethodID Bitmap_createBitmap1;

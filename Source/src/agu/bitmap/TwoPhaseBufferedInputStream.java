@@ -3,16 +3,16 @@ package agu.bitmap;
 import java.io.IOException;
 import java.io.InputStream;
 
-class TwoPhaseBufferedInputStream extends InputStream {
+public class TwoPhaseBufferedInputStream extends InputStream {
 	private static final int INITIAL_BUFFER_CAPACITY = 1024;
 	
 	private InputStream mIn;
 	private byte[] mBuffer = new byte [INITIAL_BUFFER_CAPACITY];
 	private int mBufferLength = 0;
 	private int mBufferOffset;
-	private int mMarkedOffset = 0;
+	private int mMarkOffset = 0;
 	private boolean mBufferExpandable = true;
-	private boolean mContentPhase = false;
+	private boolean mSecondPhase = false;
 	
 	public TwoPhaseBufferedInputStream(InputStream in) {
 		mIn = in;
@@ -20,32 +20,29 @@ class TwoPhaseBufferedInputStream extends InputStream {
 	
 	@Override
 	public void mark(int readlimit) {
-		mMarkedOffset = mBufferOffset;
+		mMarkOffset = mBufferOffset;
 		
-		if (mContentPhase && mBufferOffset + readlimit > mBufferLength) {
+		if (mSecondPhase && mBufferOffset + readlimit > mBufferLength) {
 			mBufferExpandable = true;
 			if (mBuffer == null) {
 				mBuffer = new byte [INITIAL_BUFFER_CAPACITY];
+				mBufferLength = mBufferOffset = mMarkOffset = 0;
 			}
 		}
 	}
 	
-	public void reset() {
-		mBufferOffset = mMarkedOffset;
+	@Override
+	public void reset() throws IOException {
+		mBufferOffset = mMarkOffset;
 	}
 	
 	private void ensureCapacity(int extraLength) {
 		int requiredLength = mBufferLength + extraLength;
 		if (requiredLength > mBuffer.length) {
-			// TODO: Decrease the size of the new buffer by discarding old data
-			expandBuffer(requiredLength * 2);
+			byte[] newBuffer = new byte [requiredLength * 2];
+			System.arraycopy(mBuffer, 0, newBuffer, 0, mBufferLength);
+			mBuffer = newBuffer;
 		}
-	}
-	
-	private void expandBuffer(int newCapacity) {
-		byte[] newBuffer = new byte [newCapacity];
-		System.arraycopy(mBuffer, 0, newBuffer, 0, mBufferLength);
-		mBuffer = newBuffer;
 	}
 	
 	@Override
@@ -101,7 +98,9 @@ class TwoPhaseBufferedInputStream extends InputStream {
 					mBufferOffset = mBufferLength;
 				} else {
 					mBuffer = null;
-					mMarkedOffset = mBufferOffset = mBufferLength = 0;
+					if (mSecondPhase) {
+						mBufferExpandable = false;
+					}
 				}
 				
 				return totalBytesRead + bytesRead;
@@ -118,9 +117,18 @@ class TwoPhaseBufferedInputStream extends InputStream {
 		mIn.close();
 	}
 	
-	public void startContentPhase() {
+	public void startSecondPhase() {
 		mBufferExpandable = false;
-		mContentPhase = true;
-		mBufferOffset = mMarkedOffset = 0;
+		mSecondPhase = true;
+		mBufferOffset = mMarkOffset = 0;
+	}
+	
+	public boolean isSecondPhase() {
+		return mSecondPhase;
+	}
+	
+	public void seekToFirst() {
+		mBufferOffset = 0;
+		mMarkOffset = 0;
 	}
 }

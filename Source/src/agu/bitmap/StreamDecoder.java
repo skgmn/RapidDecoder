@@ -10,27 +10,42 @@ import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
 class StreamDecoder extends BitmapDecoder {
-	private InputStream is;
+	private TwoPhaseBufferedInputStream mIn;
 	
 	public StreamDecoder(InputStream is) {
-		this.is = is;
+		if (is instanceof TwoPhaseBufferedInputStream &&
+				!((TwoPhaseBufferedInputStream) is).isSecondPhase()) {
+					
+			mIn = (TwoPhaseBufferedInputStream) is;
+		} else {
+			mIn = new TwoPhaseBufferedInputStream(is);
+		}
 	}
 	
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeStream(is, null, opts);
+		return BitmapFactory.decodeStream(mIn, null, opts);
 	}
 
 	@Override
 	protected InputStream openInputStream() {
-		return is;
+		return mIn;
+	}
+	
+	@Override
+	protected void onDecodingStarted(boolean builtInDecoder) {
+		if (builtInDecoder) {
+			mIn.seekToFirst();
+		} else {
+			mIn.startSecondPhase();
+		}
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
 	@Override
 	protected BitmapRegionDecoder createBitmapRegionDecoder() {
 		try {
-			return BitmapRegionDecoder.newInstance(is, false);
+			return BitmapRegionDecoder.newInstance(mIn, false);
 		} catch (IOException e) {
 			return null;
 		}

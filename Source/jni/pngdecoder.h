@@ -31,7 +31,6 @@ namespace agu
 
     private:
         JNIEnv* m_env;
-        jmethodID InputStream_close;
         jmethodID InputStream_read1;
 
         jobject m_in;

@@ -131,12 +131,12 @@ public abstract class BitmapDecoder implements BitmapSource {
 			targetHeight = this.targetHeight;
 		} else if (ratioWidth != 1 || ratioHeight != 1) {
 			if (region != null) {
-				targetWidth = (int) (region.width() * ratioWidth);
-				targetHeight = (int) (region.height() * ratioHeight);
+				targetWidth = (int) Math.round(region.width() * ratioWidth);
+				targetHeight = (int) Math.round(region.height() * ratioHeight);
 			} else {
 				final double densityRatio = getDensityRatio();
-				targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
-				targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
+				targetWidth = (int) Math.round(sourceWidth() * densityRatio * ratioWidth);
+				targetHeight = (int) Math.round(sourceHeight() * densityRatio * ratioHeight);
 			}
 		} else {
 			targetWidth = targetHeight = 0;
@@ -201,10 +201,10 @@ public abstract class BitmapDecoder implements BitmapSource {
 			
 			region = RECT.obtainNotReset();
 			
-			region.left = (int) (this.region.left / densityRatio);
-			region.top = (int) (this.region.top / densityRatio);
-			region.right = (int) (this.region.right / densityRatio);
-			region.bottom = (int) (this.region.bottom / densityRatio);
+			region.left = (int) Math.round(this.region.left / densityRatio);
+			region.top = (int) Math.round(this.region.top / densityRatio);
+			region.right = (int) Math.round(this.region.right / densityRatio);
+			region.bottom = (int) Math.round(this.region.bottom / densityRatio);
 			
 			recycleRegion = true;
 		} else {
@@ -218,6 +218,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 				this.useBuiltInDecoder ||
 				(mutable && Build.VERSION.SDK_INT < 11) ||
 				(opts.inSampleSize > 1 && !scaleFilter);
+		
+		onDecodingStarted(useBuiltInDecoder);
 		
 		final Bitmap bitmap;
 		try {
@@ -240,6 +242,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 			if (recycleRegion) {
 				RECT.recycle(region);
 			}
+			onDecodingFinished();
 		}
 		
 		// Scale corresponds to the desired density.
@@ -374,6 +377,12 @@ public abstract class BitmapDecoder implements BitmapSource {
 	protected abstract Bitmap decode(Options opts);
 	protected abstract InputStream openInputStream();
 	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
+	
+	protected void onDecodingStarted(boolean builtInDecoder) {
+	}
+	
+	protected void onDecodingFinished() {
+	}
 	
 	@SuppressLint("NewApi")
 	protected Bitmap decodeRegional(Options opts, Rect region) {
