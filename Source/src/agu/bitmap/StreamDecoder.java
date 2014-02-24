@@ -18,7 +18,7 @@ class StreamDecoder extends BitmapDecoder {
 	
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeStream(is);
+		return BitmapFactory.decodeStream(is, null, opts);
 	}
 
 	@Override
@@ -35,5 +35,4 @@ class StreamDecoder extends BitmapDecoder {
 			return null;
 		}
 	}
-
 }
