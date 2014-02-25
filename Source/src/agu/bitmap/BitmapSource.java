@@ -2,14 +2,23 @@ package agu.bitmap;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 
 public interface BitmapSource {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
-	
+
+	/**
+	 * @return The width of the source image.
+	 */
 	int sourceWidth();
+	
+	/**
+	 * @return The height of the source image.
+	 */
 	int sourceHeight();
+	
 	Bitmap bitmap();
 	
 	/**
@@ -34,6 +43,15 @@ public interface BitmapSource {
 	 */
 	BitmapSource scaleBy(double widthRatio, double heightRatio, boolean scaleFilter);
 	
+	/**
+	 * <p>Request the decoder to crop the image while decoding.
+	 * Decoded image will be the same as an image which is cropped after decoding.</p>
+	 * <p>It uses {@link BitmapRegionDecoder} on API level 10 or higher, otherwise it uses built-in decoder.</p>
+	 */
 	BitmapSource region(int left, int top, int right, int bottom);
+
+	/**
+	 * Directly draw the image to canvas without any unnecessary scaling.
+	 */
 	void draw(Canvas cv, Rect rectDest);
 }
