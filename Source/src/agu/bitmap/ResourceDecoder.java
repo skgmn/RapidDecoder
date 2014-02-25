@@ -43,7 +43,7 @@ class ResourceDecoder extends BitmapDecoder {
 //	}
 
 	@Override
-	protected InputStream openInputStream() {
+	protected InputStream getInputStream() {
 		return res.openRawResource(id);
 	}
 
@@ -51,7 +51,7 @@ class ResourceDecoder extends BitmapDecoder {
 	@Override
 	protected BitmapRegionDecoder createBitmapRegionDecoder() {
 		try {
-			return BitmapRegionDecoder.newInstance(openInputStream(), false);
+			return BitmapRegionDecoder.newInstance(getInputStream(), false);
 		} catch (IOException e) {
 			return null;
 		}

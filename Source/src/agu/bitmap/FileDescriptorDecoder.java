@@ -24,7 +24,7 @@ class FileDescriptorDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected InputStream openInputStream() {
+	protected InputStream getInputStream() {
 		return new FileInputStream(fd);
 	}
 

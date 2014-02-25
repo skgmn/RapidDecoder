@@ -283,10 +283,13 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
+	/**
+	 * Equivalent to <code>scale(width, height, true)</code>.
+	 */
 	public BitmapDecoder scale(int width, int height) {
 		return scale(width, height, true);
 	}
-	
+
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
 		if (width < 0 || height < 0) {
 			throw new IllegalArgumentException("Both width and height should be positive.");
@@ -313,14 +316,23 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return this;
 	}
 
+	/**
+	 * Equivalent to <code>scaleBy(ratio, ratio, true)</code>.
+	 */
 	public BitmapDecoder scaleBy(double ratio) {
 		return scaleBy(ratio, ratio, true);
 	}
 	
+	/**
+	 * Equivalent to <code>scaleBy(ratio, ratio, scaleFilter)</code>.
+	 */
 	public BitmapDecoder scaleBy(double ratio, boolean scaleFilter) {
 		return scaleBy(ratio, ratio, scaleFilter);
 	}
 
+	/**
+	 * Equivalent to <code>scaleBy(widthRatio, heightRatio, true)</code>.
+	 */
 	public BitmapDecoder scaleBy(double widthRatio, double heightRatio) {
 		return scaleBy(widthRatio, heightRatio, true);
 	}
@@ -356,6 +368,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
+	@Override
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (this.region == null) {
 			this.region = RECT.obtainNotReset();
@@ -375,7 +388,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 	
 	protected abstract Bitmap decode(Options opts);
-	protected abstract InputStream openInputStream();
+	protected abstract InputStream getInputStream();
 	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 	
 	protected void onDecodingStarted(boolean builtInDecoder) {
@@ -444,7 +457,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 
 	protected Bitmap aguDecode() {
-		final InputStream in = openInputStream();
+		final InputStream in = getInputStream();
 		if (in == null) return null;
 		
 		adjustDensityRatio();

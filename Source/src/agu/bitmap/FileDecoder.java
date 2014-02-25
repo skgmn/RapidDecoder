@@ -24,7 +24,7 @@ class FileDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected InputStream openInputStream() {
+	protected InputStream getInputStream() {
 		try {
 			return new FileInputStream(pathName);
 		} catch (FileNotFoundException e) {

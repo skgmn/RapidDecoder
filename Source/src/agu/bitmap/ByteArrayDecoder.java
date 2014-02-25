@@ -29,7 +29,7 @@ class ByteArrayDecoder extends BitmapDecoder {
 	}
 	
 	@Override
-	protected InputStream openInputStream() {
+	protected InputStream getInputStream() {
 		return new ByteArrayInputStream(data, offset, length);
 	}
 

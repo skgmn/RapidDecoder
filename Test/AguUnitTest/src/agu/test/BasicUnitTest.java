@@ -89,8 +89,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2.recycle();
 
 		bitmap2 = BitmapDecoder.from(res, id).scaleBy(0.5).decode();
-		assertEquals(bitmap.getWidth() / 2, bitmap2.getWidth());
-		assertEquals(bitmap.getHeight() / 2, bitmap2.getHeight());
+		assertEquals((int) Math.round(bitmap.getWidth() * 0.5f), bitmap2.getWidth());
+		assertEquals((int) Math.round(bitmap.getHeight() * 0.5f), bitmap2.getHeight());
 		bitmap2.recycle();
 	}
 }
