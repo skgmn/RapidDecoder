@@ -120,7 +120,6 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	public void startSecondPhase() {
 		mBufferExpandable = false;
 		mSecondPhase = true;
-		mBufferOffset = mMarkOffset = 0;
 	}
 	
 	public boolean isSecondPhase() {
@@ -128,7 +127,6 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	}
 	
 	public void seekToFirst() {
-		mBufferOffset = 0;
-		mMarkOffset = 0;
+		mBufferOffset = mMarkOffset = 0;
 	}
 }
