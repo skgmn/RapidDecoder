@@ -53,14 +53,14 @@ public class AguDecoder {
 		if (mimeType == null) {
 			bitmap = decodePng(opts);
 			if (bitmap == null && !opts.mCancel) {
-				in.seekToFirst();
+				in.seekToBeginning();
 				bitmap = decodeJpeg(opts);
 			}
 		} else if (mimeType.equals("image/png")) {
-			in.seekToFirst();
+			in.seekToBeginning();
 			bitmap = decodePng(opts);
 		} else if (mimeType.equals("image/jpeg")) {
-			in.seekToFirst();
+			in.seekToBeginning();
 			bitmap = decodeJpeg(opts);
 		}
 

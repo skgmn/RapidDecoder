@@ -37,7 +37,7 @@ class StreamDecoder extends BitmapDecoder {
 		if (!builtInDecoder) {
 			mIn.startSecondPhase();
 		}
-		mIn.seekToFirst();
+		mIn.seekToBeginning();
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)

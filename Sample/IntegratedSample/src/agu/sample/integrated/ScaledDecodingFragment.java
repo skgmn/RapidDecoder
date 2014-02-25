@@ -42,7 +42,7 @@ public class ScaledDecodingFragment extends Fragment {
 		sourceHeight = decoder.height();
 		
 		bitmap = decoder
-				.scale(width, height).decode();
+				.scale(width, height).useBuiltInDecoder().decode();
 		imageJpeg.setImageBitmap(bitmap);
 		
 		textJpegInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
@@ -55,7 +55,7 @@ public class ScaledDecodingFragment extends Fragment {
 		sourceHeight = decoder.height();
 		
 		bitmap = decoder
-				.scale(width, height).decode();
+				.scale(width, height).useBuiltInDecoder().decode();
 		imagePng.setImageBitmap(bitmap);
 		
 		textPngInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +

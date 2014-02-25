@@ -126,7 +126,7 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 		return mSecondPhase;
 	}
 	
-	public void seekToFirst() {
+	public void seekToBeginning() {
 		mBufferOffset = mMarkOffset = 0;
 	}
 }
