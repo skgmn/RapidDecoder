@@ -10,6 +10,7 @@
 // http://vision.ai.uiuc.edu/~dugad/research/dct/index.html
 
 #include "jpgd.h"
+#include "log.h"
 #include <string.h>
 
 //#include <android/log.h>
@@ -20,8 +21,6 @@
 #ifdef _MSC_VER
 #pragma warning (disable : 4611) // warning C4611: interaction between '_setjmp' and C++ object destruction is non-portable
 #endif
-
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "libnav", __VA_ARGS__) 
 
 // Set to 1 to enable freq. domain chroma upsampling on images using H2V2 subsampling (0=faster nearest neighbor sampling).
 // This is slower, but results in higher quality on images with highly saturated colors.
@@ -844,12 +843,23 @@ namespace DCT_Upsample
 // Unconditionally frees all allocated m_blocks.
 void jpeg_decoder::free_all_blocks()
 {
-    m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
-    m_env->DeleteGlobalRef(m_in_buf_java);
+    if (m_in_buf != NULL)
+    {
+        m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
+        m_in_buf = NULL;
+    }
 
-    m_env->CallVoidMethod(m_in, InputStream_close);
-    m_env->ExceptionClear();
-    m_env->DeleteGlobalRef(m_in);
+    if (m_in_buf_java != NULL)
+    {
+        m_env->DeleteGlobalRef(m_in_buf_java);
+        m_in_buf_java = NULL;
+    }
+
+    if (m_in != NULL)
+    {
+        m_env->DeleteGlobalRef(m_in);
+        m_in = NULL;
+    }
 
   for (mem_block *b = m_pMem_blocks; b; )
   {
@@ -921,6 +931,7 @@ void jpeg_decoder::prep_in_buffer()
     }
 
     m_env->ReleaseByteArrayElements(m_in_buf_java, (jbyte*)m_in_buf, JNI_ABORT);
+    m_in_buf = NULL;
 
     do
     {
@@ -1380,7 +1391,6 @@ void jpeg_decoder::init(JNIEnv* env, jobject is)
     m_in = env->NewGlobalRef(is);
 
     jclass InputStream = env->FindClass("java/io/InputStream");
-    InputStream_close = env->GetMethodID(InputStream, "close", "()V");
     InputStream_read3 = env->GetMethodID(InputStream, "read", "([BII)I");
 
     set_pixel_format(RGBA8888);

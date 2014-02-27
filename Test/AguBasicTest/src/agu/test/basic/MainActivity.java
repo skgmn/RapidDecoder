@@ -1,10 +1,15 @@
 package agu.test.basic;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import agu.bitmap.BitmapDecoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -22,21 +27,44 @@ public class MainActivity extends Activity {
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
 
-		Bitmap bitmap = BitmapDecoder.from(new File(Environment.getExternalStorageDirectory(), "lb.png").getPath())
-				.useBuiltInDecoder()
-				.region(647, 221, 647 + 168, 221 + 143)
-				.decode();
-		imageView.setImageBitmap(bitmap);
-		
-		imageView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-			@SuppressWarnings("deprecation")
+		new AsyncTask<Object, Object, Bitmap>() {
 			@Override
-			public void onGlobalLayout() {
-				imageView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+			protected Bitmap doInBackground(Object... params) {
+				try {
+					InputStream in = new URL("http://farm6.staticflickr.com/5172/5588953445_51dcf922aa_o.jpg")
+						.openConnection()
+						.getInputStream();
+					
+					return BitmapDecoder.from(in).scaleBy(1 / 8f).useBuiltInDecoder().decode();
+				} catch (MalformedURLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
-				Log.e("asdf", "width = " + imageView.getWidth() + ", height = " + imageView.getHeight());
+				return null;
 			}
-		});
+			
+			protected void onPostExecute(Bitmap result) {
+				if (result == null) {
+					Log.e("asdf", "bitmap is null");
+				} else {
+					imageView.setImageBitmap(result);
+				}
+			}
+		}.execute();
+		
+//		imageView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+//			@SuppressWarnings("deprecation")
+//			@Override
+//			public void onGlobalLayout() {
+//				imageView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+//				
+//				Log.e("asdf", "width = " + imageView.getWidth() + ", height = " + imageView.getHeight());
+//			}
+//		});
 	}
 
 	@Override

@@ -29,6 +29,7 @@ public class RegionalDecodingFragment extends Fragment {
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
 				.region(140, 22, 1010, 1111)
 				.scaleBy(0.5)
+				.useBuiltInDecoder(MainActivity.TEST_BUILT_IN_DECODER)
 				.decode();
 		imageJpeg.setImageBitmap(bitmap);
 		
@@ -37,6 +38,7 @@ public class RegionalDecodingFragment extends Fragment {
 		bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda2)
 				.region(204, 0, 900, 773)
 				.scaleBy(0.5)
+				.useBuiltInDecoder(MainActivity.TEST_BUILT_IN_DECODER)
 				.decode();
 		imagePng.setImageBitmap(bitmap);
 	}
