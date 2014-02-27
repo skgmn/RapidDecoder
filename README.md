@@ -88,18 +88,18 @@ Usage
 import agu.scaling.BitmapFrameBuilder;
 import agu.scaling.FrameAlignment;
 
-Bitmap sourceBitmap = BitmapDecoder.from(getResources(), R.drawable.amanda);
+BitmapDecoder source = BitmapDecoder.from(getResources(), R.drawable.amanda);
 int frameWidth = 200;
 int frameHeight = 200;
 
 Drawable background = getResources.getDrawable(R.drawable.background);
 
-Bitmap bitmap = new BitmapFrameBuilder(sourceBitmap, frameWidth, frameHeight)
+Bitmap bitmap = new BitmapFrameBuilder(source, frameWidth, frameHeight)
                         .align(FrameAlignment.LEFT_OR_TOP)
                         .background(background)
                         .fitIn();
                         
-Bitmap bitmap2 = new BitmapFrameBuilder(sourceBitmap, frameWidth, frameHeight)
+Bitmap bitmap2 = new BitmapFrameBuilder(source, frameWidth, frameHeight)
                         .align(FrameAlignment.CENTER)
                         .cutOut();
 ```
