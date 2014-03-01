@@ -28,17 +28,16 @@ class StreamDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected InputStream openInputStream() {
+	protected InputStream getInputStream() {
 		return mIn;
 	}
 	
 	@Override
 	protected void onDecodingStarted(boolean builtInDecoder) {
-		if (builtInDecoder) {
-			mIn.seekToFirst();
-		} else {
+		if (!builtInDecoder) {
 			mIn.startSecondPhase();
 		}
+		mIn.seekToBeginning();
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)

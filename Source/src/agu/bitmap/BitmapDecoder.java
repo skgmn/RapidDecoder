@@ -14,6 +14,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -42,7 +43,10 @@ public abstract class BitmapDecoder implements BitmapSource {
 		opts = OPTIONS.obtain();
 	}
 	
-	public void release() {
+	/**
+	 * Recycle some resources. This method doesn't have to be called.
+	 */
+	public void recycle() {
 		if (opts != null) {
 			OPTIONS.recycle(opts);
 			opts = null;
@@ -51,12 +55,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 			RECT.recycle(region);
 			region = null;
 		}
-	}
-	
-	@Override
-	protected void finalize() throws Throwable {
-		release();
-		super.finalize();
 	}
 	
 	protected void decodeBounds() {
@@ -73,7 +71,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 			densityRatio = 1;
 		}
 	}
-	
+
+	@Override
 	public int sourceWidth() {
 		if (width == 0) {
 			decodeBounds();
@@ -81,6 +80,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return width;
 	}
 	
+	@Override
 	public int sourceHeight() {
 		if (height == 0) {
 			decodeBounds();
@@ -88,6 +88,9 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return height;
 	}
 	
+	/**
+	 * @return The estimated width of decoded image.
+	 */
 	public int width() {
 		if (targetWidth != 0) {
 			return targetWidth;
@@ -98,6 +101,9 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 
+	/**
+	 * @return The estimated height of decoded image.
+	 */
 	public int height() {
 		if (targetHeight != 0) {
 			return targetHeight;
@@ -131,12 +137,12 @@ public abstract class BitmapDecoder implements BitmapSource {
 			targetHeight = this.targetHeight;
 		} else if (ratioWidth != 1 || ratioHeight != 1) {
 			if (region != null) {
-				targetWidth = (int) Math.round(region.width() * ratioWidth);
-				targetHeight = (int) Math.round(region.height() * ratioHeight);
+				targetWidth = (int) (region.width() * ratioWidth);
+				targetHeight = (int) (region.height() * ratioHeight);
 			} else {
 				final double densityRatio = getDensityRatio();
-				targetWidth = (int) Math.round(sourceWidth() * densityRatio * ratioWidth);
-				targetHeight = (int) Math.round(sourceHeight() * densityRatio * ratioHeight);
+				targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
+				targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
 			}
 		} else {
 			targetWidth = targetHeight = 0;
@@ -201,10 +207,10 @@ public abstract class BitmapDecoder implements BitmapSource {
 			
 			region = RECT.obtainNotReset();
 			
-			region.left = (int) Math.round(this.region.left / densityRatio);
-			region.top = (int) Math.round(this.region.top / densityRatio);
-			region.right = (int) Math.round(this.region.right / densityRatio);
-			region.bottom = (int) Math.round(this.region.bottom / densityRatio);
+			region.left = (int) (this.region.left / densityRatio);
+			region.top = (int) (this.region.top / densityRatio);
+			region.right = (int) (this.region.right / densityRatio);
+			region.bottom = (int) (this.region.bottom / densityRatio);
 			
 			recycleRegion = true;
 		} else {
@@ -250,8 +256,16 @@ public abstract class BitmapDecoder implements BitmapSource {
 		if (bitmap == null) return null;
 		
 		if (opts.inScaled) {
-			final int newWidth = (int) Math.round(bitmap.getWidth() * adjustedDensityRatio);
-			final int newHeight = (int) Math.round(bitmap.getHeight() * adjustedDensityRatio);
+			final int newWidth;
+			final int newHeight;
+			
+			if (this.region != null) {
+				newWidth = this.region.width();
+				newHeight = this.region.height();
+			} else {
+				newWidth = (int) (bitmap.getWidth() * adjustedDensityRatio);
+				newHeight = (int) (bitmap.getHeight() * adjustedDensityRatio);
+			}
 			
 			bitmap.setDensity(Bitmap.DENSITY_NONE);
 			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, scaleFilter);
@@ -283,10 +297,13 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
+	/**
+	 * Equivalent to <code>scale(width, height, true)</code>.
+	 */
 	public BitmapDecoder scale(int width, int height) {
 		return scale(width, height, true);
 	}
-	
+
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
 		if (width < 0 || height < 0) {
 			throw new IllegalArgumentException("Both width and height should be positive.");
@@ -313,14 +330,23 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return this;
 	}
 
+	/**
+	 * Equivalent to <code>scaleBy(ratio, ratio, true)</code>.
+	 */
 	public BitmapDecoder scaleBy(double ratio) {
 		return scaleBy(ratio, ratio, true);
 	}
 	
+	/**
+	 * Equivalent to <code>scaleBy(ratio, ratio, scaleFilter)</code>.
+	 */
 	public BitmapDecoder scaleBy(double ratio, boolean scaleFilter) {
 		return scaleBy(ratio, ratio, scaleFilter);
 	}
 
+	/**
+	 * Equivalent to <code>scaleBy(widthRatio, heightRatio, true)</code>.
+	 */
 	public BitmapDecoder scaleBy(double widthRatio, double heightRatio) {
 		return scaleBy(widthRatio, heightRatio, true);
 	}
@@ -344,6 +370,9 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
+	/**
+	 * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
+	 */
 	public BitmapDecoder region(Rect region) {
 		if (region == null) {
 			if (this.region != null) {
@@ -356,6 +385,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
+	@Override
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (this.region == null) {
 			this.region = RECT.obtainNotReset();
@@ -365,17 +395,26 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return this;
 	}
 	
+	/**
+	 * Equivalent to <code>mutable(true)</code>.
+	 */
 	public BitmapDecoder mutable() {
 		return mutable(true);
 	}
-	
+
+	/**
+	 * <p>Tell the decoder whether decoded image should be mutable or not.</p>
+	 * <p>It sets {@link BitmapFactory.Options#inMutable} to true on API level 11 or higher,
+	 * otherwise it uses built-in decoder which always returns mutable bitmap.</p>
+	 * @param mutable true if decoded image should be mutable.
+	 */
 	public BitmapDecoder mutable(boolean mutable) {
 		this.mutable = mutable;
 		return this;
 	}
 	
 	protected abstract Bitmap decode(Options opts);
-	protected abstract InputStream openInputStream();
+	protected abstract InputStream getInputStream();
 	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 	
 	protected void onDecodingStarted(boolean builtInDecoder) {
@@ -444,7 +483,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 
 	protected Bitmap aguDecode() {
-		final InputStream in = openInputStream();
+		final InputStream in = getInputStream();
 		if (in == null) return null;
 		
 		adjustDensityRatio();
@@ -460,6 +499,10 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return bitmap;
 	}
 	
+	/**
+	 * Request the decoder to cancel the decoding job currently working.
+	 * This should be called by another thread.
+	 */
 	public void cancel() {
 		opts.requestCancelDecode();
 	}
@@ -468,12 +511,16 @@ public abstract class BitmapDecoder implements BitmapSource {
 		draw(cv, left, top, left + width(), top + height());
 	}
 	
+	/**
+	 * Equivalent to {@link #draw(Canvas, Rect)}.
+	 */
 	public void draw(Canvas cv, int left, int top, int right, int bottom) {
 		final Rect bounds = RECT.obtain(left, top, right, bottom);
 		draw(cv, bounds);
 		RECT.recycle(bounds);
 	}
-	
+
+	@Override
 	public void draw(Canvas cv, Rect rectDest) {
 		final Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
 		
@@ -484,10 +531,17 @@ public abstract class BitmapDecoder implements BitmapSource {
 		bitmap.recycle();
 	}
 
+	/**
+	 * Equivalent to <code>useBuiltInDecoder(true)</code>.
+	 */
 	public BitmapDecoder useBuiltInDecoder() {
 		return useBuiltInDecoder(true);
 	}
 	
+	/**
+	 * Tell the decoder to either force using built-in decoder or not.
+	 * @param force true if it should always use built-in decoder.
+	 */
 	public BitmapDecoder useBuiltInDecoder(boolean force) {
 		this.useBuiltInDecoder = force;
 		return this;
@@ -500,6 +554,9 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return densityRatio;
 	}
 	
+	/**
+	 * Set preferred bitmap configuration.
+	 */
 	public BitmapDecoder config(Config config) {
 		opts.inPreferredConfig = config;
 		return this;

@@ -1,14 +1,11 @@
 #include "decoder.h"
 #include "sampler.h"
-
-#include <android/log.h>
+#include "log.h"
 
 using namespace jpgd;
 using namespace agu;
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
-
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "libnav", __VA_ARGS__) 
 
 jclass Bitmap;
 jmethodID Bitmap_createBitmap1;
@@ -248,8 +245,7 @@ jobject JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeDecode(JNIEnv* env, jcl
     int w = right - left;
     int h = bottom - top;
 
-    //jint sample_size = env->GetIntField(opts, Options_inSampleSize);
-    jint sample_size = 1;
+    jint sample_size = env->GetIntField(opts, Options_inSampleSize);
     int sampled_width = (sample_size > 1 ? w / sample_size : w);
     int sampled_height = (sample_size > 1 ? h / sample_size : h);
 
