@@ -176,7 +176,7 @@ public abstract class ResourcePool<T> {
 				obj.setBitmap(null);
 				return true;
 			} else {
-				// Canvas.setBitmap(null) throws an NullPointerException before API Level 11.
+				// Canvas.setBitmap(null) throws an NullPointerException before API Level 14.
 				
 				try {
 					if (Canvas_mNativeCanvas == null) {
@@ -188,6 +188,10 @@ public abstract class ResourcePool<T> {
 					if (Canvas_native_setBitmap == null) {
 						Canvas_native_setBitmap = Canvas.class.getDeclaredMethod("native_setBitmap", Integer.TYPE, Integer.TYPE);
 					}
+					
+					Canvas_mNativeCanvas.setAccessible(true);
+					Canvas_native_setBitmap.setAccessible(true);
+					Canvas_mBitmap.setAccessible(true);
 					
 					final int nativeCanvas = Canvas_mNativeCanvas.getInt(obj);
 					Canvas_native_setBitmap.invoke(null, nativeCanvas, 0);
