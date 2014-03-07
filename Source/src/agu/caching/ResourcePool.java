@@ -172,7 +172,7 @@ public abstract class ResourcePool<T> {
 		
 		@Override
 		protected boolean onRecycle(Canvas obj) {
-			if (Build.VERSION.SDK_INT >= 11) {
+			if (Build.VERSION.SDK_INT >= 14) {
 				obj.setBitmap(null);
 				return true;
 			} else {
