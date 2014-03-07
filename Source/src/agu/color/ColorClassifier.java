@@ -59,8 +59,8 @@ public class ColorClassifier {
 			hueDiff = Math.min(hue2 - hue1, hue1 - hue2 + 360);
 		}
 		
-		final float satDiff = (sat1 - sat2) * 160;
-		final float valDiff = (val1 - val2) * 160;
+		final float satDiff = (sat1 - sat2) * 180;
+		final float valDiff = (val1 - val2) * 180;
 		
 		return (float) Math.sqrt(hueDiff * hueDiff +
 				satDiff * satDiff +
