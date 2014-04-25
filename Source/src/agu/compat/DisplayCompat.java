@@ -12,12 +12,11 @@ public class DisplayCompat {
 	public static int getWidth(Display display) {
 		if (Build.VERSION.SDK_INT >= 13) {
 			final Point size = POINT.obtain();
-			try {
-				display.getSize(size);
-				return size.x;
-			} finally {
-				POINT.recycle(size);
-			}
+			display.getSize(size);
+			final int width = size.x;
+			POINT.recycle(size);
+			
+			return width;
 		} else {
 			return display.getWidth();
 		}
@@ -28,12 +27,11 @@ public class DisplayCompat {
 	public static int getHeight(Display display) {
 		if (Build.VERSION.SDK_INT >= 13) {
 			final Point size = POINT.obtain();
-			try {
-				display.getSize(size);
-				return size.y;
-			} finally {
-				POINT.recycle(size);
-			}
+			display.getSize(size);
+			final int height = size.y;
+			POINT.recycle(size);
+			
+			return height;
 		} else {
 			return display.getHeight();
 		}
