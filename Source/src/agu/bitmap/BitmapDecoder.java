@@ -129,14 +129,20 @@ public abstract class BitmapDecoder implements BitmapSource {
 
 		//
 		
-		final int targetWidth;
-		final int targetHeight;
+		int targetWidth;
+		int targetHeight;
 		
 		// Setup target size.
 		
-		if (this.targetWidth != 0 && this.targetHeight != 0) {
+		if (this.targetWidth != 0 || this.targetHeight != 0) {
 			targetWidth = this.targetWidth;
 			targetHeight = this.targetHeight;
+
+			if (targetWidth == 0 && targetHeight != 0) {
+				targetWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), targetHeight);
+			} else if (targetHeight == 0 && targetWidth != 0) {
+				targetHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), targetWidth);
+			}
 		} else if (ratioWidth != 1 || ratioHeight != 1) {
 			if (region != null) {
 				targetWidth = (int) (region.width() * ratioWidth);
@@ -311,21 +317,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 			throw new IllegalArgumentException("Both width and height should be positive.");
 		}
 
-		if ((width == SIZE_AUTO && height == SIZE_AUTO) ||
-				(width != SIZE_AUTO && height != SIZE_AUTO)) {
-			
-			targetWidth = width;
-			targetHeight = height;
-		} else {
-			if (width == SIZE_AUTO) {
-				targetWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), height);
-				targetHeight = height;
-			} else {
-				targetHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), width);
-				targetWidth = width;
-			}
-		}
-		
+		targetWidth = width;
+		targetHeight = height;
 		ratioWidth = ratioHeight = 1;
 		
 		this.scaleFilter = scaleFilter;
