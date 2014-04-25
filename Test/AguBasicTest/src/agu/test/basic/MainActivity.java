@@ -1,23 +1,12 @@
 package agu.test.basic;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import agu.bitmap.BitmapDecoder;
 import agu.bitmap.async.AsyncBitmapLoader;
 import agu.bitmap.async.ImageViewBinder;
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.Menu;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.ImageView;
 
 public class MainActivity extends Activity {
@@ -33,7 +22,7 @@ public class MainActivity extends Activity {
 		AsyncBitmapLoader loader = new AsyncBitmapLoader();
 		loader.load(
 				BitmapDecoder
-						.from(this, Uri.parse("http://farm6.staticflickr.com/5172/5588953445_51dcf922aa_o.jpg"))
+						.from(this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
 						.scaleBy(1 / 2f),
 				new ImageViewBinder(imageView));
 

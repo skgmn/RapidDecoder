@@ -1,5 +1,6 @@
 package agu.bitmap.async;
 
+import java.util.ArrayList;
 import java.util.WeakHashMap;
 
 import agu.bitmap.BitmapSource;
@@ -14,15 +15,25 @@ public class AsyncBitmapLoader {
 	public static final int STATE_IDLE = 0;
 	public static final int STATE_LOADING = 1;
 	
+	private static AsyncBitmapLoader sGlobalInstance;
+	
+	private ArrayList<Loader> mLoaders;
 	private WeakHashMap<Object, Loader> mSingletonLoaders;
-	private int mLoadersCount = 0;
 	private OnLoadingStateChangedListener mOnLoadingStateChanged;
 	
 	public AsyncBitmapLoader() {
 	}
 	
 	public void load(BitmapSource source, AsyncBitmapCallback callback) {
-		new Loader(null, source, callback).execute();
+		if (mLoaders == null) {
+			mLoaders = new ArrayList<AsyncBitmapLoader.Loader>();
+		}
+		checkLoadingStarted();
+		
+		Loader loader = new Loader(null, source, callback);
+		mLoaders.add(loader);
+		
+		loader.execute();
 	}
 	
 	public void load(Object singletonKey, BitmapSource source, AsyncBitmapCallback callback) {
@@ -31,11 +42,21 @@ public class AsyncBitmapLoader {
 		} else {
 			cancel(singletonKey);
 		}
+		checkLoadingStarted();
 		
 		Loader loader = new Loader(singletonKey, source, callback);
 		mSingletonLoaders.put(singletonKey, loader);
 		
 		loader.execute();
+	}
+	
+	private void checkLoadingStarted() {
+		if (mOnLoadingStateChanged != null &&
+				(mSingletonLoaders == null || mSingletonLoaders.isEmpty()) &&
+				(mLoaders == null || mLoaders.isEmpty())) {
+			
+			mOnLoadingStateChanged.onLoadingStateChanged(STATE_LOADING);
+		}
 	}
 	
 	public void load(BitmapSource source, BitmapBinder binder) {
@@ -57,8 +78,22 @@ public class AsyncBitmapLoader {
 		}
 	}
 	
-	public int getLoadingJobsCount() {
-		return mSingletonLoaders.size();
+	public void cancelAll() {
+		if (mLoaders != null) {
+			for (Loader loader: mLoaders) {
+				loader.cancel();
+			}
+		}
+		if (mSingletonLoaders != null) {
+			for (Loader loader: mSingletonLoaders.values()) {
+				loader.cancel();
+			}
+		}
+	}
+	
+	public int getCount() {
+		return (mLoaders == null ? 0 : mLoaders.size()) +
+				(mSingletonLoaders == null ? 0 : mSingletonLoaders.size());
 	}
 	
 	public void setOnLoadingStateChangedListener(OnLoadingStateChangedListener listener) {
@@ -74,10 +109,6 @@ public class AsyncBitmapLoader {
 			mKey = key;
 			mBitmapSource = source;
 			mCallback = callback;
-			
-			if (mLoadersCount++ == 0 && mOnLoadingStateChanged != null) {
-				mOnLoadingStateChanged.onLoadingStateChanged(STATE_LOADING);
-			}
 		}
 		
 		@Override
@@ -88,27 +119,34 @@ public class AsyncBitmapLoader {
 		@Override
 		protected void onPostExecute(Bitmap result) {
 			checkStateChanged();
-			
-			final boolean isValid;
-			
-			if (mKey != null) {
-				isValid = (mSingletonLoaders.remove(mKey) == this);
-			} else {
-				isValid = true;
-			}
-			
-			if (isValid) {
+			if (isValid()) {
 				mCallback.onBitmapLoaded(result);
+			} else {
+				mCallback.onBitmapCancelled();
 			}
 		}
 		
 		@Override
 		protected void onCancelled() {
 			checkStateChanged();
+			isValid();
+			
+			mCallback.onBitmapCancelled();
+		}
+		
+		private boolean isValid() {
+			if (mKey != null) {
+				return (mSingletonLoaders.remove(mKey) == this);
+			} else {
+				return mLoaders.remove(this);
+			}
 		}
 		
 		private void checkStateChanged() {
-			if (--mLoadersCount == 0 && mOnLoadingStateChanged != null) {
+			if (mOnLoadingStateChanged != null &&
+					(mLoaders == null || mLoaders.isEmpty()) &&
+					(mSingletonLoaders == null || mSingletonLoaders.isEmpty())) {
+				
 				mOnLoadingStateChanged.onLoadingStateChanged(STATE_IDLE);
 			}
 		}
@@ -117,5 +155,16 @@ public class AsyncBitmapLoader {
 			cancel(false);
 			mBitmapSource.cancel();
 		}
+	}
+	
+	public static AsyncBitmapLoader getInstance() {
+		if (sGlobalInstance == null) {
+			synchronized (AsyncBitmapLoader.class) {
+				if (sGlobalInstance == null) {
+					sGlobalInstance = new AsyncBitmapLoader();
+				}
+			}
+		}
+		return sGlobalInstance;
 	}
 }
