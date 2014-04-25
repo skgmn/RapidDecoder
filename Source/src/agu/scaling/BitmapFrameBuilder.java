@@ -57,7 +57,7 @@ public class BitmapFrameBuilder {
 		final int height = decoder.sourceHeight();
 		
 		if (width == frameWidth && height == frameHeight) {
-			return decoder.bitmap();
+			return decoder.decode();
 		}
 		
 		final Rect bounds = RECT.obtainNotReset();
@@ -99,7 +99,7 @@ public class BitmapFrameBuilder {
 					bounds.right = bounds.left + width;
 				}
 				
-				final Bitmap bitmap = decoder.scale(bounds.width(), bounds.height(), true).bitmap();
+				final Bitmap bitmap = decoder.scale(bounds.width(), bounds.height(), true).decode();
 				
 				final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 				final Canvas cv = new Canvas(bitmap2);
@@ -131,9 +131,9 @@ public class BitmapFrameBuilder {
 				final int h = bounds.height();
 				
 				if (frameWidth == w && frameHeight == h) {
-					return decoder.scale(frameWidth, frameHeight, true).bitmap();
+					return decoder.scale(frameWidth, frameHeight, true).decode();
 				} else {
-					final Bitmap bitmap = decoder.scale(w, h, true).bitmap();
+					final Bitmap bitmap = decoder.scale(w, h, true).decode();
 					
 					final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 					final Canvas canvas = new Canvas(bitmap2);

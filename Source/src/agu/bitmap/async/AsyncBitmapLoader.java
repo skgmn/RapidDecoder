@@ -113,7 +113,7 @@ public class AsyncBitmapLoader {
 		
 		@Override
 		protected Bitmap doInBackground(Object... params) {
-			return mBitmapSource.bitmap();
+			return mBitmapSource.decode();
 		}
 		
 		@Override

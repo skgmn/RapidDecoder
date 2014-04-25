@@ -26,21 +26,11 @@ class ResourceDecoder extends BitmapDecoder {
 	}
 	
 	@Override
-	public Bitmap bitmap() {
+	public Bitmap decode() {
 		// Ensure that the native decoder fills in inDensity and inTargetDensity.
 		decodeBounds();
-		return super.bitmap();
+		return super.decode();
 	}
-
-//	private static int translateDensity(int resDensity) {
-//		if (resDensity == TypedValue.DENSITY_DEFAULT) {
-//			return DisplayMetrics.DENSITY_DEFAULT;
-//		} else if (resDensity == TypedValue.DENSITY_NONE) {
-//			return 0;
-//		} else {
-//			return resDensity;
-//		}
-//	}
 
 	@Override
 	protected InputStream getInputStream() {

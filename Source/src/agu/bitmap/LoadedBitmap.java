@@ -1,5 +1,6 @@
 package agu.bitmap;
 
+import agu.scaling.AspectRatioCalculator;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -7,10 +8,12 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import static agu.caching.ResourcePool.*;
 
-public class LoadedBitmap implements BitmapSource {
+public class LoadedBitmap extends BitmapSource {
 	private Bitmap bitmap;
 	private int targetWidth;
 	private int targetHeight;
+	private int maxWidth = Integer.MAX_VALUE;
+	private int maxHeight = Integer.MAX_VALUE;
 	private boolean scaleFilter;
 	private Rect region;
 	
@@ -27,9 +30,13 @@ public class LoadedBitmap implements BitmapSource {
 	public int sourceHeight() {
 		return bitmap.getHeight();
 	}
-
+	
 	@Override
-	public Bitmap bitmap() {
+	public Bitmap decode() {
+		if (targetWidth == 0 || targetHeight == 0) {
+			throw new IllegalArgumentException("Both width and height must be positive and non-zero.");
+		}
+		
 		if (region != null) {
 			if (targetWidth == 0 && targetHeight == 0) {
 				return Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height());
@@ -48,8 +55,10 @@ public class LoadedBitmap implements BitmapSource {
 				
 				return b;
 			}
-		} else {
+		} else if (targetWidth != 0 && targetHeight != 0) {
 			return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
+		} else {
+			return bitmap;
 		}
 	}
 
@@ -59,6 +68,13 @@ public class LoadedBitmap implements BitmapSource {
 		this.targetHeight = height;
 		this.scaleFilter = scaleFilter;
 		
+		if (targetWidth == 0 && targetHeight != 0) {
+			targetWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), targetHeight);
+		} else if (targetHeight == 0 && targetWidth != 0) {
+			targetHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), targetWidth);
+		}
+
+		fitInMaxSize();		
 		return this;
 	}
 
@@ -110,5 +126,56 @@ public class LoadedBitmap implements BitmapSource {
 
 	@Override
 	public void cancel() {
+	}
+
+	@Override
+	public int width() {
+		if (targetWidth != 0) {
+			return targetWidth;
+		} else if (region != null) {
+			return region.width();
+		} else {
+			return sourceWidth();
+		}
+	}
+
+	@Override
+	public int height() {
+		if (targetHeight != 0) {
+			return targetHeight;
+		} else if (region != null) {
+			return region.height();
+		} else {
+			return sourceHeight();
+		}
+	}
+
+	@Override
+	public BitmapSource maxSize(int width, int height) {
+		maxWidth = width;
+		maxHeight = height;
+		
+		fitInMaxSize();
+		return this;
+	}
+	
+	private void fitInMaxSize() {
+		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) &&
+				(targetWidth == 0 && targetHeight == 0)) {
+			
+			targetWidth = sourceWidth();
+			targetHeight = sourceHeight();
+		}
+		
+		if (targetWidth != 0 || targetHeight != 0) {
+			if (targetWidth > maxWidth) {
+				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, maxWidth);
+				targetWidth = maxWidth;
+			}
+			if (targetHeight > maxHeight) {
+				targetWidth = AspectRatioCalculator.fitHeight(targetWidth, targetHeight, maxHeight);
+				targetHeight = maxHeight;
+			}
+		}
 	}
 }

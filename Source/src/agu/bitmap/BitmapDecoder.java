@@ -23,7 +23,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 
-public abstract class BitmapDecoder implements BitmapSource {
+public abstract class BitmapDecoder extends BitmapSource {
 	public static final int SIZE_AUTO = 0;
 
 	Options opts;
@@ -45,20 +45,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 	
 	protected BitmapDecoder() {
 		opts = OPTIONS.obtain();
-	}
-	
-	/**
-	 * Recycle some resources. This method doesn't have to be called.
-	 */
-	public void recycle() {
-		if (opts != null) {
-			OPTIONS.recycle(opts);
-			opts = null;
-		}
-		if (region != null) {
-			RECT.recycle(region);
-			region = null;
-		}
 	}
 	
 	protected void decodeBounds() {
@@ -92,9 +78,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return height;
 	}
 	
-	/**
-	 * @return The estimated width of decoded image.
-	 */
 	public int width() {
 		if (targetWidth != 0) {
 			return targetWidth;
@@ -105,9 +88,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 
-	/**
-	 * @return The estimated height of decoded image.
-	 */
 	public int height() {
 		if (targetHeight != 0) {
 			return targetHeight;
@@ -119,10 +99,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 	}
 	
 	@Override
-	public Bitmap bitmap() {
-		return decode();
-	}
-	
 	public Bitmap decode() {
 		// reset
 		
@@ -163,13 +139,13 @@ public abstract class BitmapDecoder implements BitmapSource {
 		// Limit the size.
 		
 		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) &&
-				(targetWidth == 0 || targetHeight == 0)) {
+				(targetWidth == 0 && targetHeight == 0)) {
 			
 			targetWidth = sourceWidth();
 			targetHeight = sourceHeight();
 		}
 		
-		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
+		final boolean postScale = (targetWidth != 0 || targetHeight != 0);
 		if (postScale) {
 			if (targetWidth > maxWidth) {
 				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, maxWidth);
@@ -329,13 +305,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 		}
 	}
 	
-	/**
-	 * Equivalent to <code>scale(width, height, true)</code>.
-	 */
-	public BitmapDecoder scale(int width, int height) {
-		return scale(width, height, true);
-	}
-
 	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
 		if (width < 0 || height < 0) {
 			throw new IllegalArgumentException("Both width and height should be positive.");

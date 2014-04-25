@@ -6,21 +6,38 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 
-public interface BitmapSource {
+public abstract class  BitmapSource {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
 	/**
 	 * @return The width of the source image.
 	 */
-	int sourceWidth();
+	public abstract int sourceWidth();
 	
 	/**
 	 * @return The height of the source image.
 	 */
-	int sourceHeight();
+	public abstract int sourceHeight();
 	
-	Bitmap bitmap();
+	/**
+	 * @return The estimated width of decoded image.
+	 */
+	public abstract int width();
 	
+	/**
+	 * @return The estimated height of decoded image.
+	 */
+	public abstract int height();
+	
+	public abstract Bitmap decode();
+	
+	/**
+	 * Equivalent to <code>scale(width, height, true)</code>.
+	 */
+	public BitmapSource scale(int width, int height) {
+		return scale(width, height, true);
+	}
+
 	/**
 	 * <p>Request the decoder to scale the image to the specific dimension while decoding.
 	 * This will automatically calculate and set {@link BitmapFactory.Options#inSampleSize} internally,
@@ -30,7 +47,7 @@ public interface BitmapSource {
 	 * @param height A desired height to be scaled to.
 	 * @param scaleFilter true if the image should be filtered.
 	 */
-	BitmapSource scale(int width, int height, boolean scaleFilter);
+	public abstract BitmapSource scale(int width, int height, boolean scaleFilter);
 	
 	/**
 	 * <p>Request the decoder to scale the image by the specific ratio while decoding.
@@ -41,23 +58,25 @@ public interface BitmapSource {
 	 * @param heightRatio Scale ratio of height.
 	 * @param scaleFilter true if the image should be filtered.
 	 */
-	BitmapSource scaleBy(double widthRatio, double heightRatio, boolean scaleFilter);
+	public abstract BitmapSource scaleBy(double widthRatio, double heightRatio, boolean scaleFilter);
 	
 	/**
 	 * <p>Request the decoder to crop the image while decoding.
 	 * Decoded image will be the same as an image which is cropped after decoding.</p>
 	 * <p>It uses {@link BitmapRegionDecoder} on API level 10 or higher, otherwise it uses built-in decoder.</p>
 	 */
-	BitmapSource region(int left, int top, int right, int bottom);
+	public abstract BitmapSource region(int left, int top, int right, int bottom);
 
+	public abstract BitmapSource maxSize(int width, int height);
+	
 	/**
 	 * Directly draw the image to canvas without any unnecessary scaling.
 	 */
-	void draw(Canvas cv, Rect rectDest);
+	public abstract void draw(Canvas cv, Rect rectDest);
 	
 	/**
 	 * Request the decoder to cancel the decoding job currently working.
 	 * This should be called by another thread.
 	 */
-	void cancel();
+	public abstract void cancel();
 }
