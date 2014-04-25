@@ -1,7 +1,5 @@
 package agu.bitmap.async;
 
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -10,25 +8,18 @@ public class NoEffect extends ImageTurningOutEffect {
 	private static NoEffect sInstance;
 
 	@Override
-	public void visit(ImageView iv, Bitmap bitmap) {
-		iv.setImageBitmap(bitmap);
+	public void visit(ImageView iv, Drawable d) {
+		iv.setImageDrawable(d);
 	}
 
 	@Override
-	public void visit(TextView tv, int place, int width, int height, Bitmap bitmap) {
+	public void visit(TextView tv, int index, int width, int height, Drawable d) {
+		setDrawableSize(d, width, height);
+
 		Drawable[] drawables = tv.getCompoundDrawables();
+		drawables[index] = d;
 		
-		Drawable left = ((place & TextViewBinder.PLACE_LEFT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[0]);
-		Drawable top = ((place & TextViewBinder.PLACE_TOP) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[1]);
-		Drawable right = ((place & TextViewBinder.PLACE_RIGHT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[2]);
-		Drawable bottom = ((place & TextViewBinder.PLACE_BOTTOM) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[3]);
-
-		setDrawableSize(left, width, height);
-		setDrawableSize(top, width, height);
-		setDrawableSize(right, width, height);
-		setDrawableSize(bottom, width, height);
-
-		tv.setCompoundDrawables(left, top, right, bottom);
+		tv.setCompoundDrawables(drawables[0], drawables[1], drawables[2], drawables[3]);
 	}
 	
 	public static synchronized NoEffect getInstance() {

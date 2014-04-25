@@ -2,7 +2,10 @@ package agu.bitmap.async;
 
 import java.lang.ref.WeakReference;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
 public class TextViewBinder extends BitmapBinder {
@@ -32,6 +35,19 @@ public class TextViewBinder extends BitmapBinder {
 		TextView tv = mTextView.get();
 		if (tv == null) return;
 		
-		getEffect().visit(tv, mPlace, mWidth, mHeight, doPostProcess(bitmap));
+		final Resources res = tv.getResources();
+		
+		bitmap = doPostProcess(bitmap);
+		
+		final ImageTurningOutEffect effect = getEffect();
+		
+		if ((mPlace & PLACE_LEFT) != 0) effect.visit(tv, 0, mWidth, mHeight, createDrawable(res, bitmap)); 
+		if ((mPlace & PLACE_TOP) != 0) effect.visit(tv, 1, mWidth, mHeight, createDrawable(res, bitmap)); 
+		if ((mPlace & PLACE_RIGHT) != 0) effect.visit(tv, 2, mWidth, mHeight, createDrawable(res, bitmap)); 
+		if ((mPlace & PLACE_BOTTOM) != 0) effect.visit(tv, 3, mWidth, mHeight, createDrawable(res, bitmap)); 
+	}
+	
+	private Drawable createDrawable(Resources res, Bitmap bitmap) {
+		return (bitmap != null ? new BitmapDrawable(res, bitmap) : getFailImage(res).mutate());
 	}
 }

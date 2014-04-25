@@ -152,17 +152,21 @@ public abstract class BitmapDecoder implements BitmapSource {
 				targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
 				targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
 			}
+			
+			if (targetWidth == 0 || targetHeight == 0) {
+				return null;
+			}
 		} else {
 			targetWidth = targetHeight = 0;
 		}
 		
 		// Limit the size.
 		
-		if (maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) {
-			if (targetWidth == 0 || targetHeight == 0) {
-				targetWidth = sourceWidth();
-				targetHeight = sourceHeight();
-			}
+		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) &&
+				(targetWidth == 0 || targetHeight == 0)) {
+			
+			targetWidth = sourceWidth();
+			targetHeight = sourceHeight();
 		}
 		
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
@@ -345,7 +349,7 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return this;
 	}
 	
-	public BitmapDecoder limit(int width, int height) {
+	public BitmapDecoder maxSize(int width, int height) {
 		if (width <= 0 || height <= 0) {
 			throw new IllegalArgumentException("Both width and height should be positive and non-zero.");
 		}

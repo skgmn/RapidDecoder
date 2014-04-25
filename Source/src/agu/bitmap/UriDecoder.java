@@ -55,14 +55,14 @@ class UriDecoder extends BitmapDecoder {
 			}
 			
 			mDecoder = new ResourceDecoder(res, id);
-		} else if (scheme.equals(ContentResolver.SCHEME_CONTENT) ||
-				scheme.equals(ContentResolver.SCHEME_FILE)) {
-			
+		} else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
 			try {
 				mDecoder = new StreamDecoder(context.getContentResolver().openInputStream(uri));
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e);
 			}
+		} else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
+			mDecoder = new FileDecoder(uri.getPath());
 		} else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
 			mDecoder = new PendingStreamDecoder(new StreamOpener() {
 				@Override

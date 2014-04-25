@@ -1,8 +1,6 @@
 package agu.bitmap.async;
 
 import agu.drawable.PlaceHolderDrawable;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.view.animation.AlphaAnimation;
@@ -27,53 +25,27 @@ public class FadeInEffect extends ImageTurningOutEffect {
 	}
 	
 	@Override
-	public void visit(ImageView iv, Bitmap bitmap) {
+	public void visit(ImageView iv, Drawable d) {
 		if (!mTransition) {
-			iv.setImageBitmap(bitmap);
+			iv.setImageDrawable(d);
 			
 			AlphaAnimation anim = new AlphaAnimation(0f, 1f);
 			anim.setDuration(mDuration);
 			iv.startAnimation(anim);
 		} else {
-			TransitionDrawable td = createFadingInDrawable(
-					iv.getDrawable(),
-					new BitmapDrawable(iv.getResources(), bitmap),
-					mDuration);
+			TransitionDrawable td = createFadingInDrawable(iv.getDrawable(), d, mDuration);
 			iv.setImageDrawable(td);
 		}
 	}
 
 	@Override
-	public void visit(TextView tv, int place, int width, int height, Bitmap bitmap) {
-		Drawable[] drawables = tv.getCompoundDrawables();
-		
-		Drawable left = ((place & TextViewBinder.PLACE_LEFT) != 0
-				? createFadingInDrawable(mTransition ? drawables[0] : null,
-						new BitmapDrawable(tv.getResources(), bitmap),
-						mDuration)
-				: drawables[0]);
-		Drawable top = ((place & TextViewBinder.PLACE_TOP) != 0
-				? createFadingInDrawable(mTransition ? drawables[1] : null,
-						new BitmapDrawable(tv.getResources(), bitmap),
-						mDuration)
-				: drawables[1]);
-		Drawable right = ((place & TextViewBinder.PLACE_RIGHT) != 0
-				? createFadingInDrawable(mTransition ? drawables[2] : null,
-						new BitmapDrawable(tv.getResources(), bitmap),
-						mDuration)
-				: drawables[2]);
-		Drawable bottom = ((place & TextViewBinder.PLACE_BOTTOM) != 0
-				? createFadingInDrawable(mTransition ? drawables[3] : null,
-						new BitmapDrawable(tv.getResources(), bitmap),
-						mDuration)
-				: drawables[3]);
+	public void visit(TextView tv, int index, int width, int height, Drawable d) {
+		setDrawableSize(d, width, height);
 
-		setDrawableSize(left, width, height);
-		setDrawableSize(top, width, height);
-		setDrawableSize(right, width, height);
-		setDrawableSize(bottom, width, height);
+		Drawable[] drawables = tv.getCompoundDrawables();
+		drawables[index] = createFadingInDrawable(drawables[index], d, mDuration);
 		
-		tv.setCompoundDrawables(left, top, right, bottom);
+		tv.setCompoundDrawables(drawables[0], drawables[1], drawables[2], drawables[3]);
 	}
 
 	protected static TransitionDrawable createFadingInDrawable(Drawable from, Drawable to, int duration) {
