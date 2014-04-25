@@ -36,6 +36,8 @@ public abstract class BitmapDecoder implements BitmapSource {
 	private int height;
 	private int targetWidth;
 	private int targetHeight;
+	private int maxWidth = Integer.MAX_VALUE;
+	private int maxHeight = Integer.MAX_VALUE;
 	private double ratioWidth = 1;
 	private double ratioHeight = 1;
 	private double densityRatio;
@@ -127,13 +129,11 @@ public abstract class BitmapDecoder implements BitmapSource {
 		opts.mCancel = false;
 		adjustedDensityRatio = 0;
 
-		//
+		// Setup target size.
 		
 		int targetWidth;
 		int targetHeight;
-		
-		// Setup target size.
-		
+
 		if (this.targetWidth != 0 || this.targetHeight != 0) {
 			targetWidth = this.targetWidth;
 			targetHeight = this.targetHeight;
@@ -156,9 +156,29 @@ public abstract class BitmapDecoder implements BitmapSource {
 			targetWidth = targetHeight = 0;
 		}
 		
-		// Setup sample size.
+		// Limit the size.
+		
+		if (maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) {
+			if (targetWidth == 0 || targetHeight == 0) {
+				targetWidth = sourceWidth();
+				targetHeight = sourceHeight();
+			}
+		}
 		
 		final boolean postScale = (targetWidth != 0 && targetHeight != 0);
+		if (postScale) {
+			if (targetWidth > maxWidth) {
+				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, maxWidth);
+				targetWidth = maxWidth;
+			}
+			if (targetHeight > maxHeight) {
+				targetWidth = AspectRatioCalculator.fitHeight(targetWidth, targetHeight, maxHeight);
+				targetHeight = maxHeight;
+			}
+		}
+		
+		// Setup sample size.
+		
 		if (postScale) {
 			opts.inScaled = false;
 			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
@@ -322,6 +342,16 @@ public abstract class BitmapDecoder implements BitmapSource {
 		ratioWidth = ratioHeight = 1;
 		
 		this.scaleFilter = scaleFilter;
+		return this;
+	}
+	
+	public BitmapDecoder limit(int width, int height) {
+		if (width <= 0 || height <= 0) {
+			throw new IllegalArgumentException("Both width and height should be positive and non-zero.");
+		}
+		
+		maxWidth = width;
+		maxHeight = height;
 		return this;
 	}
 
