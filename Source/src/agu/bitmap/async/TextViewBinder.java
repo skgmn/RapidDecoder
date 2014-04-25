@@ -3,8 +3,6 @@ package agu.bitmap.async;
 import java.lang.ref.WeakReference;
 
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.widget.TextView;
 
 public class TextViewBinder extends BitmapBinder {
@@ -25,12 +23,7 @@ public class TextViewBinder extends BitmapBinder {
 	public void onBitmapLoaded(Bitmap bitmap) {
 		TextView tv = mTextView.get();
 		if (tv == null) return;
-
-		Drawable left = ((mPlace & PLACE_LEFT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : null);
-		Drawable top = ((mPlace & PLACE_TOP) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : null);
-		Drawable right = ((mPlace & PLACE_RIGHT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : null);
-		Drawable bottom = ((mPlace & PLACE_BOTTOM) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : null);
 		
-		tv.setCompoundDrawablesWithIntrinsicBounds(left, top, right, bottom);
+		getEffect().visit(tv, mPlace, doPostProcess(bitmap));
 	}
 }

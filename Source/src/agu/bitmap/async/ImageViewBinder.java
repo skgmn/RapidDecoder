@@ -17,11 +17,11 @@ public class ImageViewBinder extends BitmapBinder {
 		ImageView iv = mImageView.get();
 		if (iv == null) return;
 		
-		iv.setImageBitmap(bitmap);
+		getEffect().visit(iv, doPostProcess(bitmap));
 	}
 	
 	@Override
-	public Object getSingletonKey() {
+	Object singletonKey() {
 		return mImageView.get();
 	}
 }

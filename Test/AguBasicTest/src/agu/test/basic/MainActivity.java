@@ -2,6 +2,7 @@ package agu.test.basic;
 
 import agu.bitmap.BitmapDecoder;
 import agu.bitmap.async.AsyncBitmapLoader;
+import agu.bitmap.async.FadeInEffect;
 import agu.bitmap.async.ImageViewBinder;
 import android.app.Activity;
 import android.net.Uri;
@@ -23,8 +24,9 @@ public class MainActivity extends Activity {
 		loader.load(
 				BitmapDecoder
 						.from(this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
-						.scaleBy(1 / 2f),
-				new ImageViewBinder(imageView));
+						.scaleBy(1f),
+				new ImageViewBinder(imageView)
+						.effect(new FadeInEffect(500)));
 
 //		new AsyncTask<Object, Object, Bitmap>() {
 //			@Override

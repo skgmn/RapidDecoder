@@ -5,10 +5,7 @@ import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 
-public class EmptyDrawable extends Drawable {
-	private int width = 0;
-	private int height = 0;
-
+public class PlaceHolderDrawable extends Drawable {
 	@Override
 	public void draw(Canvas arg0) {
 	}
@@ -28,19 +25,11 @@ public class EmptyDrawable extends Drawable {
 	
 	@Override
 	public int getIntrinsicWidth() {
-		return width;
+		return getBounds().width();
 	}
 	
 	@Override
 	public int getIntrinsicHeight() {
-		return height;
-	}
-	
-	public void setWidth(int width) {
-		this.width = width;
-	}
-	
-	public void setHeight(int height) {
-		this.height = height;
+		return getBounds().height();
 	}
 }

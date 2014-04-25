@@ -1,25 +1,35 @@
 package agu.bitmap.async;
 
+import android.graphics.Bitmap;
+
+
 public abstract class BitmapBinder implements AsyncBitmapCallback {
-	public interface OnCancelListener {
-		void onCancel();
-	}
+	private ImageTurningOutEffect mEffect;
+	private ImagePostProcessor mPostProcessor;
 	
-	private OnCancelListener mOnCancel;
-	
-	public Object getSingletonKey() {
+	Object singletonKey() {
 		return null;
 	}
 	
 	@Override
 	public void onBitmapCancelled() {
-		if (mOnCancel != null) {
-			mOnCancel.onCancel();
-		}
 	}
 	
-	public BitmapBinder setOnCancelListener(OnCancelListener listener) {
-		mOnCancel = listener;
+	protected ImageTurningOutEffect getEffect() {
+		return (mEffect == null ? NoEffect.getInstance() : mEffect);
+	}
+	
+	public BitmapBinder effect(ImageTurningOutEffect effect) {
+		mEffect = effect;
 		return this;
+	}
+	
+	public BitmapBinder postProcess(ImagePostProcessor processor) {
+		mPostProcessor = processor;
+		return this;
+	}
+	
+	protected Bitmap doPostProcess(Bitmap bitmap) {
+		return (mPostProcessor == null ? bitmap : mPostProcessor.postProcess(bitmap));
 	}
 }

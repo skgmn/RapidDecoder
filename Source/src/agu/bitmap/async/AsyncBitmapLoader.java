@@ -60,7 +60,7 @@ public class AsyncBitmapLoader {
 	}
 	
 	public void load(BitmapSource source, BitmapBinder binder) {
-		Object key = binder.getSingletonKey();
+		Object key = binder.singletonKey();
 		
 		if (key == null) {
 			load(source, binder);
