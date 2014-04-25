@@ -13,10 +13,18 @@ public class TextViewBinder extends BitmapBinder {
 	
 	private WeakReference<TextView> mTextView;
 	private int mPlace;
+	private int mWidth;
+	private int mHeight;
 	
 	public TextViewBinder(TextView tv, int place) {
+		this(tv, place, 0, 0);
+	}
+	
+	public TextViewBinder(TextView tv, int place, int width, int height) {
 		mTextView = new WeakReference<TextView>(tv);
 		mPlace = place;
+		mWidth = width;
+		mHeight = height;
 	}
 	
 	@Override
@@ -24,6 +32,6 @@ public class TextViewBinder extends BitmapBinder {
 		TextView tv = mTextView.get();
 		if (tv == null) return;
 		
-		getEffect().visit(tv, mPlace, doPostProcess(bitmap));
+		getEffect().visit(tv, mPlace, mWidth, mHeight, doPostProcess(bitmap));
 	}
 }

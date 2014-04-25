@@ -15,7 +15,7 @@ public class NoEffect extends ImageTurningOutEffect {
 	}
 
 	@Override
-	public void visit(TextView tv, int place, Bitmap bitmap) {
+	public void visit(TextView tv, int place, int width, int height, Bitmap bitmap) {
 		Drawable[] drawables = tv.getCompoundDrawables();
 		
 		Drawable left = ((place & TextViewBinder.PLACE_LEFT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[0]);
@@ -23,9 +23,14 @@ public class NoEffect extends ImageTurningOutEffect {
 		Drawable right = ((place & TextViewBinder.PLACE_RIGHT) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[2]);
 		Drawable bottom = ((place & TextViewBinder.PLACE_BOTTOM) != 0 ? new BitmapDrawable(tv.getResources(), bitmap) : drawables[3]);
 
+		setDrawableSize(left, width, height);
+		setDrawableSize(top, width, height);
+		setDrawableSize(right, width, height);
+		setDrawableSize(bottom, width, height);
+
 		tv.setCompoundDrawables(left, top, right, bottom);
 	}
-
+	
 	public static synchronized NoEffect getInstance() {
 		if (sInstance == null) {
 			sInstance = new NoEffect();

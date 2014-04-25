@@ -44,7 +44,7 @@ public class FadeInEffect extends ImageTurningOutEffect {
 	}
 
 	@Override
-	public void visit(TextView tv, int place, Bitmap bitmap) {
+	public void visit(TextView tv, int place, int width, int height, Bitmap bitmap) {
 		Drawable[] drawables = tv.getCompoundDrawables();
 		
 		Drawable left = ((place & TextViewBinder.PLACE_LEFT) != 0
@@ -68,6 +68,11 @@ public class FadeInEffect extends ImageTurningOutEffect {
 						mDuration)
 				: drawables[3]);
 
+		setDrawableSize(left, width, height);
+		setDrawableSize(top, width, height);
+		setDrawableSize(right, width, height);
+		setDrawableSize(bottom, width, height);
+		
 		tv.setCompoundDrawables(left, top, right, bottom);
 	}
 

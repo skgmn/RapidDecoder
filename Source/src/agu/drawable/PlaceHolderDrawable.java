@@ -6,6 +6,13 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 
 public class PlaceHolderDrawable extends Drawable {
+	public PlaceHolderDrawable() {
+	}
+	
+	public PlaceHolderDrawable(int width, int height) {
+		setBounds(0, 0, width, height);
+	}
+	
 	@Override
 	public void draw(Canvas arg0) {
 	}
