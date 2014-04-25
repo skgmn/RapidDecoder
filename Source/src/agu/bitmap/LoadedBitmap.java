@@ -2,6 +2,7 @@ package agu.bitmap;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import static agu.caching.ResourcePool.*;
@@ -29,12 +30,27 @@ public class LoadedBitmap implements BitmapSource {
 
 	@Override
 	public Bitmap bitmap() {
-		final Bitmap regionalBitmap = (region == null ? bitmap :
-			Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height()));
-		final Bitmap scaledBitmap = (targetWidth == 0 && targetHeight == 0 ? regionalBitmap :
-			Bitmap.createScaledBitmap(regionalBitmap, targetWidth, targetHeight, scaleFilter));
-		
-		return scaledBitmap;
+		if (region != null) {
+			if (targetWidth == 0 && targetHeight == 0) {
+				return Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height());
+			} else {
+				Matrix m = MATRIX.obtain();
+				m.setScale(
+						(float) targetWidth / region.width(),
+						(float) targetHeight / region.height());
+				
+				Bitmap b = Bitmap.createBitmap(bitmap,
+						region.left, region.top,
+						region.width(), region.height(),
+						m, scaleFilter);
+				
+				MATRIX.recycle(m);
+				
+				return b;
+			}
+		} else {
+			return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
+		}
 	}
 
 	@Override
@@ -90,5 +106,9 @@ public class LoadedBitmap implements BitmapSource {
 			RECT.recycle(region);
 		}
 		super.finalize();
+	}
+
+	@Override
+	public void cancel() {
 	}
 }

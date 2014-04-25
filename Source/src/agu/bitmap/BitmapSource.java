@@ -54,4 +54,10 @@ public interface BitmapSource {
 	 * Directly draw the image to canvas without any unnecessary scaling.
 	 */
 	void draw(Canvas cv, Rect rectDest);
+	
+	/**
+	 * Request the decoder to cancel the decoding job currently working.
+	 * This should be called by another thread.
+	 */
+	void cancel();
 }

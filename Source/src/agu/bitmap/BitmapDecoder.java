@@ -10,6 +10,7 @@ import java.io.InputStream;
 import agu.bitmap.decoder.AguDecoder;
 import agu.scaling.AspectRatioCalculator;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -19,6 +20,7 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Build;
 
 public abstract class BitmapDecoder implements BitmapSource {
@@ -481,6 +483,10 @@ public abstract class BitmapDecoder implements BitmapSource {
 	public static BitmapDecoder from(InputStream in) {
 		return new StreamDecoder(in);
 	}
+	
+	public static BitmapDecoder from(Context context, Uri uri) {
+		return new UriDecoder(context, uri);
+	}
 
 	protected Bitmap aguDecode() {
 		final InputStream in = getInputStream();
@@ -499,10 +505,6 @@ public abstract class BitmapDecoder implements BitmapSource {
 		return bitmap;
 	}
 	
-	/**
-	 * Request the decoder to cancel the decoding job currently working.
-	 * This should be called by another thread.
-	 */
 	public void cancel() {
 		opts.requestCancelDecode();
 	}
