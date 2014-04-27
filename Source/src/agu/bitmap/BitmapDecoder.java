@@ -26,8 +26,8 @@ import android.os.Build;
 public abstract class BitmapDecoder extends BitmapSource {
 	public static final int SIZE_AUTO = 0;
 
-	Options opts;
-	Rect region;
+	protected Options opts;
+	protected Rect region;
 	protected boolean mutable;
 	private boolean scaleFilter = true;
 	private boolean useBuiltInDecoder = false;
@@ -40,11 +40,23 @@ public abstract class BitmapDecoder extends BitmapSource {
 	private int maxHeight = Integer.MAX_VALUE;
 	private double ratioWidth = 1;
 	private double ratioHeight = 1;
-	private double densityRatio;
+	
 	private double adjustedDensityRatio;
+	private double adjustedWidthRatio;
+	private double adjustedHeightRatio;
 	
 	protected BitmapDecoder() {
 		opts = OPTIONS.obtain();
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			OPTIONS.recycle(opts);
+			RECT.recycle(region);
+		} finally {
+			super.finalize();
+		}
 	}
 	
 	protected void decodeBounds() {
@@ -54,12 +66,6 @@ public abstract class BitmapDecoder extends BitmapSource {
 
 		width = opts.outWidth;
 		height = opts.outHeight;
-
-		if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-			densityRatio = (double) opts.inTargetDensity / opts.inDensity;
-		} else {
-			densityRatio = 1;
-		}
 	}
 
 	@Override
@@ -107,8 +113,8 @@ public abstract class BitmapDecoder extends BitmapSource {
 
 		// Setup target size.
 		
-		int targetWidth;
-		int targetHeight;
+		int targetWidth = 0;
+		int targetHeight = 0;
 
 		if (this.targetWidth != 0 || this.targetHeight != 0) {
 			targetWidth = this.targetWidth;
@@ -123,30 +129,22 @@ public abstract class BitmapDecoder extends BitmapSource {
 			if (region != null) {
 				targetWidth = (int) (region.width() * ratioWidth);
 				targetHeight = (int) (region.height() * ratioHeight);
-			} else {
-				final double densityRatio = getDensityRatio();
-				targetWidth = (int) (sourceWidth() * densityRatio * ratioWidth);
-				targetHeight = (int) (sourceHeight() * densityRatio * ratioHeight);
 			}
-			
-			if (targetWidth == 0 || targetHeight == 0) {
-				return null;
-			}
-		} else {
-			targetWidth = targetHeight = 0;
 		}
 		
 		// Limit the size.
 		
 		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) &&
-				(targetWidth == 0 && targetHeight == 0)) {
+				(targetWidth == 0 || targetHeight == 0)) {
 			
 			targetWidth = sourceWidth();
 			targetHeight = sourceHeight();
 		}
 		
-		final boolean postScale = (targetWidth != 0 || targetHeight != 0);
-		if (postScale) {
+		final boolean postScaleTo = (targetWidth != 0 && targetHeight != 0);
+		final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
+		
+		if (postScaleTo) {
 			if (targetWidth > maxWidth) {
 				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, maxWidth);
 				targetWidth = maxWidth;
@@ -159,10 +157,13 @@ public abstract class BitmapDecoder extends BitmapSource {
 		
 		// Setup sample size.
 		
-		if (postScale) {
+		if (postScaleTo) {
 			opts.inScaled = false;
 			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 					targetWidth, targetHeight);
+		} else if (postScaleBy) {
+			opts.inScaled = false;
+			opts.inSampleSize = calculateInSampleSizeByRatio();
 		} else {
 			opts.inScaled = true;
 			opts.inSampleSize = 1;
@@ -175,7 +176,7 @@ public abstract class BitmapDecoder extends BitmapSource {
 		
 		// Scale it finally.
 		
-		if (postScale && (bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
+		if (postScaleTo && (bitmap.getWidth() != targetWidth || bitmap.getHeight() != targetHeight)) {
 			bitmap.setDensity(Bitmap.DENSITY_NONE);
 			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
 			
@@ -190,6 +191,20 @@ public abstract class BitmapDecoder extends BitmapSource {
 		}
 	}
 	
+	private int calculateInSampleSizeByRatio() {
+		adjustedWidthRatio = getDensityRatio() * ratioWidth;
+		adjustedHeightRatio = getDensityRatio() * ratioHeight;
+		
+		int sampleSize = 1;
+		while (adjustedWidthRatio <= 0.5 && adjustedHeightRatio <= 0.5) {
+			sampleSize *= 2;
+			adjustedWidthRatio *= 2;
+			adjustedHeightRatio *= 2;
+		}
+		
+		return sampleSize;
+	}
+
 	private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
 		opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 				targetWidth, targetHeight);
@@ -200,7 +215,6 @@ public abstract class BitmapDecoder extends BitmapSource {
 	
 	/**
 	 * Simulate native decoding.
-	 * @param ctx
 	 * @return
 	 */
 	@SuppressLint("NewApi")
@@ -545,11 +559,8 @@ public abstract class BitmapDecoder extends BitmapSource {
 		return this;
 	}
 
-	private double getDensityRatio() {
-		if (densityRatio == 0) {
-			decodeBounds();
-		}
-		return densityRatio;
+	protected double getDensityRatio() {
+		return 1;
 	}
 	
 	/**

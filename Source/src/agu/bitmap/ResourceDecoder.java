@@ -14,6 +14,8 @@ import android.os.Build;
 class ResourceDecoder extends BitmapDecoder {
 	Resources res;
 	int id;
+	
+	private double densityRatio;
 
 	public ResourceDecoder(Resources res, int id) {
 		this.res = res;
@@ -25,13 +27,6 @@ class ResourceDecoder extends BitmapDecoder {
 		return BitmapFactory.decodeResource(res, id, opts);
 	}
 	
-	@Override
-	public Bitmap decode() {
-		// Ensure that the native decoder fills in inDensity and inTargetDensity.
-		decodeBounds();
-		return super.decode();
-	}
-
 	@Override
 	protected InputStream getInputStream() {
 		return res.openRawResource(id);
@@ -45,5 +40,19 @@ class ResourceDecoder extends BitmapDecoder {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	@Override
+	protected double getDensityRatio() {
+		if (densityRatio == 0) {
+			decodeBounds();
+
+			if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
+				densityRatio = (double) opts.inTargetDensity / opts.inDensity;
+			} else {
+				densityRatio = 1;
+			}
+		}
+		return densityRatio;
 	}
 }
