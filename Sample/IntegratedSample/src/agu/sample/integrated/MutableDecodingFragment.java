@@ -28,7 +28,7 @@ public class MutableDecodingFragment extends Fragment {
 		int imageHeight = getResources().getDimensionPixelOffset(R.dimen.scaled_decoding_height);
 		
 		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.amanda)
-				.scale(imageWidth, imageHeight) .mutable().decode();
+				.scale(imageWidth, imageHeight).mutable().decode();
 		Canvas cv = new Canvas(bitmap);
 		
 		int ribbonLeft = getResources().getDimensionPixelOffset(R.dimen.ribbon_x);

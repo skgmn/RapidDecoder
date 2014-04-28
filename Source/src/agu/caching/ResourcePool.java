@@ -262,6 +262,8 @@ public abstract class ResourcePool<T> {
 				return newInstance();
 			} else {
 				final T obj = (T) stack[--top];
+				stack[top] = null;
+				
 				if (reset) onReset(obj);
 				return obj;
 			}

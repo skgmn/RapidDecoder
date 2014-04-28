@@ -32,13 +32,6 @@ public abstract class  BitmapSource {
 	public abstract Bitmap decode();
 	
 	/**
-	 * Equivalent to <code>scale(width, height, true)</code>.
-	 */
-	public BitmapSource scale(int width, int height) {
-		return scale(width, height, true);
-	}
-
-	/**
 	 * <p>Request the decoder to scale the image to the specific dimension while decoding.
 	 * This will automatically calculate and set {@link BitmapFactory.Options#inSampleSize} internally,
 	 * so you don't need to be concerned about it.</p>
@@ -58,7 +51,7 @@ public abstract class  BitmapSource {
 	 * @param heightRatio Scale ratio of height.
 	 * @param scaleFilter true if the image should be filtered.
 	 */
-	public abstract BitmapSource scaleBy(double widthRatio, double heightRatio, boolean scaleFilter);
+	public abstract BitmapSource scaleBy(float widthRatio, float heightRatio, boolean scaleFilter);
 	
 	/**
 	 * <p>Request the decoder to crop the image while decoding.

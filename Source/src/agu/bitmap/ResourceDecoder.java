@@ -15,7 +15,7 @@ class ResourceDecoder extends BitmapDecoder {
 	Resources res;
 	int id;
 	
-	private double densityRatio;
+	private float densityRatio;
 
 	public ResourceDecoder(Resources res, int id) {
 		this.res = res;
@@ -43,12 +43,12 @@ class ResourceDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected double getDensityRatio() {
+	protected float getDensityRatio() {
 		if (densityRatio == 0) {
 			decodeBounds();
 
 			if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-				densityRatio = (double) opts.inTargetDensity / opts.inDensity;
+				densityRatio = (float) opts.inTargetDensity / opts.inDensity;
 			} else {
 				densityRatio = 1;
 			}

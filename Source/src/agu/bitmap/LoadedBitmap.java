@@ -79,7 +79,7 @@ public class LoadedBitmap extends BitmapSource {
 	}
 
 	@Override
-	public BitmapSource scaleBy(double widthRatio, double heightRatio,
+	public BitmapSource scaleBy(float widthRatio, float heightRatio,
 			boolean scaleFilter) {
 		
 		if (widthRatio <= 0 || heightRatio <= 0) {

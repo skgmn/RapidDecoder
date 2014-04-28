@@ -87,8 +87,8 @@ jobject JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeDecode(JNIEnv* env, jc
     int h = bottom - top;
 
     jint sample_size = env->GetIntField(opts, Options_inSampleSize);
-    int sampled_width = (sample_size > 1 ? w / sample_size : w);
-    int sampled_height = (sample_size > 1 ? h / sample_size : h);
+    int sampled_width = (sample_size > 1 ? (w + sample_size - 1) / sample_size : w);
+    int sampled_height = (sample_size > 1 ? (h + sample_size - 1) / sample_size : h);
 
     jobject bitmap = env->CallStaticObjectMethod(Bitmap, Bitmap_createBitmap1, sampled_width, sampled_height, config);
 
@@ -111,7 +111,7 @@ jobject JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeDecode(JNIEnv* env, jc
 
     if (sample_size > 1)
     {
-        sampler = new opaque_sampler(sampled_width, sample_size, filter, format);
+        sampler = new opaque_sampler(w, sampled_width, sample_size, filter, format);
         decoder->set_pixel_format(RGB888);
     }
     else
@@ -148,7 +148,7 @@ jobject JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeDecode(JNIEnv* env, jc
 
         if (sample_size > 1)
         {
-            if (sampler->sample((const uint8*)buffer, 0, w, pixels))
+            if (sampler->sample((const uint8*)buffer, 0, pixels))
             {
                 pixels += info.stride;
             }
@@ -162,6 +162,7 @@ jobject JNICALL Java_agu_bitmap_decoder_JpegDecoder_nativeDecode(JNIEnv* env, jc
 
     if (sample_size > 1)
     {
+        sampler->finish(pixels);
         delete sampler;
     }
     AndroidBitmap_unlockPixels(env, bitmap);
@@ -246,8 +247,8 @@ jobject JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeDecode(JNIEnv* env, jcl
     int h = bottom - top;
 
     jint sample_size = env->GetIntField(opts, Options_inSampleSize);
-    int sampled_width = (sample_size > 1 ? w / sample_size : w);
-    int sampled_height = (sample_size > 1 ? h / sample_size : h);
+    int sampled_width = (sample_size > 1 ? (w + sample_size - 1) / sample_size : w);
+    int sampled_height = (sample_size > 1 ? (h + sample_size - 1) / sample_size : h);
 
     jobject bitmap = env->CallStaticObjectMethod(Bitmap, Bitmap_createBitmap1, sampled_width, sampled_height, config);
 
@@ -274,13 +275,13 @@ jobject JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeDecode(JNIEnv* env, jcl
         if (decoder->has_alpha())
         {
             scanline_buffer = new unsigned char [w * 4];
-            smplr = new sampler(sampled_width, sample_size, filter, format);
+            smplr = new sampler(w, sampled_width, sample_size, filter, format);
             decoder->set_pixel_format(RGBA8888);
         }
         else
         {
             scanline_buffer = new unsigned char [w * 3];
-            smplr = new opaque_sampler(sampled_width, sample_size, filter, format);
+            smplr = new opaque_sampler(w, sampled_width, sample_size, filter, format);
             decoder->set_pixel_format(RGB888);
         }
     }
@@ -314,7 +315,7 @@ jobject JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeDecode(JNIEnv* env, jcl
 
         if (sample_size > 1)
         {
-            if (smplr->sample(scanline_buffer, 0, w, pixels))
+            if (smplr->sample(scanline_buffer, 0, pixels))
             {
                 pixels += info.stride;
             }
@@ -327,6 +328,7 @@ jobject JNICALL Java_agu_bitmap_decoder_PngDecoder_nativeDecode(JNIEnv* env, jcl
 
     if (sample_size > 1)
     {
+        smplr->finish(pixels);
         delete[] scanline_buffer;
         delete smplr;
     }

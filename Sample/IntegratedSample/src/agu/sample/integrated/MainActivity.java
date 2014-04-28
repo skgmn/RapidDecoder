@@ -14,7 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 public class MainActivity extends FragmentActivity {
-	public static final boolean TEST_BUILT_IN_DECODER = false;
+	public static final boolean TEST_BUILT_IN_DECODER = true;
 	
 	private DrawerLayout drawer;
 	private ListView listDrawerMenu;
