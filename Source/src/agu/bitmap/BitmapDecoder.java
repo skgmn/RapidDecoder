@@ -40,6 +40,8 @@ public abstract class BitmapDecoder extends BitmapSource {
 	private int targetHeight;
 	private int maxWidth = Integer.MAX_VALUE;
 	private int maxHeight = Integer.MAX_VALUE;
+	private int minWidth = 0;
+	private int minHeight = 0;
 	private float ratioWidth = 1;
 	private float ratioHeight = 1;
 	
@@ -134,7 +136,8 @@ public abstract class BitmapDecoder extends BitmapSource {
 		
 		// Limit the size.
 		
-		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE) &&
+		if ((maxWidth != Integer.MAX_VALUE || maxHeight != Integer.MAX_VALUE ||
+				minWidth > 0 || minHeight > 0) &&
 				(targetWidth == 0 || targetHeight == 0)) {
 			
 			targetWidth = sourceWidth();
@@ -148,10 +151,23 @@ public abstract class BitmapDecoder extends BitmapSource {
 			if (targetWidth > maxWidth) {
 				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, maxWidth);
 				targetWidth = maxWidth;
+			} else if (targetWidth < minWidth) {
+				targetHeight = AspectRatioCalculator.fitWidth(targetWidth, targetHeight, minWidth);
+				targetWidth = minWidth;
 			}
+			
 			if (targetHeight > maxHeight) {
 				targetWidth = AspectRatioCalculator.fitHeight(targetWidth, targetHeight, maxHeight);
 				targetHeight = maxHeight;
+			} else if (targetHeight < minHeight) {
+				targetWidth = AspectRatioCalculator.fitHeight(targetWidth, targetHeight, minHeight);
+				targetHeight = minHeight;
+			}
+			
+			if (!(targetWidth >= minWidth && targetWidth <= maxWidth &&
+					targetHeight >= minHeight && targetHeight <= maxHeight)) {
+				
+				throw new IllegalArgumentException("Illegal size limit.");
 			}
 		}
 		
@@ -201,8 +217,10 @@ public abstract class BitmapDecoder extends BitmapSource {
 	}
 	
 	private int calculateInSampleSizeByRatio() {
-		adjustedWidthRatio = getDensityRatio() * ratioWidth;
-		adjustedHeightRatio = getDensityRatio() * ratioHeight;
+		final float densityRatio = getDensityRatio();
+		
+		adjustedWidthRatio = densityRatio * ratioWidth;
+		adjustedHeightRatio = densityRatio * ratioHeight;
 		
 		int sampleSize = 1;
 		while (adjustedWidthRatio <= 0.5 && adjustedHeightRatio <= 0.5) {
@@ -358,6 +376,16 @@ public abstract class BitmapDecoder extends BitmapSource {
 		return this;
 	}
 
+	public BitmapDecoder minSize(int width, int height) {
+		if (width <= 0 || height <= 0) {
+			throw new IllegalArgumentException("Both width and height should be positive and non-zero.");
+		}
+		
+		minWidth = width;
+		minHeight = height;
+		return this;
+	}
+	
 	/**
 	 * Equivalent to <code>scaleBy(ratio, ratio, true)</code>.
 	 */

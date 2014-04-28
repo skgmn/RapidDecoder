@@ -24,4 +24,11 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
 			return value.getWidth() * value.getHeight() * bytesPerPixel;
 		}
 	}
+	
+	@Override
+	protected void entryRemoved(boolean evicted, K key, Bitmap oldValue,
+			Bitmap newValue) {
+		
+		oldValue.recycle();
+	}
 }
