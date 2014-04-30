@@ -6,8 +6,15 @@ import android.graphics.Bitmap.Config;
 import android.os.Build;
 
 public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
+	private boolean mAutoRecycle;
+	
 	public BitmapLruCache(int maxSize) {
+		this(maxSize, false);
+	}
+
+	public BitmapLruCache(int maxSize, boolean autoRecycle) {
 		super(maxSize);
+		mAutoRecycle = autoRecycle;
 	}
 	
 	@SuppressLint("NewApi")
@@ -28,7 +35,9 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
 	@Override
 	protected void entryRemoved(boolean evicted, K key, Bitmap oldValue,
 			Bitmap newValue) {
-		
-		oldValue.recycle();
+
+		if (mAutoRecycle) {
+			oldValue.recycle();
+		}
 	}
 }

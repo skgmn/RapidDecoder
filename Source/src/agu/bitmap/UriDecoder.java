@@ -22,13 +22,22 @@ class UriDecoder extends BitmapDecoder {
 	private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
 	private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
 	private static final String MESSAGE_UNSUPPORTED_SCHEME = "Unsupported scheme: %s";
+	private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context. Use BitmapDecoder.from(Uri, Context) instead.";
 	
 	private BitmapDecoder mDecoder;
+
+	public UriDecoder(Uri uri) {
+		this(null, uri);
+	}
 	
 	public UriDecoder(Context context, final Uri uri) {
 		String scheme = uri.getScheme();
 		
 		if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
+			if (context == null) {
+				throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+			}
+			
 			List<String> segments = uri.getPathSegments();
 			if (segments.size() != 2 || !segments.get(0).equals("drawable")) {
 				throw new IllegalArgumentException(String.format(MESSAGE_INVALID_URI, uri));
@@ -56,6 +65,10 @@ class UriDecoder extends BitmapDecoder {
 			
 			mDecoder = new ResourceDecoder(res, id);
 		} else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
+			if (context == null) {
+				throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+			}
+			
 			try {
 				mDecoder = new StreamDecoder(context.getContentResolver().openInputStream(uri));
 			} catch (FileNotFoundException e) {

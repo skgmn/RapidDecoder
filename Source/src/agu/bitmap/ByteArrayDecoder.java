@@ -42,4 +42,10 @@ class ByteArrayDecoder extends BitmapDecoder {
 			return null;
 		}
 	}
+
+	@Override
+	protected BitmapDecoder clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -25,7 +25,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 
-public abstract class BitmapDecoder extends BitmapSource {
+public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
 	public static final int SIZE_AUTO = 0;
 
 	protected Options opts;
@@ -51,6 +51,26 @@ public abstract class BitmapDecoder extends BitmapSource {
 	
 	protected BitmapDecoder() {
 		opts = OPTIONS.obtain();
+	}
+	
+	protected BitmapDecoder(BitmapDecoder other) {
+		opts = OPTIONS.obtain();
+		
+		region = new Rect(other.region);
+		mutable = other.mutable;
+		scaleFilter = other.scaleFilter;
+		useBuiltInDecoder = other.useBuiltInDecoder;
+		
+		width = other.width;
+		height = other.height;
+		targetWidth = other.targetWidth;
+		targetHeight = other.targetHeight;
+		maxWidth = other.maxWidth;
+		maxHeight = other.maxHeight;
+		minWidth = other.minWidth;
+		minHeight = other.minHeight;
+		ratioWidth = other.ratioWidth;
+		ratioHeight = other.ratioHeight;
 	}
 	
 	@Override
@@ -187,6 +207,8 @@ public abstract class BitmapDecoder extends BitmapSource {
 		
 		// Execute actual decoding
 		
+		if (opts.mCancel) return null;
+		
 		final Bitmap bitmap = executeDecoding();
 		if (bitmap == null) return null;
 		
@@ -245,7 +267,7 @@ public abstract class BitmapDecoder extends BitmapSource {
 	 * @return
 	 */
 	@SuppressLint("NewApi")
-	private Bitmap executeDecoding() {
+	protected Bitmap executeDecoding() {
 		// Adjust region.
 		
 		final Rect region;
@@ -302,7 +324,7 @@ public abstract class BitmapDecoder extends BitmapSource {
 		
 		// Scale corresponds to the desired density.
 		
-		if (bitmap == null) return null;
+		if (bitmap == null || opts.mCancel) return null;
 		
 		if (opts.inScaled) {
 			final int newWidth;
@@ -533,8 +555,12 @@ public abstract class BitmapDecoder extends BitmapSource {
 	public static BitmapDecoder from(InputStream in) {
 		return new StreamDecoder(in);
 	}
+
+	public static BitmapDecoder from(Uri uri) {
+		return new UriDecoder(uri);
+	}
 	
-	public static BitmapDecoder from(Context context, Uri uri) {
+	public static BitmapDecoder from(Uri uri, Context context) {
 		return new UriDecoder(context, uri);
 	}
 
@@ -552,7 +578,7 @@ public abstract class BitmapDecoder extends BitmapSource {
 		final Bitmap bitmap = d.decode(opts);
 		d.close();
 		
-		return bitmap;
+		return mutable ? bitmap : Bitmap.createBitmap(bitmap);
 	}
 	
 	public void cancel() {
@@ -625,4 +651,7 @@ public abstract class BitmapDecoder extends BitmapSource {
 			}
 		}
 	}
+
+	@Override
+	protected abstract BitmapDecoder clone() throws CloneNotSupportedException;
 }
