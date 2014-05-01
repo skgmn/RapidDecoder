@@ -2,6 +2,7 @@ package agu.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +21,11 @@ class StreamDecoder extends BitmapDecoder {
 		} else {
 			mIn = new TwoPhaseBufferedInputStream(is);
 		}
+	}
+	
+	protected StreamDecoder(StreamDecoder other) {
+		super(other);
+		mIn = other.mIn;
 	}
 	
 	@Override
@@ -48,5 +54,10 @@ class StreamDecoder extends BitmapDecoder {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	@Override
+	protected BitmapDecoder clone() throws CloneNotSupportedException {
+		return new StreamDecoder(this);
 	}
 }

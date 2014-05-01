@@ -4,6 +4,7 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,11 @@ class FileDescriptorDecoder extends BitmapDecoder {
 	
 	public FileDescriptorDecoder(FileDescriptor fd) {
 		this.fd = fd;
+	}
+	
+	protected FileDescriptorDecoder(FileDescriptorDecoder other) {
+		super(other);
+		fd = other.fd;
 	}
 
 	@Override
@@ -38,4 +44,8 @@ class FileDescriptorDecoder extends BitmapDecoder {
 		}
 	}
 
+	@Override
+	protected BitmapDecoder clone() throws CloneNotSupportedException {
+		return new FileDescriptorDecoder(this);
+	}
 }

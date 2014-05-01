@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,11 @@ class FileDecoder extends BitmapDecoder {
 	
 	public FileDecoder(String pathName) {
 		this.pathName = pathName;
+	}
+	
+	protected FileDecoder(FileDecoder other) {
+		super(other);
+		pathName = other.pathName;
 	}
 	
 	@Override
@@ -40,5 +46,10 @@ class FileDecoder extends BitmapDecoder {
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	@Override
+	protected BitmapDecoder clone() throws CloneNotSupportedException {
+		return new FileDecoder(this);
 	}
 }

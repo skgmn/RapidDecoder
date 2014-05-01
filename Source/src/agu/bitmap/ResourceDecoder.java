@@ -21,6 +21,13 @@ class ResourceDecoder extends BitmapDecoder {
 		this.res = res;
 		this.id = id;
 	}
+	
+	protected ResourceDecoder(ResourceDecoder other) {
+		super(other);
+		res = other.res;
+		id = other.id;
+		densityRatio = other.densityRatio;
+	}
 
 	@Override
 	protected Bitmap decode(Options opts) {
@@ -54,5 +61,10 @@ class ResourceDecoder extends BitmapDecoder {
 			}
 		}
 		return densityRatio;
+	}
+
+	@Override
+	protected BitmapDecoder clone() throws CloneNotSupportedException {
+		return new ResourceDecoder(this);
 	}
 }

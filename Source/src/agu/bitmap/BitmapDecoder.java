@@ -1,22 +1,31 @@
 package agu.bitmap;
 
+import static agu.caching.ResourcePool.MATRIX;
 import static agu.caching.ResourcePool.OPTIONS;
 import static agu.caching.ResourcePool.PAINT;
 import static agu.caching.ResourcePool.RECT;
-import static agu.caching.ResourcePool.MATRIX;
 
 import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
 
 import agu.bitmap.decoder.AguDecoder;
 import agu.scaling.AspectRatioCalculator;
+import agu.util.Cloner;
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -26,6 +35,12 @@ import android.net.Uri;
 import android.os.Build;
 
 public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
+	private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
+	private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
+	private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
+	private static final String MESSAGE_UNSUPPORTED_SCHEME = "Unsupported scheme: %s";
+	private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context. Use BitmapDecoder.from(Uri, Context) instead.";
+	
 	public static final int SIZE_AUTO = 0;
 
 	protected Options opts;
@@ -54,7 +69,7 @@ public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
 	}
 	
 	protected BitmapDecoder(BitmapDecoder other) {
-		opts = OPTIONS.obtain();
+		opts = Cloner.clone(other.opts);
 		
 		region = new Rect(other.region);
 		mutable = other.mutable;
@@ -557,11 +572,71 @@ public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
 	}
 
 	public static BitmapDecoder from(Uri uri) {
-		return new UriDecoder(uri);
+		return from(uri, null);
 	}
 	
-	public static BitmapDecoder from(Uri uri, Context context) {
-		return new UriDecoder(context, uri);
+	public static BitmapDecoder from(final Uri uri, Context context) {
+		String scheme = uri.getScheme();
+		
+		if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
+			if (context == null) {
+				throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+			}
+			
+			List<String> segments = uri.getPathSegments();
+			if (segments.size() != 2 || !segments.get(0).equals("drawable")) {
+				throw new IllegalArgumentException(String.format(MESSAGE_INVALID_URI, uri));
+			}
+			
+			Resources res;
+			
+			String packageName = uri.getAuthority();
+			if (context.getPackageName().equals(packageName)) {
+				res = context.getResources();
+			} else {
+				PackageManager pm = context.getPackageManager();
+				try {
+					res = pm.getResourcesForApplication(packageName);
+				} catch (NameNotFoundException e) {
+					throw new IllegalArgumentException(String.format(MESSAGE_PACKAGE_NOT_FOUND, packageName));
+				}
+			}
+			
+			String resName = segments.get(1);
+			int id = res.getIdentifier(resName, "drawable", packageName);
+			if (id == 0) {
+				throw new IllegalArgumentException(String.format(MESSAGE_RESOURCE_NOT_FOUND, resName));
+			}
+			
+			return new ResourceDecoder(res, id);
+		} else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
+			if (context == null) {
+				throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+			}
+			
+			try {
+				return new StreamDecoder(context.getContentResolver().openInputStream(uri));
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		} else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
+			return new FileDecoder(uri.getPath());
+		} else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
+			return new StreamDecoder(new LazyInputStream(new StreamOpener() {
+				@Override
+				public InputStream openInputStream() {
+					try {
+						return new URL(uri.toString()).openStream();
+					} catch (MalformedURLException e) {
+						throw new IllegalArgumentException(e);
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}					
+				}
+			}));
+		} else {
+			throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
+		}
 	}
 
 	protected Bitmap aguDecode() {
