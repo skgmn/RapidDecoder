@@ -57,7 +57,7 @@ class StreamDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected BitmapDecoder clone() throws CloneNotSupportedException {
+	public BitmapDecoder clone() {
 		return new StreamDecoder(this);
 	}
 }

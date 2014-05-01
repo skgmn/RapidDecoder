@@ -64,7 +64,7 @@ class ResourceDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected BitmapDecoder clone() throws CloneNotSupportedException {
+	public BitmapDecoder clone() {
 		return new ResourceDecoder(this);
 	}
 }

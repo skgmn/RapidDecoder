@@ -6,7 +6,7 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 
-public abstract class  BitmapSource {
+public abstract class  BitmapSource implements Cloneable {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
 	/**
@@ -72,4 +72,6 @@ public abstract class  BitmapSource {
 	 * This should be called by another thread.
 	 */
 	public abstract void cancel();
+	
+	public abstract BitmapSource clone();
 }

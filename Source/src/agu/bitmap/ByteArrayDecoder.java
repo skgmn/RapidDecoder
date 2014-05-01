@@ -21,6 +21,13 @@ class ByteArrayDecoder extends BitmapDecoder {
 		this.offset = offset;
 		this.length = length;
 	}
+	
+	protected ByteArrayDecoder(ByteArrayDecoder other) {
+		super(other);
+		data = other.data;
+		offset = other.offset;
+		length = other.length;
+	}
 
 	@SuppressLint("NewApi")
 	@Override
@@ -44,8 +51,7 @@ class ByteArrayDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	protected BitmapDecoder clone() throws CloneNotSupportedException {
-		// TODO Auto-generated method stub
-		return null;
+	public BitmapDecoder clone() {
+		return new ByteArrayDecoder(this);
 	}
 }

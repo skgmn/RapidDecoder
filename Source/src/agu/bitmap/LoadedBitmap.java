@@ -178,4 +178,10 @@ public class LoadedBitmap extends BitmapSource {
 			}
 		}
 	}
+
+	@Override
+	public BitmapSource clone() {
+		// TODO: Implement this
+		return this;
+	}
 }

@@ -34,7 +34,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 
-public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
+public abstract class BitmapDecoder extends BitmapSource {
 	private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
 	private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
 	private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
@@ -728,5 +728,5 @@ public abstract class BitmapDecoder extends BitmapSource implements Cloneable {
 	}
 
 	@Override
-	protected abstract BitmapDecoder clone() throws CloneNotSupportedException;
+	public abstract BitmapDecoder clone();
 }
