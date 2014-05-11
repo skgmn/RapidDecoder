@@ -49,7 +49,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	protected ExternalBitmapDecoder(ExternalBitmapDecoder other) {
 		opts = Cloner.clone(other.opts);
 		
-		region = new Rect(other.region);
+		region = (other.region == null ? null : new Rect(other.region));
 		mutable = other.mutable;
 		scaleFilter = other.scaleFilter;
 		useBuiltInDecoder = other.useBuiltInDecoder;
@@ -492,5 +492,10 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 				}
 			}
 		}
+	}
+	
+	@Override
+	public Rect region() {
+		return region;
 	}
 }

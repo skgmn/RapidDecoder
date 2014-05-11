@@ -227,4 +227,9 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 		this.mutable = mutable;
 		return this;
 	}
+	
+	@Override
+	public Rect region() {
+		return region;
+	} 
 }

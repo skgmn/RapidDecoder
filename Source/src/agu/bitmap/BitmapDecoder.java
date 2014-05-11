@@ -84,6 +84,8 @@ public abstract class  BitmapDecoder implements Cloneable {
 	 */
 	public abstract BitmapDecoder region(int left, int top, int right, int bottom);
 	
+	public abstract Rect region();
+	
 	/**
 	 * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
 	 */
@@ -178,6 +180,16 @@ public abstract class  BitmapDecoder implements Cloneable {
 	 */
 	public BitmapDecoder scale(int width, int height) {
 		return scale(width, height, true);
+	}
+	
+	public BitmapDecoder region(int width, int height) {
+		final Rect prevRegion = region();
+		if (prevRegion == null) {
+			return region(0, 0, width, height);
+		} else {
+			return region(prevRegion.left, prevRegion.top,
+					prevRegion.left + width, prevRegion.top + height);
+		}
 	}
 	
 	//
