@@ -3,7 +3,7 @@ package agu.bitmap.async;
 import java.util.ArrayList;
 import java.util.WeakHashMap;
 
-import agu.bitmap.BitmapSource;
+import agu.bitmap.BitmapDecoder;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
@@ -24,7 +24,7 @@ public class AsyncBitmapLoader {
 	public AsyncBitmapLoader() {
 	}
 	
-	public void load(BitmapSource source, AsyncBitmapCallback callback) {
+	public void load(BitmapDecoder source, AsyncBitmapCallback callback) {
 		if (mLoaders == null) {
 			mLoaders = new ArrayList<AsyncBitmapLoader.Loader>();
 		}
@@ -36,7 +36,7 @@ public class AsyncBitmapLoader {
 		loader.execute();
 	}
 	
-	public void load(Object singletonKey, BitmapSource source, AsyncBitmapCallback callback) {
+	public void load(Object singletonKey, BitmapDecoder source, AsyncBitmapCallback callback) {
 		if (mSingletonLoaders == null) {
 			mSingletonLoaders = new WeakHashMap<Object, AsyncBitmapLoader.Loader>();
 		} else {
@@ -59,7 +59,7 @@ public class AsyncBitmapLoader {
 		}
 	}
 	
-	public void load(BitmapSource source, BitmapBinder binder) {
+	public void load(BitmapDecoder source, BitmapBinder binder) {
 		Object key = binder.singletonKey();
 		
 		if (key == null) {
@@ -101,11 +101,11 @@ public class AsyncBitmapLoader {
 	}
 	
 	private class Loader extends AsyncTask<Object, Object, Bitmap> {
-		private BitmapSource mBitmapSource;
+		private BitmapDecoder mBitmapSource;
 		private AsyncBitmapCallback mCallback;
 		private Object mKey;
 		
-		public Loader(Object key, BitmapSource source, AsyncBitmapCallback callback) {
+		public Loader(Object key, BitmapDecoder source, AsyncBitmapCallback callback) {
 			mKey = key;
 			mBitmapSource = source;
 			mCallback = callback;

@@ -11,6 +11,10 @@ class LazyInputStream extends InputStream {
 		mOpener = opener;
 	}
 
+	public StreamOpener getStreamOpener() {
+		return mOpener;
+	}
+
 	@Override
 	public int read() throws IOException {
 		return getStream().read();

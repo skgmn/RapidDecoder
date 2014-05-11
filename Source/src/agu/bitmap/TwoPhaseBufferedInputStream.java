@@ -18,6 +18,10 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 		mIn = in;
 	}
 	
+	public InputStream getStream() {
+		return mIn;
+	}
+	
 	@Override
 	public void mark(int readlimit) {
 		mMarkOffset = mBufferOffset;

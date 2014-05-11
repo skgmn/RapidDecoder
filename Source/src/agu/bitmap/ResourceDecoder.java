@@ -11,7 +11,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
-class ResourceDecoder extends BitmapDecoder {
+class ResourceDecoder extends ExternalBitmapDecoder {
 	Resources res;
 	int id;
 	
@@ -64,7 +64,7 @@ class ResourceDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	public BitmapDecoder clone() {
+	public ExternalBitmapDecoder clone() {
 		return new ResourceDecoder(this);
 	}
 }

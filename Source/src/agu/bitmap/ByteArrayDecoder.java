@@ -11,7 +11,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
-class ByteArrayDecoder extends BitmapDecoder {
+class ByteArrayDecoder extends ExternalBitmapDecoder {
 	private byte[] data;
 	private int offset;
 	private int length;
@@ -51,7 +51,7 @@ class ByteArrayDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	public BitmapDecoder clone() {
+	public ExternalBitmapDecoder clone() {
 		return new ByteArrayDecoder(this);
 	}
 }

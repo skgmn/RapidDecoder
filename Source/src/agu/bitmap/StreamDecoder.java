@@ -10,7 +10,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
-class StreamDecoder extends BitmapDecoder {
+class StreamDecoder extends ExternalBitmapDecoder {
 	private TwoPhaseBufferedInputStream mIn;
 	
 	public StreamDecoder(InputStream is) {
@@ -25,7 +25,12 @@ class StreamDecoder extends BitmapDecoder {
 	
 	protected StreamDecoder(StreamDecoder other) {
 		super(other);
-		mIn = other.mIn;
+		
+		InputStream is = mIn.getStream();
+		if (is instanceof LazyInputStream) {
+			is = new LazyInputStream(((LazyInputStream) is).getStreamOpener());
+		}
+		mIn = new TwoPhaseBufferedInputStream(is);
 	}
 	
 	@Override
@@ -57,7 +62,7 @@ class StreamDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	public BitmapDecoder clone() {
+	public ExternalBitmapDecoder clone() {
 		return new StreamDecoder(this);
 	}
 }

@@ -12,7 +12,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
-class FileDescriptorDecoder extends BitmapDecoder {
+class FileDescriptorDecoder extends ExternalBitmapDecoder {
 	private FileDescriptor fd;
 	
 	public FileDescriptorDecoder(FileDescriptor fd) {
@@ -45,7 +45,7 @@ class FileDescriptorDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	public BitmapDecoder clone() {
+	public ExternalBitmapDecoder clone() {
 		return new FileDescriptorDecoder(this);
 	}
 }

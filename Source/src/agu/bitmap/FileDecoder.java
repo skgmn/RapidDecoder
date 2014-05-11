@@ -12,7 +12,7 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 
-class FileDecoder extends BitmapDecoder {
+class FileDecoder extends ExternalBitmapDecoder {
 	private String pathName;
 	
 	public FileDecoder(String pathName) {
@@ -49,7 +49,7 @@ class FileDecoder extends BitmapDecoder {
 	}
 
 	@Override
-	public BitmapDecoder clone() {
+	public ExternalBitmapDecoder clone() {
 		return new FileDecoder(this);
 	}
 }

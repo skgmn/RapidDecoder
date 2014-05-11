@@ -10,7 +10,7 @@ import android.graphics.Paint.Align;
 import android.graphics.Point;
 import android.graphics.Rect;
 
-public class TextBitmap {
+public final class TextBitmap {
 	public static Bitmap createTextBitmap(String text, Paint p, Rect outTextBounds) {
 		final Rect textBounds = (outTextBounds != null ? outTextBounds : RECT.obtainNotReset());
     	p.getTextBounds(text, 0, text.length(), textBounds);
