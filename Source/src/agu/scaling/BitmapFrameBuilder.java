@@ -23,6 +23,11 @@ public class BitmapFrameBuilder {
 		this.frameHeight = frameHeight;
 	}
 	
+	public BitmapFrameBuilder(BitmapDecoder decoder, int frameWidth, int frameHeight, FrameOptions options) {
+		this(decoder, frameWidth, frameHeight);
+		setOptions(options);
+	}
+	
 	private BitmapFrameBuilder(BitmapFrameBuilder other) {
 		decoder = other.decoder;
 		frameWidth = other.frameWidth;
@@ -51,7 +56,11 @@ public class BitmapFrameBuilder {
 	}
 
 	public Bitmap build(FrameMode mode) {
-		return scale(mode == FrameMode.FIT_IN);
+		if (mode == FrameMode.FILL) {
+			return decoder.clone().scale(frameWidth, frameHeight).decode();
+		} else {
+			return scale(mode == FrameMode.FIT_IN);
+		}
 	}
 	
 	private Bitmap scale(boolean fitIn) {

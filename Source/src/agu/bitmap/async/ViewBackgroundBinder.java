@@ -9,7 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
 
-public class ViewBackgroundBinder extends BitmapBinder {
+public class ViewBackgroundBinder extends ViewBinder {
 	private WeakReference<View> mView;
 	
 	public ViewBackgroundBinder(View v) {
@@ -32,7 +32,7 @@ public class ViewBackgroundBinder extends BitmapBinder {
 	}
 	
 	@Override
-	public Object singletonKey() {
+	protected View getView() {
 		return mView.get();
 	}
 }

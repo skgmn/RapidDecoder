@@ -60,11 +60,7 @@ public class TextViewBinder extends BitmapBinder {
 			@Override
 			public Bitmap decode(BitmapDecoder decoder) {
 				if (mWidth != 0 && mHeight != 0 && mFrameMode != null) {
-					return new BitmapFrameBuilder(decoder, mWidth, mHeight)
-							.setOptions(mFrameOptions)
-							.build(mFrameMode);
-				} else if (mWidth != 0 || mHeight != 0) {
-					return decoder.clone().scale(mWidth, mHeight).decode();
+					return new BitmapFrameBuilder(decoder, mWidth, mHeight, mFrameOptions).build(mFrameMode);
 				} else {
 					return decoder.decode();
 				}
