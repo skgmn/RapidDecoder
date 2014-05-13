@@ -1,5 +1,9 @@
 package agu.bitmap;
 
+import static agu.caching.ResourcePool.CANVAS;
+import static agu.caching.ResourcePool.MATRIX;
+import static agu.caching.ResourcePool.PAINT;
+import static agu.caching.ResourcePool.RECT;
 import agu.scaling.AspectRatioCalculator;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -7,7 +11,6 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import static agu.caching.ResourcePool.*;
 
 public class InternalBitmapDecoder extends BitmapDecoder {
 	private Bitmap bitmap;
@@ -231,5 +234,30 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 	@Override
 	public Rect region() {
 		return region;
-	} 
+	}
+	
+	@Override
+	public int hashCode() {
+		final int hashBitmap = bitmap.hashCode();
+		final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
+		final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
+		final int hashConfig = (targetConfig == null ? 0 : targetConfig.hashCode());
+		
+		return hashBitmap ^ hashRegion ^ hashOptions ^ hashConfig ^ targetWidth ^ targetHeight;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof InternalBitmapDecoder)) return false;
+		
+		final InternalBitmapDecoder d = (InternalBitmapDecoder) o;
+		return bitmap.equals(d.bitmap) &&
+				(region == null ? d.region == null : region.equals(d.region)) &&
+				mutable == d.mutable &&
+				scaleFilter == d.scaleFilter &&
+				(targetConfig == null ? d.targetConfig == null : targetConfig.equals(d.targetConfig)) &&
+				targetWidth == d.targetWidth &&
+				targetHeight == d.targetHeight;
+	}
 }

@@ -498,4 +498,34 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public Rect region() {
 		return region;
 	}
+	
+	@Override
+	public int hashCode() {
+		final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
+		final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
+		final int hashRatioWidth = Float.floatToIntBits(ratioWidth);
+		final int hashRatioHeight = Float.floatToIntBits(ratioHeight);
+		final int hashConfig = (opts.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS : opts.inPreferredConfig.hashCode());
+		
+		return hashRegion ^ hashOptions ^ hashRatioWidth ^ hashRatioHeight ^ hashConfig ^ targetWidth ^ targetHeight;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ExternalBitmapDecoder)) return false;
+		
+		final ExternalBitmapDecoder d = (ExternalBitmapDecoder) o;
+		
+		final Config config1 = opts.inPreferredConfig;
+		final Config config2 = d.opts.inPreferredConfig;
+		
+		return (region == null ? d.region == null : region.equals(d.region)) &&
+				(config1 == null ? config2 == null : config1.equals(config2)) &&
+				mutable == d.mutable &&
+				scaleFilter == d.scaleFilter &&
+				targetWidth == d.targetWidth &&
+				targetHeight == d.targetHeight &&
+				ratioWidth == d.ratioWidth &&
+				ratioHeight == d.ratioHeight;
+	}
 }

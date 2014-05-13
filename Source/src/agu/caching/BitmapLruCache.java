@@ -1,9 +1,8 @@
 package agu.caching;
 
+import agu.bitmap.BitmapUtils;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
-import android.os.Build;
 
 public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
 	private boolean mAutoRecycle;
@@ -20,16 +19,7 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
 	@SuppressLint("NewApi")
 	@Override
 	protected int sizeOf(K key, Bitmap value) {
-		if (Build.VERSION.SDK_INT >= 19) {
-			return value.getAllocationByteCount();
-		} else if (Build.VERSION.SDK_INT >= 12) {
-			return value.getByteCount();
-		} else {
-			final Config config = value.getConfig();
-			final int bytesPerPixel = (config.equals(Config.ARGB_8888) ? 4 : 2);
-			
-			return value.getWidth() * value.getHeight() * bytesPerPixel;
-		}
+		return BitmapUtils.getByteCount(value);
 	}
 	
 	@Override

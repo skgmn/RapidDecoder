@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
+import agu.caching.BitmapLruCache;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -17,14 +18,15 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.graphics.Bitmap.Config;
 import android.net.Uri;
+import android.view.Display;
 
-public abstract class  BitmapDecoder {
+public abstract class BitmapDecoder {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
 	private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
@@ -32,7 +34,43 @@ public abstract class  BitmapDecoder {
 	private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
 	private static final String MESSAGE_UNSUPPORTED_SCHEME = "Unsupported scheme: %s";
 	private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context. Use BitmapDecoder.from(Uri, Context) instead.";
+	
+	protected static final int HASHCODE_NULL_REGION = 0x09DF79A9;
+	protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
 
+	protected static Object sMemCacheLock = new Object();
+	protected static BitmapLruCache<BitmapDecoder> sMemCache;
+
+	public static void initMemoryCache(Display display) {
+		// TODO
+	}
+
+	public static void initMemoryCache(int size) {
+		synchronized (sMemCacheLock) {
+			if (sMemCache != null) {
+				sMemCache.evictAll();
+			}
+			sMemCache = new BitmapLruCache<BitmapDecoder>(size);
+		}
+	}
+	
+	public static void destroyMemoryCache() {
+		synchronized (sMemCacheLock) {
+			if (sMemCache != null) {
+				sMemCache.evictAll();
+				sMemCache = null;
+			}
+		}
+	}
+	
+	public static void clearMemoryCache() {
+		synchronized (sMemCacheLock) {
+			if (sMemCache != null) {
+				sMemCache.evictAll();
+			}
+		}
+	}
+	
 	/**
 	 * @return The width of the source image.
 	 */

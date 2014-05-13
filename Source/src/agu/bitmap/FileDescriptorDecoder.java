@@ -48,4 +48,18 @@ class FileDescriptorDecoder extends ExternalBitmapDecoder {
 	public ExternalBitmapDecoder clone() {
 		return new FileDescriptorDecoder(this);
 	}
+	
+	@Override
+	public int hashCode() {
+		return super.hashCode() ^ fd.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof FileDescriptorDecoder) || !super.equals(o)) return false;
+		
+		final FileDescriptorDecoder fdd = (FileDescriptorDecoder) o;
+		return fd.equals(fdd.fd);
+	}
 }

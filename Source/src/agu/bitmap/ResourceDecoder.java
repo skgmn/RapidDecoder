@@ -67,4 +67,18 @@ class ResourceDecoder extends ExternalBitmapDecoder {
 	public ExternalBitmapDecoder clone() {
 		return new ResourceDecoder(this);
 	}
+	
+	@Override
+	public int hashCode() {
+		return super.hashCode() ^ res.hashCode() ^ id;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof ResourceDecoder) || !super.equals(o)) return false;
+		
+		final ResourceDecoder d = (ResourceDecoder) o;
+		return res.equals(d.res) && id == d.id;
+	}
 }

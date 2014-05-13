@@ -3,6 +3,7 @@ package agu.bitmap;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
@@ -17,6 +18,10 @@ class ByteArrayDecoder extends ExternalBitmapDecoder {
 	private int length;
 	
 	public ByteArrayDecoder(byte[] data, int offset, int length) {
+		if (data == null) {
+			throw new NullPointerException();
+		}
+		
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
@@ -53,5 +58,21 @@ class ByteArrayDecoder extends ExternalBitmapDecoder {
 	@Override
 	public ExternalBitmapDecoder clone() {
 		return new ByteArrayDecoder(this);
+	}
+	
+	@Override
+	public int hashCode() {
+		return super.hashCode() ^ data.hashCode() ^ offset ^ length;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!super.equals(o) || !(o instanceof ByteArrayDecoder)) return false;
+		
+		final ByteArrayDecoder d = (ByteArrayDecoder) o;
+		return data.equals(d.data) &&
+				offset == d.offset &&
+				length == d.length;
 	}
 }

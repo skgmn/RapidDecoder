@@ -6,8 +6,11 @@ import android.graphics.PixelFormat;
 import android.graphics.Bitmap.Config;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 
-public class BitmapUtils {
+import static agu.caching.ResourcePool.*;
+
+public final class BitmapUtils {
 	public static Bitmap getBitmap(Drawable d) {
 		if (d instanceof BitmapDrawable) {
 			return ((BitmapDrawable) d).getBitmap();
@@ -18,9 +21,25 @@ public class BitmapUtils {
 					opaque ? Config.RGB_565 : Config.ARGB_8888);
 			d.setDither(opaque);
 			d.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-			d.draw(new Canvas(bitmap));
+			
+			Canvas cv = CANVAS.obtain(bitmap);
+			d.draw(cv);
+			CANVAS.recycle(cv);
 			
 			return bitmap;
+		}
+	}
+	
+	public static int getByteCount(Bitmap bitmap) {
+		if (Build.VERSION.SDK_INT >= 19) {
+			return bitmap.getAllocationByteCount();
+		} else if (Build.VERSION.SDK_INT >= 12) {
+			return bitmap.getByteCount();
+		} else {
+			final Config config = bitmap.getConfig();
+			final int bytesPerPixel = (config.equals(Config.ARGB_8888) ? 4 : 2);
+			
+			return bitmap.getWidth() * bitmap.getHeight() * bytesPerPixel;
 		}
 	}
 }

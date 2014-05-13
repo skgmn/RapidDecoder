@@ -65,4 +65,9 @@ class StreamDecoder extends ExternalBitmapDecoder {
 	public ExternalBitmapDecoder clone() {
 		return new StreamDecoder(this);
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		return this == o;
+	}
 }

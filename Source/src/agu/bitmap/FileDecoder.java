@@ -16,6 +16,9 @@ class FileDecoder extends ExternalBitmapDecoder {
 	private String pathName;
 	
 	public FileDecoder(String pathName) {
+		if (pathName == null) {
+			throw new NullPointerException();
+		}
 		this.pathName = pathName;
 	}
 	
@@ -51,5 +54,19 @@ class FileDecoder extends ExternalBitmapDecoder {
 	@Override
 	public ExternalBitmapDecoder clone() {
 		return new FileDecoder(this);
+	}
+	
+	@Override
+	public int hashCode() {
+		return super.hashCode() ^ pathName.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof FileDecoder) || !super.equals(o)) return false;
+		
+		final FileDecoder d = (FileDecoder) o;
+		return pathName.equals(d.pathName);
 	}
 }
