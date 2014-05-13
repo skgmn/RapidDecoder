@@ -1,8 +1,8 @@
 package agu.scaling;
 
+import static agu.caching.ResourcePool.CANVAS;
 import static agu.caching.ResourcePool.PAINT;
 import static agu.caching.ResourcePool.RECT;
-import static agu.caching.ResourcePool.CANVAS;
 import agu.bitmap.BitmapDecoder;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -15,9 +15,7 @@ public class BitmapFrameBuilder {
 	private BitmapDecoder decoder;
 	private int frameWidth;
 	private int frameHeight;
-	private FrameAlignment align = FrameAlignment.CENTER;
-	private FrameStrategy strategy = FrameStrategy.FIT;
-	private Drawable background;
+	private FrameOptions options = new FrameOptions();
 	
 	public BitmapFrameBuilder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
 		this.decoder = decoder;
@@ -25,27 +23,35 @@ public class BitmapFrameBuilder {
 		this.frameHeight = frameHeight;
 	}
 	
+	private BitmapFrameBuilder(BitmapFrameBuilder other) {
+		decoder = other.decoder;
+		frameWidth = other.frameWidth;
+		frameHeight = other.frameHeight;
+		options.set(other.options);
+	}
+	
 	public BitmapFrameBuilder align(FrameAlignment align) {
-		this.align = align;
+		options.align = align;
 		return this;
 	}
 	
 	public BitmapFrameBuilder strategy(FrameStrategy strategy) {
-		this.strategy = strategy;
+		options.strategy = strategy;
 		return this;
 	}
 	
 	public BitmapFrameBuilder background(Drawable d) {
-		this.background = d;
+		options.background = d;
 		return this;
 	}
 	
-	public Bitmap fitIn() {
-		return scale(true);
+	public BitmapFrameBuilder setOptions(FrameOptions options) {
+		this.options.set(options);
+		return this;
 	}
-	
-	public Bitmap cutOut() {
-		return scale(false);
+
+	public Bitmap build(FrameMode mode) {
+		return scale(mode == FrameMode.FIT_IN);
 	}
 	
 	private Bitmap scale(boolean fitIn) {
@@ -53,10 +59,10 @@ public class BitmapFrameBuilder {
 		final int height = decoder.sourceHeight();
 		
 		if ((width == frameWidth && height == frameHeight) ||
-				(strategy == FrameStrategy.ZOOM_OUT && 
+				(options.strategy == FrameStrategy.ZOOM_OUT_ONLY && 
 						((!fitIn && (width <= frameWidth || height <= frameHeight)) ||
 						 ( fitIn && (width <= frameWidth && height <= frameHeight)))) ||
-				(strategy == FrameStrategy.ZOOM_IN &&
+				(options.strategy == FrameStrategy.ZOOM_IN_ONLY &&
 						((!fitIn && (width >= frameWidth && height >= frameHeight)) ||
 						 ( fitIn && (width >= frameWidth || height >= frameHeight))))) {
 					
@@ -66,7 +72,7 @@ public class BitmapFrameBuilder {
 		final Rect bounds = RECT.obtainNotReset();
 		try {
 			AspectRatioCalculator.frame(width, height,
-					frameWidth, frameHeight, align, fitIn, bounds);
+					frameWidth, frameHeight, options.align, fitIn, bounds);
 			
 			final int w = bounds.width();
 			final int h = bounds.height();
@@ -79,12 +85,12 @@ public class BitmapFrameBuilder {
 				final Bitmap bitmap2 = Bitmap.createBitmap(frameWidth, frameHeight, bitmap.getConfig());
 				final Canvas canvas = CANVAS.obtain(bitmap2);
 				
-				if (background != null) {
+				if (options.background != null) {
 					canvas.save(Canvas.CLIP_SAVE_FLAG);
 					canvas.clipRect(bounds, Op.DIFFERENCE);
 					
-					background.setBounds(0, 0, frameWidth, frameHeight);
-					background.draw(canvas);
+					options.background.setBounds(0, 0, frameWidth, frameHeight);
+					options.background.draw(canvas);
 					
 					canvas.restore();
 				}
@@ -100,5 +106,10 @@ public class BitmapFrameBuilder {
 		} finally {
 			RECT.recycle(bounds);
 		}
+	}
+
+	@Override
+	public BitmapFrameBuilder clone() {
+		return new BitmapFrameBuilder(this);
 	}
 }

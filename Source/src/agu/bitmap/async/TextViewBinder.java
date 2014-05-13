@@ -2,6 +2,9 @@ package agu.bitmap.async;
 
 import java.lang.ref.WeakReference;
 
+import agu.bitmap.BitmapDecoder;
+import agu.bitmap.BitmapDecoderDelegate;
+import agu.scaling.BitmapFrameBuilder;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -49,5 +52,24 @@ public class TextViewBinder extends BitmapBinder {
 	
 	private Drawable createDrawable(Resources res, Bitmap bitmap) {
 		return (bitmap != null ? new BitmapDrawable(res, bitmap) : getFailImage(res).mutate());
+	}
+	
+	@Override
+	public void execute(final AsyncBitmapLoaderJob job) {
+		job.setDelegate(new BitmapDecoderDelegate() {
+			@Override
+			public Bitmap decode(BitmapDecoder decoder) {
+				if (mWidth != 0 && mHeight != 0 && mFrameMode != null) {
+					return new BitmapFrameBuilder(decoder, mWidth, mHeight)
+							.setOptions(mFrameOptions)
+							.build(mFrameMode);
+				} else if (mWidth != 0 || mHeight != 0) {
+					return decoder.clone().scale(mWidth, mHeight).decode();
+				} else {
+					return decoder.decode();
+				}
+			}
+		});
+		job.start();
 	}
 }

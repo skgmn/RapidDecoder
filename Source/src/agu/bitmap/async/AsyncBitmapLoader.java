@@ -1,9 +1,10 @@
 package agu.bitmap.async;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.WeakHashMap;
 
 import agu.bitmap.BitmapDecoder;
+import agu.bitmap.BitmapDecoderDelegate;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
@@ -17,26 +18,38 @@ public class AsyncBitmapLoader {
 	
 	private static AsyncBitmapLoader sGlobalInstance;
 	
-	private ArrayList<Loader> mLoaders;
+	private HashSet<Loader> mLoaders;
 	private WeakHashMap<Object, Loader> mSingletonLoaders;
 	private OnLoadingStateChangedListener mOnLoadingStateChanged;
 	
 	public AsyncBitmapLoader() {
 	}
 	
-	public void load(BitmapDecoder source, AsyncBitmapCallback callback) {
+	public void load(BitmapDecoder decoder, AsyncBitmapCallback callback) {
+		load(decoder, callback, null);
+	}
+	
+	public void load(BitmapDecoder decoder, AsyncBitmapCallback callback, AsyncBitmapLoadStarter starter) {
 		if (mLoaders == null) {
-			mLoaders = new ArrayList<AsyncBitmapLoader.Loader>();
+			mLoaders = new HashSet<AsyncBitmapLoader.Loader>();
 		}
 		checkLoadingStarted();
 		
-		Loader loader = new Loader(null, source, callback);
+		Loader loader = new Loader(null, decoder, callback);
 		mLoaders.add(loader);
 		
-		loader.execute();
+		if (starter == null) {
+			loader.execute();
+		} else {
+			starter.execute(loader);
+		}
+	}
+
+	public void load(Object singletonKey, BitmapDecoder decoder, AsyncBitmapCallback callback) {
+		load(singletonKey, decoder, callback, null);
 	}
 	
-	public void load(Object singletonKey, BitmapDecoder source, AsyncBitmapCallback callback) {
+	public void load(Object singletonKey, BitmapDecoder decoder, AsyncBitmapCallback callback, AsyncBitmapLoadStarter starter) {
 		if (mSingletonLoaders == null) {
 			mSingletonLoaders = new WeakHashMap<Object, AsyncBitmapLoader.Loader>();
 		} else {
@@ -44,10 +57,14 @@ public class AsyncBitmapLoader {
 		}
 		checkLoadingStarted();
 		
-		Loader loader = new Loader(singletonKey, source, callback);
+		Loader loader = new Loader(singletonKey, decoder, callback);
 		mSingletonLoaders.put(singletonKey, loader);
 		
-		loader.execute();
+		if (starter == null) {
+			loader.execute();
+		} else {
+			starter.execute(loader);
+		}
 	}
 	
 	private void checkLoadingStarted() {
@@ -59,13 +76,13 @@ public class AsyncBitmapLoader {
 		}
 	}
 	
-	public void load(BitmapDecoder source, BitmapBinder binder) {
+	public void load(BitmapDecoder decoder, BitmapBinder binder) {
 		Object key = binder.singletonKey();
 		
 		if (key == null) {
-			load(source, (AsyncBitmapCallback) binder);
+			load(decoder, (AsyncBitmapCallback) binder);
 		} else {
-			load(key, source, binder);
+			load(key, decoder, binder);
 		}
 	}
 	
@@ -100,26 +117,31 @@ public class AsyncBitmapLoader {
 		mOnLoadingStateChanged = listener;
 	}
 	
-	private class Loader extends AsyncTask<Object, Object, Bitmap> {
-		private BitmapDecoder mBitmapSource;
+	private class Loader extends AsyncTask<Object, Object, Bitmap> implements AsyncBitmapLoaderJob {
+		private BitmapDecoder mDecoder;
 		private AsyncBitmapCallback mCallback;
 		private Object mKey;
+		private BitmapDecoderDelegate mDelegate;
 		
-		public Loader(Object key, BitmapDecoder source, AsyncBitmapCallback callback) {
+		public Loader(Object key, BitmapDecoder decoder, AsyncBitmapCallback callback) {
 			mKey = key;
-			mBitmapSource = source;
+			mDecoder = decoder;
 			mCallback = callback;
 		}
 		
 		@Override
 		protected Bitmap doInBackground(Object... params) {
-			return mBitmapSource.decode();
+			if (mDelegate == null) {
+				return mDecoder.decode();
+			} else {
+				return mDelegate.decode(mDecoder);
+			}
 		}
 		
 		@Override
 		protected void onPostExecute(Bitmap result) {
 			checkStateChanged();
-			if (isValid()) {
+			if (isValid(true)) {
 				mCallback.onBitmapLoaded(result);
 			} else {
 				mCallback.onBitmapCancelled();
@@ -129,16 +151,28 @@ public class AsyncBitmapLoader {
 		@Override
 		protected void onCancelled() {
 			checkStateChanged();
-			isValid();
+			isValid(true);
 			
 			mCallback.onBitmapCancelled();
 		}
 		
-		private boolean isValid() {
-			if (mKey != null) {
-				return (mSingletonLoaders.remove(mKey) == this);
+		public boolean isValid() {
+			return !isCancelled() && isValid(false);
+		}
+		
+		private boolean isValid(boolean remove) {
+			if (remove) {
+				if (mKey != null) {
+					return (mSingletonLoaders.remove(mKey) == this);
+				} else {
+					return mLoaders.remove(this);
+				}
 			} else {
-				return mLoaders.remove(this);
+				if (mKey != null) {
+					return mSingletonLoaders.get(mKey) == this;
+				} else {
+					return mLoaders.contains(this);
+				}
 			}
 		}
 		
@@ -153,7 +187,17 @@ public class AsyncBitmapLoader {
 		
 		public void cancel() {
 			cancel(false);
-			mBitmapSource.cancel();
+			mDecoder.cancel();
+		}
+
+		@Override
+		public void setDelegate(BitmapDecoderDelegate d) {
+			mDelegate = d;
+		}
+
+		@Override
+		public void start() {
+			execute();
 		}
 	}
 	

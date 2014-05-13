@@ -24,7 +24,7 @@ import android.graphics.Rect;
 import android.graphics.Bitmap.Config;
 import android.net.Uri;
 
-public abstract class  BitmapDecoder implements Cloneable {
+public abstract class  BitmapDecoder {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
 	private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
@@ -52,8 +52,6 @@ public abstract class  BitmapDecoder implements Cloneable {
 	 * @return The estimated height of decoded image.
 	 */
 	public abstract int height();
-	
-	public abstract Bitmap decode();
 	
 	/**
 	 * <p>Request the decoder to scale the image to the specific dimension while decoding.
@@ -97,12 +95,6 @@ public abstract class  BitmapDecoder implements Cloneable {
 	public abstract void draw(Canvas cv, Rect rectDest);
 	
 	/**
-	 * Request the decoder to cancel the decoding job currently working.
-	 * This should be called by another thread.
-	 */
-	public abstract void cancel();
-	
-	/**
 	 * Set preferred bitmap configuration.
 	 */
 	public abstract BitmapDecoder config(Config config);
@@ -113,7 +105,14 @@ public abstract class  BitmapDecoder implements Cloneable {
 	 */
 	public abstract BitmapDecoder useBuiltInDecoder(boolean force);
 	
+	public abstract Bitmap decode();
 	public abstract BitmapDecoder clone();
+	
+	/**
+	 * Request the decoder to cancel the decoding job currently working.
+	 * This should be called by another thread.
+	 */
+	public abstract void cancel();
 	
 	/**
 	 * <p>Tell the decoder whether decoded image should be mutable or not.</p>

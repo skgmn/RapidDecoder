@@ -1,15 +1,18 @@
 package agu.bitmap.async;
 
+import agu.scaling.FrameMode;
+import agu.scaling.FrameOptions;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 
-
-public abstract class BitmapBinder implements AsyncBitmapCallback {
+public abstract class BitmapBinder implements AsyncBitmapCallback, AsyncBitmapLoadStarter {
 	private ImageTurningOutEffect mEffect;
 	private ImagePostProcessor mPostProcessor;
 	private Drawable mFailImage;
-	private int mFailImageResId; 
+	private int mFailImageResId;
+	protected FrameOptions mFrameOptions;
+	protected FrameMode mFrameMode;
 	
 	Object singletonKey() {
 		return null;
@@ -44,6 +47,16 @@ public abstract class BitmapBinder implements AsyncBitmapCallback {
 		mFailImage = null;
 		return this;
 	}
+
+	public BitmapBinder frame(FrameMode mode) {
+		return frame(null, mode);
+	}
+	
+	public BitmapBinder frame(FrameOptions options, FrameMode mode) {
+		mFrameOptions = options;
+		mFrameMode = mode;
+		return this;
+	}
 	
 	protected Bitmap doPostProcess(Bitmap bitmap) {
 		return (mPostProcessor == null ? bitmap : mPostProcessor.postProcess(bitmap));
@@ -55,5 +68,10 @@ public abstract class BitmapBinder implements AsyncBitmapCallback {
 		} else {
 			return res.getDrawable(mFailImageResId);
 		}
+	}
+	
+	@Override
+	public void execute(AsyncBitmapLoaderJob job) {
+		job.start();
 	}
 }
