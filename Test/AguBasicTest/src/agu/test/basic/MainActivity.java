@@ -35,8 +35,10 @@ public class MainActivity extends Activity {
 				AsyncBitmapLoader loader = new AsyncBitmapLoader();
 				loader.load(
 						BitmapDecoder
-								.from(MainActivity.this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
-								.scaleBy(0.8f),
+//						.from(MainActivity.this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
+//						.scaleBy(0.8f),
+								.from(MainActivity.this, Uri.parse("http://upload.wikimedia.org/wikipedia/commons/4/4e/Pleiades_large.jpg"))
+								.scaleBy(0.1f),
 						new ImageViewBinder(imageView)
 								.effect(new FadeInEffect(500)));
 			}

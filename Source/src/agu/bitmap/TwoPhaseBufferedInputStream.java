@@ -2,7 +2,8 @@ package agu.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+
+import agu.caching.TransactionOutputStream;
 
 public class TwoPhaseBufferedInputStream extends InputStream {
 	private static final int INITIAL_BUFFER_CAPACITY = 1024;
@@ -15,7 +16,8 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	private boolean mBufferExpandable = true;
 	private boolean mSecondPhase = false;
 	
-	private OutputStream mCacheOutputStream;
+	private TransactionOutputStream mCacheOutputStream;
+	private boolean mTransactionSucceeded;
 	
 	public TwoPhaseBufferedInputStream(InputStream in) {
 		mIn = in;
@@ -25,8 +27,9 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 		return mIn;
 	}
 	
-	public void setCacheOutputStream(OutputStream out) {
+	public void setCacheOutputStream(TransactionOutputStream out) {
 		mCacheOutputStream = out;
+		mTransactionSucceeded = true;
 	}
 	
 	@Override
@@ -148,11 +151,18 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	
 	@Override
 	public void close() throws IOException {
-		mIn.close();
 		if (mCacheOutputStream != null) {
-			try { mCacheOutputStream.close(); } catch (IOException e) {}
+			try {
+				if (mTransactionSucceeded) {
+					mCacheOutputStream.close();
+				} else {
+					mCacheOutputStream.rollback();
+				}
+			} catch (IOException e) {
+			}
 			mCacheOutputStream = null;
 		}
+		mIn.close();
 	}
 	
 	public void startSecondPhase() {
@@ -166,5 +176,9 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	
 	public void seekToBeginning() {
 		mBufferOffset = mMarkOffset = 0;
+	}
+	
+	public void setTransactionSucceeded(boolean succeeded) {
+		mTransactionSucceeded = succeeded;
 	}
 }

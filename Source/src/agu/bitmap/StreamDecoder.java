@@ -2,8 +2,8 @@ package agu.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
+import agu.caching.TransactionOutputStream;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -34,13 +34,27 @@ class StreamDecoder extends ExternalBitmapDecoder {
 		mIn = new TwoPhaseBufferedInputStream(is);
 	}
 	
-	void setCacheOutputStream(OutputStream out) {
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			mIn.close();
+		} finally {
+			super.finalize();
+		}
+	}
+	
+	void setCacheOutputStream(TransactionOutputStream out) {
 		mIn.setCacheOutputStream(out);
 	}
 	
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeStream(mIn, null, opts);
+		try {
+			return BitmapFactory.decodeStream(mIn, null, opts);
+		} catch (RuntimeException e) {
+			mIn.setTransactionSucceeded(false);
+			throw e;
+		}
 	}
 
 	@Override

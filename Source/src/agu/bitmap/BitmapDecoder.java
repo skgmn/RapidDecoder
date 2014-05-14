@@ -44,7 +44,7 @@ public abstract class BitmapDecoder {
 	protected static final int HASHCODE_NULL_REGION = 0x09DF79A9;
 	protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
 
-	private static final long DEFAULT_CACHE_SIZE = 2 * 1024 * 1024; // 2MB
+	private static final long DEFAULT_CACHE_SIZE = 4 * 1024 * 1024; // 4MB
 
 	protected static Object sMemCacheLock = new Object();
 	protected static BitmapLruCache<Object> sMemCache;
@@ -362,39 +362,35 @@ public abstract class BitmapDecoder {
 			return new FileDecoder(uri.getPath());
 		} else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
 			String uriString = uri.toString();
-			DiskLruCache cache;
-			
-			synchronized (sDiskCacheLock) {
-				cache = sDiskCache;
-			}
-
 			ExternalBitmapDecoder d = null;
-			
-			if (cache != null) {
-				InputStream in = cache.get(uriString);
-				if (in != null) {
-					d = new StreamDecoder(in);
-				}
-			}
-			
-			if (d == null) {
-				StreamDecoder sd = new StreamDecoder(new LazyInputStream(new StreamOpener() {
-					@Override
-					public InputStream openInputStream() {
-						try {
-							return new URL(uri.toString()).openStream();
-						} catch (MalformedURLException e) {
-							throw new IllegalArgumentException(e);
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}					
+
+			synchronized (sDiskCacheLock) {
+				if (sDiskCache != null) {
+					InputStream in = sDiskCache.get(uriString);
+					if (in != null) {
+						d = new StreamDecoder(in);
 					}
-				}));
-				if (cache != null) {
-					sd.setCacheOutputStream(cache.getOutputStream(uriString));
 				}
 				
-				d = sd;
+				if (d == null) {
+					StreamDecoder sd = new StreamDecoder(new LazyInputStream(new StreamOpener() {
+						@Override
+						public InputStream openInputStream() {
+							try {
+								return new URL(uri.toString()).openStream();
+							} catch (MalformedURLException e) {
+								throw new IllegalArgumentException(e);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}					
+						}
+					}));
+					if (sDiskCache != null) {
+						sd.setCacheOutputStream(sDiskCache.getOutputStream(uriString));
+					}
+					
+					d = sd;
+				}
 			}
 			
 			synchronized (sMemCacheLock) {

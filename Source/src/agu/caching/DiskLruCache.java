@@ -6,8 +6,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
-import agu.caching.DiskLruCacheEngine.Editor;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -26,6 +27,7 @@ public class DiskLruCache {
 	private long mCacheSize;
     private boolean mDiskCacheStarting = true;
 	
+	@SuppressLint("NewApi")
 	public DiskLruCache(Context context, String cacheName, long cacheSize) {
 		mContext = context;
 		mCacheName = cacheName;
@@ -40,13 +42,19 @@ public class DiskLruCache {
 			version = 1;
 		}
 
-		new AsyncTask<Object, Object, Object>() {
+		AsyncTask<Integer, Object, Object> task = new AsyncTask<Integer, Object, Object>() {
 			@Override
-			protected Object doInBackground(Object... params) {
-				initDiskCache((Integer) params[0]);
+			protected Object doInBackground(Integer... params) {
+				initDiskCache(params[0]);
 				return null;
 			}
-		}.execute(version);
+		};
+
+		if (Build.VERSION.SDK_INT >= 11) {
+			task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, version);
+		} else {
+			task.execute(version);
+		}
 	}
 	
 	public void close() {
@@ -81,8 +89,8 @@ public class DiskLruCache {
         }
     }
     
-    public OutputStream getOutputStream(String key) {
-    	final String hash = Integer.toString(key.hashCode());
+    public TransactionOutputStream getOutputStream(String key) {
+    	final String hash = hashKeyForDisk(key);
 
     	synchronized (mDiskCacheLock) {
             while (mDiskCacheStarting) {
@@ -102,7 +110,7 @@ public class DiskLruCache {
                        dos.writeUTF(key);
                        dos.close();
                        
-                       return new AutoCommitOutputStream(editor, editor.newOutputStream(1));
+                       return new TransactionOutputStream(this, editor, editor.newOutputStream(1));
                    }
                 } catch (Exception e) {
                 	e.printStackTrace();
@@ -120,7 +128,7 @@ public class DiskLruCache {
     }
     
     public InputStream get(String key) {
-    	final String hash = Integer.toString(key.hashCode());
+    	final String hash = hashKeyForDisk(key);
 
     	synchronized (mDiskCacheLock) {
             while (mDiskCacheStarting) {
@@ -160,6 +168,35 @@ public class DiskLruCache {
     	return null;
     }
     
+    /**
+     * A hashing method that changes a string (like a URL) into a hash suitable for using as a
+     * disk filename.
+     */
+    public static String hashKeyForDisk(String key) {
+        String cacheKey;
+        try {
+            final MessageDigest mDigest = MessageDigest.getInstance("MD5");
+            mDigest.update(key.getBytes());
+            cacheKey = bytesToHexString(mDigest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            cacheKey = String.valueOf(key.hashCode());
+        }
+        return cacheKey;
+    }
+
+    private static String bytesToHexString(byte[] bytes) {
+        // http://stackoverflow.com/questions/332079
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            String hex = Integer.toHexString(0xFF & bytes[i]);
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+    
     public void clear() {
     	synchronized (mDiskCacheLock) {
 			if (mCache != null) {
@@ -182,6 +219,14 @@ public class DiskLruCache {
         return new File(cachePath + File.separator + uniqueName);
     }
     
+    public void flush() throws IOException {
+    	synchronized (mDiskCacheLock) {
+    		if (mCache != null) {
+    			mCache.flush();
+    		}
+    	}
+    }
+    
     @SuppressLint("NewApi")
 	private static boolean isExternalStorageRemovable() {
     	return (Build.VERSION.SDK_INT >= 9 ? Environment.isExternalStorageRemovable() : true);
@@ -196,49 +241,5 @@ public class DiskLruCache {
             final StatFs stats = new StatFs(path.getPath());
             return (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
         }
-    }
-    
-    private class AutoCommitOutputStream extends OutputStream {
-    	private Editor mEditor;
-    	private OutputStream mOut;
-    	
-    	public AutoCommitOutputStream(Editor editor, OutputStream out) {
-    		mEditor = editor;
-    		mOut = out;
-    	}
-    	
-    	@Override
-    	public void close() throws IOException {
-    		mOut.close();
-    		mEditor.commit();
-
-    		synchronized (mDiskCacheLock) {
-    			if (mCache != null) {
-    				mCache.flush();
-    			}
-			}
-    	}
-    	
-    	@Override
-    	public void flush() throws IOException {
-    		mOut.flush();
-    	}
-    	
-    	@Override
-    	public void write(byte[] buffer, int offset, int count)
-    			throws IOException {
-    		
-    		mOut.write(buffer, offset, count);
-    	}
-    	
-		@Override
-		public void write(int oneByte) throws IOException {
-			mOut.write(oneByte);
-		}
-		
-		@Override
-		public void write(byte[] buffer) throws IOException {
-			mOut.write(buffer);
-		}
     }
 }
