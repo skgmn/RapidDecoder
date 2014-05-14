@@ -1,12 +1,11 @@
 package agu.caching;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 
 import agu.caching.DiskLruCacheEngine.Editor;
 import android.annotation.SuppressLint;
@@ -19,7 +18,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 
-public class DiskLruCache<T extends Serializable> {
+public class DiskLruCache {
     private final Object mDiskCacheLock = new Object();
 	private DiskLruCacheEngine mCache;
 	private Context mContext;
@@ -82,7 +81,7 @@ public class DiskLruCache<T extends Serializable> {
         }
     }
     
-    public OutputStream getOutputStream(T key) {
+    public OutputStream getOutputStream(String key) {
     	final String hash = Integer.toString(key.hashCode());
 
     	synchronized (mDiskCacheLock) {
@@ -99,9 +98,9 @@ public class DiskLruCache<T extends Serializable> {
                    final DiskLruCacheEngine.Editor editor = mCache.edit(hash);
                    if (editor != null) {
                        out = editor.newOutputStream(0);
-                       ObjectOutputStream oos = new ObjectOutputStream(out);
-                       oos.writeObject(key);
-                       oos.close();
+                       DataOutputStream dos = new DataOutputStream(out);
+                       dos.writeUTF(key);
+                       dos.close();
                        
                        return new AutoCommitOutputStream(editor, editor.newOutputStream(1));
                    }
@@ -120,7 +119,7 @@ public class DiskLruCache<T extends Serializable> {
     	return null;
     }
     
-    public InputStream get(T key) {
+    public InputStream get(String key) {
     	final String hash = Integer.toString(key.hashCode());
 
     	synchronized (mDiskCacheLock) {
@@ -141,15 +140,14 @@ public class DiskLruCache<T extends Serializable> {
                 inputStream = snapshot.getInputStream(0);
                 if (inputStream == null) return null;
                 
-            	ObjectInputStream ois = new ObjectInputStream(inputStream);
-            	Object storedKey = ois.readObject();
-            	ois.close();
+                DataInputStream dis = new DataInputStream(inputStream);
+                String storedKey = dis.readUTF();
+            	dis.close();
             	
             	if (!storedKey.equals(key)) return null;
             	
             	return snapshot.getInputStream(1);
             } catch (final IOException e) {
-            } catch (ClassNotFoundException e) {
 			} finally {
                 try {
                     if (inputStream != null) {

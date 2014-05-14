@@ -1,13 +1,12 @@
 package agu.bitmap;
 
-import static agu.caching.ResourcePool.RECT;
 import static agu.caching.ResourcePool.POINT;
+import static agu.caching.ResourcePool.RECT;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -51,7 +50,7 @@ public abstract class BitmapDecoder {
 	protected static BitmapLruCache<Object> sMemCache;
 	
 	static Object sDiskCacheLock = new Object();
-	static DiskLruCache<Serializable> sDiskCache;
+	static DiskLruCache sDiskCache;
 
 	public static void initMemoryCache(Context context) {
 		final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -98,7 +97,7 @@ public abstract class BitmapDecoder {
 	
 	public static void initDiskCache(Context context, long size) {
 		synchronized (sDiskCacheLock) {
-			sDiskCache = new DiskLruCache<Serializable>(context, "agu", size);
+			sDiskCache = new DiskLruCache(context, "agu", size);
 		}
 	}
 	
@@ -350,7 +349,11 @@ public abstract class BitmapDecoder {
 			
 			try {
 				StreamDecoder d = new StreamDecoder(context.getContentResolver().openInputStream(uri));
-				d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+				synchronized (sMemCacheLock) {
+					if (sMemCache != null) {
+						d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+					}
+				}
 				return d;
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e);
@@ -359,7 +362,7 @@ public abstract class BitmapDecoder {
 			return new FileDecoder(uri.getPath());
 		} else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
 			String uriString = uri.toString();
-			DiskLruCache<Serializable> cache;
+			DiskLruCache cache;
 			
 			synchronized (sDiskCacheLock) {
 				cache = sDiskCache;
@@ -394,7 +397,11 @@ public abstract class BitmapDecoder {
 				d = sd;
 			}
 			
-			d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+			synchronized (sMemCacheLock) {
+				if (sMemCache != null) {
+					d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+				}
+			}
 			return d;
 		} else {
 			throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
