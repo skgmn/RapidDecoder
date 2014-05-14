@@ -422,18 +422,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (region == null) {
 			region = RECT.obtainNotReset();
-//		} else {
-//			region.offset(
-//					(int) Math.round(left / ratioWidth),
-//					(int) Math.round(top / ratioHeight));
-//			region.right = region.left + (int) Math.round((right - left) / ratioWidth);
-//			region.bottom = region.top + (int) Math.round((bottom - top) / ratioHeight);
 		}
-//		
-//		if (targetWidth != 0 || targetHeight != 0) {
-//		} else {
-			region.set(left, top, right, bottom);
-//		}
+		region.set(left, top, right, bottom);
 		
 		return this;
 	}
