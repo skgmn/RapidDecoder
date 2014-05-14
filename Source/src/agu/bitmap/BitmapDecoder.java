@@ -118,6 +118,27 @@ public abstract class BitmapDecoder {
 		}
 	}
 	
+	//
+	// Commands
+	//
+	
+	protected static class Command {
+	}
+	
+	protected static class ScaleTo extends Command {
+		public int width;
+		public int height;
+	}
+	
+	protected static class ScaleBy extends Command {
+		public float width;
+		public float height;
+	}
+	
+	protected static class Region extends Command {
+		public Rect bounds;
+	}
+	
 	/**
 	 * @return The width of the source image.
 	 */
