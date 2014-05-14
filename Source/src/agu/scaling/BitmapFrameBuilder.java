@@ -86,8 +86,8 @@ public class BitmapFrameBuilder {
 			final int w = bounds.width();
 			final int h = bounds.height();
 			
-			if (frameWidth == w && frameHeight == h) {
-				return decoder.scale(frameWidth, frameHeight, true).decode();
+			if (bounds.left == 0 && bounds.top == 0 && frameWidth == w && frameHeight == h) {
+				return decoder.clone().scale(frameWidth, frameHeight, true).decode();
 			} else {
 				final Bitmap bitmap = decoder.clone().scale(w, h, true).decode();
 				

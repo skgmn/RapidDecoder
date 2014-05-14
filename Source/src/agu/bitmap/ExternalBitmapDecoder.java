@@ -110,6 +110,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public int width() {
 		if (targetWidth != 0) {
 			return targetWidth;
+		} else if (targetHeight != 0) {
+			return autoWidth();
 		} else if (region != null) {
 			return (int) Math.ceil(region.width() * ratioWidth);
 		} else {
@@ -121,6 +123,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public int height() {
 		if (targetHeight != 0) {
 			return targetHeight;
+		} else if (targetWidth != 0) {
+			return autoHeight();
 		} else if (region != null) {
 			return (int) Math.ceil(region.height() * ratioHeight);
 		} else {
@@ -166,11 +170,11 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 
 		if (this.targetWidth != 0 || this.targetHeight != 0) {
 			if (targetWidth == 0) {
-				finalWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), targetHeight);
+				finalWidth = autoWidth();
 				finalHeight = targetHeight;
 			} else if (finalHeight == 0) {
 				finalWidth = targetWidth;
-				finalHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), targetWidth);
+				finalHeight = autoHeight();
 			} else {
 				finalWidth = this.targetWidth;
 				finalHeight = this.targetHeight;
@@ -390,8 +394,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		if (targetWidth != 0 && targetHeight != 0) {
 			return scale(
-					(int) (targetWidth * widthRatio),
-					(int) (targetHeight * heightRatio),
+					(int) Math.round(targetWidth * widthRatio),
+					(int) Math.round(targetHeight * heightRatio),
 					scaleFilter);
 		} else {
 			this.ratioWidth = widthRatio;
@@ -416,10 +420,20 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	
 	@Override
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
-		if (this.region == null) {
-			this.region = RECT.obtainNotReset();
+		if (region == null) {
+			region = RECT.obtainNotReset();
+//		} else {
+//			region.offset(
+//					(int) Math.round(left / ratioWidth),
+//					(int) Math.round(top / ratioHeight));
+//			region.right = region.left + (int) Math.round((right - left) / ratioWidth);
+//			region.bottom = region.top + (int) Math.round((bottom - top) / ratioHeight);
 		}
-		this.region.set(left, top, right, bottom);
+//		
+//		if (targetWidth != 0 || targetHeight != 0) {
+//		} else {
+			region.set(left, top, right, bottom);
+//		}
 		
 		return this;
 	}
@@ -428,6 +442,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public ExternalBitmapDecoder mutable(boolean mutable) {
 		this.mutable = mutable;
 		return this;
+	}
+	
+	private int autoWidth() {
+		return AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), targetHeight);
+	}
+	
+	private int autoHeight() {
+		return AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), targetWidth);
 	}
 	
 	protected abstract Bitmap decode(Options opts);
