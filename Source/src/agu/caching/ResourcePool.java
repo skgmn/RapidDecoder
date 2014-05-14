@@ -58,6 +58,12 @@ public abstract class ResourcePool<T> {
 			rect.set(left, top, right, bottom);
 			return rect;
 		}
+		
+		public Rect obtain(Rect other) {
+			final Rect rect = obtainImpl(false);
+			rect.set(other);
+			return rect;
+		}
 	}
 	public static final RectPool RECT = new RectPool();
 	

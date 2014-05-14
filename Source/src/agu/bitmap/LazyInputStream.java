@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 class LazyInputStream extends InputStream {
 	private StreamOpener mOpener;
-	private InputStream mIn;
+	protected InputStream mIn;
 	
 	public LazyInputStream(StreamOpener opener) {
 		mOpener = opener;
@@ -64,7 +64,7 @@ class LazyInputStream extends InputStream {
 		return getStream().skip(byteCount);
 	}
 
-	private InputStream getStream() {
+	protected InputStream getStream() {
 		if (mIn == null) {
 			mIn = mOpener.openInputStream();
 			mOpener = null;

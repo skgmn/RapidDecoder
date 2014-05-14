@@ -69,4 +69,9 @@ class FileDecoder extends ExternalBitmapDecoder {
 		final FileDecoder d = (FileDecoder) o;
 		return pathName.equals(d.pathName);
 	}
+
+	@Override
+	protected boolean isMemCacheSupported() {
+		return true;
+	}
 }

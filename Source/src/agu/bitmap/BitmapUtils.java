@@ -36,10 +36,12 @@ public final class BitmapUtils {
 		} else if (Build.VERSION.SDK_INT >= 12) {
 			return bitmap.getByteCount();
 		} else {
-			final Config config = bitmap.getConfig();
-			final int bytesPerPixel = (config.equals(Config.ARGB_8888) ? 4 : 2);
-			
-			return bitmap.getWidth() * bitmap.getHeight() * bytesPerPixel;
+			return getByteCount(bitmap.getWidth(), bitmap.getHeight(), bitmap.getConfig());
 		}
+	}
+	
+	public static int getByteCount(int width, int height, Config config) {
+		final int bytesPerPixel = (config.equals(Config.ARGB_8888) ? 4 : 2);
+		return width * height * bytesPerPixel;
 	}
 }

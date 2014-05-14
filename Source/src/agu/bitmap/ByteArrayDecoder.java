@@ -75,4 +75,9 @@ class ByteArrayDecoder extends ExternalBitmapDecoder {
 				offset == d.offset &&
 				length == d.length;
 	}
+
+	@Override
+	protected boolean isMemCacheSupported() {
+		return false;
+	}
 }

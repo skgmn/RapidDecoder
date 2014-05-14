@@ -81,4 +81,9 @@ class ResourceDecoder extends ExternalBitmapDecoder {
 		final ResourceDecoder d = (ResourceDecoder) o;
 		return res.equals(d.res) && id == d.id;
 	}
+
+	@Override
+	protected boolean isMemCacheSupported() {
+		return true;
+	}
 }

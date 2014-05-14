@@ -37,6 +37,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	private float ratioWidth = 1;
 	private float ratioHeight = 1;
 	
+	private MemCacheEnabler<?> memCacheEnabler;
+	
 	// Temporary variables
 	private float adjustedDensityRatio;
 	private float adjustedWidthRatio;
@@ -49,7 +51,10 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	protected ExternalBitmapDecoder(ExternalBitmapDecoder other) {
 		opts = Cloner.clone(other.opts);
 		
-		region = (other.region == null ? null : new Rect(other.region));
+		if (other.region != null) {
+			region = RECT.obtain(other.region);
+		}
+		
 		mutable = other.mutable;
 		scaleFilter = other.scaleFilter;
 		useBuiltInDecoder = other.useBuiltInDecoder;
@@ -60,6 +65,10 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		targetHeight = other.targetHeight;
 		ratioWidth = other.ratioWidth;
 		ratioHeight = other.ratioHeight;
+		
+		if (other.memCacheEnabler != null) {
+			setMemCacheEnabler(other.memCacheEnabler.clone());
+		}
 	}
 	
 	@Override
@@ -119,8 +128,32 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		}
 	}
 	
+	void setMemCacheEnabler(MemCacheEnabler<?> enabler) {
+		enabler.setBitmapDecoder(this);
+		memCacheEnabler = enabler;
+	}
+	
+	private Object getCacheKey() {
+		return memCacheEnabler != null ? memCacheEnabler : this;
+	}
+	
+	public Bitmap getCachedBitmap() {
+		synchronized (sMemCacheLock) {
+			if (sMemCache == null) return null;
+			return sMemCache.get(getCacheKey());
+		}
+	}
+	
 	@Override
 	public Bitmap decode() {
+		final boolean memCacheSupported = (memCacheEnabler != null || isMemCacheSupported());
+		if (memCacheSupported) {
+			final Bitmap cachedBitmap = getCachedBitmap();
+			if (cachedBitmap != null) {
+				return cachedBitmap;
+			}
+		}
+		
 		// reset
 		
 		opts.mCancel = false;
@@ -168,7 +201,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		if (opts.mCancel) return null;
 		
-		final Bitmap bitmap = executeDecoding();
+		Bitmap bitmap = executeDecoding();
 		if (bitmap == null) return null;
 		
 		// Scale it finally.
@@ -191,10 +224,18 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 			}
 
 			bitmap2.setDensity(opts.inTargetDensity);
-			return bitmap2;
-		} else {
-			return bitmap;
+			bitmap = bitmap2;
 		}
+		
+		if (memCacheSupported) {
+			synchronized (sMemCacheLock) {
+				if (sMemCache != null) {
+					sMemCache.put(getCacheKey(), bitmap);
+				}
+			}
+		}
+		
+		return bitmap;
 	}
 	
 	private int calculateInSampleSizeByRatio() {
@@ -392,6 +433,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	protected abstract Bitmap decode(Options opts);
 	protected abstract InputStream getInputStream();
 	protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
+	protected abstract boolean isMemCacheSupported();
 	
 	protected void onDecodingStarted(boolean builtInDecoder) {
 	}

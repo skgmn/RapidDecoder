@@ -2,6 +2,7 @@ package agu.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public class TwoPhaseBufferedInputStream extends InputStream {
 	private static final int INITIAL_BUFFER_CAPACITY = 1024;
@@ -14,12 +15,18 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	private boolean mBufferExpandable = true;
 	private boolean mSecondPhase = false;
 	
+	private OutputStream mCacheOutputStream;
+	
 	public TwoPhaseBufferedInputStream(InputStream in) {
 		mIn = in;
 	}
 	
 	public InputStream getStream() {
 		return mIn;
+	}
+	
+	public void setCacheOutputStream(OutputStream out) {
+		mCacheOutputStream = out;
 	}
 	
 	@Override
@@ -66,7 +73,17 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 			}
 		}
 
-		return mIn.read();
+		int oneByte = mIn.read();
+		if (mCacheOutputStream != null) {
+			if (oneByte == -1) {
+				try { mCacheOutputStream.close(); } catch (IOException e) {}
+				mCacheOutputStream = null;
+			} else {
+				mCacheOutputStream.write(oneByte);
+			}
+		}
+		
+		return oneByte;
 	}
 	
 	@Override
@@ -92,7 +109,7 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 			}
 			
 			if (byteCount > 0) {
-				int bytesRead = mIn.read(buffer, byteOffset, byteCount);
+				int bytesRead = readFromStream(buffer, byteOffset, byteCount);
 
 				if (mBufferExpandable) {
 					ensureCapacity(bytesRead);
@@ -112,13 +129,30 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 				return totalBytesRead;
 			}
 		} else {
-			return mIn.read(buffer, byteOffset, byteCount);
+			return readFromStream(buffer, byteOffset, byteCount);
 		}
+	}
+	
+	private int readFromStream(byte[] bytes, int offset, int count) throws IOException {
+		int bytesRead = mIn.read(bytes, offset, count);
+		if (mCacheOutputStream != null) {
+			if (bytesRead == -1) {
+				try { mCacheOutputStream.close(); } catch (IOException e) {}
+				mCacheOutputStream = null;
+			} else {
+				mCacheOutputStream.write(bytes, offset, bytesRead);
+			}
+		}
+		return bytesRead;
 	}
 	
 	@Override
 	public void close() throws IOException {
 		mIn.close();
+		if (mCacheOutputStream != null) {
+			try { mCacheOutputStream.close(); } catch (IOException e) {}
+			mCacheOutputStream = null;
+		}
 	}
 	
 	public void startSecondPhase() {

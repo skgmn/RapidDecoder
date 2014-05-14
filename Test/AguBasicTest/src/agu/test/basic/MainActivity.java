@@ -5,9 +5,14 @@ import agu.bitmap.async.AsyncBitmapLoader;
 import agu.bitmap.async.FadeInEffect;
 import agu.bitmap.async.ImageViewBinder;
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.ImageView;
 
 public class MainActivity extends Activity {
@@ -20,44 +25,23 @@ public class MainActivity extends Activity {
 		
 		imageView = (ImageView) findViewById(R.id.image_view);
 		
-		AsyncBitmapLoader loader = new AsyncBitmapLoader();
-		loader.load(
-				BitmapDecoder
-						.from(this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
-						.scaleBy(1f),
-				new ImageViewBinder(imageView)
-						.effect(new FadeInEffect(500)));
-
-//		new AsyncTask<Object, Object, Bitmap>() {
-//			@Override
-//			protected Bitmap doInBackground(Object... params) {
-//				try {
-////					InputStream in = new URL("http://farm6.staticflickr.com/5172/5588953445_51dcf922aa_o.jpg")
-//					InputStream in = new URL("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg")
-//						.openConnection()
-//						.getInputStream();
-//					
-//					return BitmapDecoder.from(in).scaleBy(1 / 2f).useBuiltInDecoder(false).decode();
-//				} catch (MalformedURLException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				
-//				return null;
-//			}
-//			
-//			protected void onPostExecute(Bitmap result) {
-//				if (result == null) {
-//					Log.e("asdf", "bitmap is null");
-//				} else {
-//					imageView.setImageBitmap(result);
-//				}
-//			}
-//		}.execute();
+		BitmapDecoder.initMemoryCache(this);
+		BitmapDecoder.initDiskCache(this);
 		
+		Button button = (Button) findViewById(R.id.button);
+		button.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				AsyncBitmapLoader loader = new AsyncBitmapLoader();
+				loader.load(
+						BitmapDecoder
+								.from(MainActivity.this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
+								.scaleBy(0.8f),
+						new ImageViewBinder(imageView)
+								.effect(new FadeInEffect(500)));
+			}
+		});
+
 //		imageView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
 //			@SuppressWarnings("deprecation")
 //			@Override

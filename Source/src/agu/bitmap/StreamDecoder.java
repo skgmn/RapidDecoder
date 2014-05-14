@@ -2,6 +2,7 @@ package agu.bitmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
@@ -31,6 +32,10 @@ class StreamDecoder extends ExternalBitmapDecoder {
 			is = new LazyInputStream(((LazyInputStream) is).getStreamOpener());
 		}
 		mIn = new TwoPhaseBufferedInputStream(is);
+	}
+	
+	void setCacheOutputStream(OutputStream out) {
+		mIn.setCacheOutputStream(out);
 	}
 	
 	@Override
@@ -67,7 +72,7 @@ class StreamDecoder extends ExternalBitmapDecoder {
 	}
 	
 	@Override
-	public boolean equals(Object o) {
-		return this == o;
+	protected boolean isMemCacheSupported() {
+		return false;
 	}
 }

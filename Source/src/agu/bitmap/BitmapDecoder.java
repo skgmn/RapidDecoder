@@ -1,16 +1,20 @@
 package agu.bitmap;
 
 import static agu.caching.ResourcePool.RECT;
+import static agu.caching.ResourcePool.POINT;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
 import agu.caching.BitmapLruCache;
+import agu.caching.DiskLruCache;
+import agu.compat.DisplayCompat;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -22,9 +26,12 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.Build;
 import android.view.Display;
+import android.view.WindowManager;
 
 public abstract class BitmapDecoder {
 	static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
@@ -33,16 +40,30 @@ public abstract class BitmapDecoder {
 	private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
 	private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
 	private static final String MESSAGE_UNSUPPORTED_SCHEME = "Unsupported scheme: %s";
-	private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context. Use BitmapDecoder.from(Uri, Context) instead.";
+	private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context. Use BitmapDecoder.from(Context, Uri) instead.";
 	
 	protected static final int HASHCODE_NULL_REGION = 0x09DF79A9;
 	protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
 
-	protected static Object sMemCacheLock = new Object();
-	protected static BitmapLruCache<BitmapDecoder> sMemCache;
+	private static final long DEFAULT_CACHE_SIZE = 2 * 1024 * 1024; // 2MB
 
-	public static void initMemoryCache(Display display) {
-		// TODO
+	protected static Object sMemCacheLock = new Object();
+	protected static BitmapLruCache<Object> sMemCache;
+	
+	static Object sDiskCacheLock = new Object();
+	static DiskLruCache<Serializable> sDiskCache;
+
+	public static void initMemoryCache(Context context) {
+		final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+		final Display display = wm.getDefaultDisplay();
+		
+		Point size = POINT.obtainNotReset();
+		DisplayCompat.getSize(display, size);
+		
+		final Config defaultConfig = Build.VERSION.SDK_INT < 9 ? Config.RGB_565 : Config.ARGB_8888;
+		initMemoryCache(BitmapUtils.getByteCount(size.x, size.y, defaultConfig));
+		
+		POINT.recycle(size);
 	}
 
 	public static void initMemoryCache(int size) {
@@ -50,7 +71,7 @@ public abstract class BitmapDecoder {
 			if (sMemCache != null) {
 				sMemCache.evictAll();
 			}
-			sMemCache = new BitmapLruCache<BitmapDecoder>(size);
+			sMemCache = new BitmapLruCache<Object>(size, true);
 		}
 	}
 	
@@ -67,6 +88,33 @@ public abstract class BitmapDecoder {
 		synchronized (sMemCacheLock) {
 			if (sMemCache != null) {
 				sMemCache.evictAll();
+			}
+		}
+	}
+	
+	public static void initDiskCache(Context context) {
+		initDiskCache(context, DEFAULT_CACHE_SIZE);
+	}
+	
+	public static void initDiskCache(Context context, long size) {
+		synchronized (sDiskCacheLock) {
+			sDiskCache = new DiskLruCache<Serializable>(context, "agu", size);
+		}
+	}
+	
+	public static void destroyDiskCache() {
+		synchronized (sDiskCacheLock) {
+			if (sDiskCache != null) {
+				sDiskCache.close();
+				sDiskCache = null;
+			}
+		}
+	}
+	
+	public static void clearDiskCache() {
+		synchronized (sDiskCacheLock) {
+			if (sDiskCache != null) {
+				sDiskCache.clear();
 			}
 		}
 	}
@@ -258,10 +306,10 @@ public abstract class BitmapDecoder {
 	}
 
 	public static BitmapDecoder from(Uri uri) {
-		return from(uri, null);
+		return from(null, uri);
 	}
 	
-	public static BitmapDecoder from(final Uri uri, Context context) {
+	public static BitmapDecoder from(Context context, final Uri uri) {
 		String scheme = uri.getScheme();
 		
 		if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -301,25 +349,53 @@ public abstract class BitmapDecoder {
 			}
 			
 			try {
-				return new StreamDecoder(context.getContentResolver().openInputStream(uri));
+				StreamDecoder d = new StreamDecoder(context.getContentResolver().openInputStream(uri));
+				d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+				return d;
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e);
 			}
 		} else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
 			return new FileDecoder(uri.getPath());
 		} else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
-			return new StreamDecoder(new LazyInputStream(new StreamOpener() {
-				@Override
-				public InputStream openInputStream() {
-					try {
-						return new URL(uri.toString()).openStream();
-					} catch (MalformedURLException e) {
-						throw new IllegalArgumentException(e);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}					
+			String uriString = uri.toString();
+			DiskLruCache<Serializable> cache;
+			
+			synchronized (sDiskCacheLock) {
+				cache = sDiskCache;
+			}
+
+			ExternalBitmapDecoder d = null;
+			
+			if (cache != null) {
+				InputStream in = cache.get(uriString);
+				if (in != null) {
+					d = new StreamDecoder(in);
 				}
-			}));
+			}
+			
+			if (d == null) {
+				StreamDecoder sd = new StreamDecoder(new LazyInputStream(new StreamOpener() {
+					@Override
+					public InputStream openInputStream() {
+						try {
+							return new URL(uri.toString()).openStream();
+						} catch (MalformedURLException e) {
+							throw new IllegalArgumentException(e);
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}					
+					}
+				}));
+				if (cache != null) {
+					sd.setCacheOutputStream(cache.getOutputStream(uriString));
+				}
+				
+				d = sd;
+			}
+			
+			d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
+			return d;
 		} else {
 			throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
 		}
