@@ -9,11 +9,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import agu.caching.BitmapLruCache;
 import agu.caching.DiskLruCache;
 import agu.compat.DisplayCompat;
+import agu.scaling.AspectRatioCalculator;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -119,24 +122,68 @@ public abstract class BitmapDecoder {
 	}
 	
 	//
-	// Commands
+	// Queries
 	//
 	
-	protected static class Command {
+	protected static class Query {
 	}
 	
-	protected static class ScaleTo extends Command {
+	protected static class ScaleTo extends Query {
 		public int width;
 		public int height;
+		
+		public ScaleTo(int width, int height) {
+			this.width = width;
+			this.height = height;
+		}
 	}
 	
-	protected static class ScaleBy extends Command {
+	protected static class ScaleBy extends Query {
 		public float width;
 		public float height;
+
+		public ScaleBy(float width, float height) {
+			this.width = width;
+			this.height = height;
+		}
 	}
 	
-	protected static class Region extends Command {
-		public Rect bounds;
+	protected static class Region extends Query {
+		public int left;
+		public int top;
+		public int right;
+		public int bottom;
+
+		public Region(int left, int top, int right, int bottom) {
+			this.left = left;
+			this.top = top;
+			this.right = right;
+			this.bottom = bottom;
+		}
+	}
+	
+	protected LinkedList<Query> queries;
+	private boolean queriesResolved = false;
+
+	protected float ratioWidth = 1;
+	protected float ratioHeight = 1;
+	protected Rect region;
+	
+	protected BitmapDecoder() {
+	}
+	
+	protected BitmapDecoder(BitmapDecoder other) {
+		if (other.queries != null) {
+			queries = new LinkedList<Query>();
+			queries.addAll(other.queries);
+		}
+	}
+	
+	protected void addRequest(Query request) {
+		if (queries == null) {
+			queries = new LinkedList<BitmapDecoder.Query>();
+		}
+		queries.add(request);
 	}
 	
 	/**
@@ -152,12 +199,22 @@ public abstract class BitmapDecoder {
 	/**
 	 * @return The estimated width of decoded image.
 	 */
-	public abstract int width();
-	
+	public int width() {
+		resolveQueries();
+		
+		int w = (region == null ? (int) Math.ceil(sourceWidth() * getDensityRatio()) : region.width());
+		return (int) Math.ceil(w * ratioWidth);
+	}
+
 	/**
 	 * @return The estimated height of decoded image.
 	 */
-	public abstract int height();
+	public int height() {
+		resolveQueries();
+		
+		int h = (region == null ? (int) Math.ceil(sourceHeight() * getDensityRatio()) : region.height());
+		return (int) Math.ceil(h * ratioHeight);
+	}
 	
 	/**
 	 * <p>Request the decoder to scale the image to the specific dimension while decoding.
@@ -166,9 +223,36 @@ public abstract class BitmapDecoder {
 	 * <p>It uses built-in decoder when scaleFilter is false.</p>
 	 * @param width A desired width to be scaled to.
 	 * @param height A desired height to be scaled to.
-	 * @param scaleFilter true if the image should be filtered.
 	 */
-	public abstract BitmapDecoder scale(int width, int height, boolean scaleFilter);
+	public BitmapDecoder scale(int width, int height) {
+		if (width < 0) {
+			throw new IllegalArgumentException("Invalid width");
+		}
+		if (height < 0) {
+			throw new IllegalArgumentException("Invalid height");
+		}
+		if (width == 0 && height == 0) {
+			throw new IllegalArgumentException();
+		}
+		
+		queriesResolved = false;
+		
+		Query lastRequest = (queries == null ? null : queries.getLast());
+		if (lastRequest != null) {
+			if (lastRequest instanceof ScaleTo) {
+				ScaleTo scaleTo = (ScaleTo) lastRequest;
+				scaleTo.width = width;
+				scaleTo.height = height;
+				
+				return this;
+			} else if (lastRequest instanceof ScaleBy) {
+				queries.removeLast();
+			}
+		}
+		
+		addRequest(new ScaleTo(width, height));
+		return this;
+	}
 	
 	/**
 	 * <p>Request the decoder to scale the image by the specific ratio while decoding.
@@ -177,23 +261,72 @@ public abstract class BitmapDecoder {
 	 * <p>It uses built-in decoder when scaleFilter is false.</p>
 	 * @param widthRatio Scale ratio of width. 
 	 * @param heightRatio Scale ratio of height.
-	 * @param scaleFilter true if the image should be filtered.
 	 */
-	public abstract BitmapDecoder scaleBy(float widthRatio, float heightRatio, boolean scaleFilter);
+	public BitmapDecoder scaleBy(float widthRatio, float heightRatio) {
+		if (widthRatio <= 0 || heightRatio <= 0) {
+			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
+		}
+		
+		queriesResolved = false;
+		
+		Query lastRequest = (queries == null ? null : queries.getLast());
+		if (lastRequest != null) {
+			if (lastRequest instanceof ScaleTo) {
+				ScaleTo scaleTo = (ScaleTo) lastRequest;
+				scaleTo.width = (int) Math.ceil(scaleTo.width * widthRatio);
+				scaleTo.height = (int) Math.ceil(scaleTo.height * heightRatio);
+				
+				return this;
+			} else if (lastRequest instanceof ScaleBy) {
+				ScaleBy scaleBy = (ScaleBy) lastRequest;
+				scaleBy.width *= widthRatio;
+				scaleBy.height *= heightRatio;
+				
+				return this;
+			}
+		}
+		
+		addRequest(new ScaleBy(widthRatio, heightRatio));
+		return this;
+	}
 	
 	/**
 	 * <p>Request the decoder to crop the image while decoding.
 	 * Decoded image will be the same as an image which is cropped after decoding.</p>
 	 * <p>It uses {@link BitmapRegionDecoder} on API level 10 or higher, otherwise it uses built-in decoder.</p>
 	 */
-	public abstract BitmapDecoder region(int left, int top, int right, int bottom);
+	public BitmapDecoder region(int left, int top, int right, int bottom) {
+		if (right < left || bottom < top) {
+			throw new IllegalArgumentException();
+		}
+		
+		queriesResolved = false;
+		
+		Query lastRequest = (queries == null ? null : queries.getLast());
+		if (lastRequest != null) {
+			if (lastRequest instanceof Region) {
+				Region region = (Region) lastRequest;
+				region.left += left;
+				region.top += top;
+				region.right = region.left + (right - left);
+				region.bottom = region.top + (bottom - top);
+				
+				return this;
+			}
+		}
+		
+		addRequest(new Region(left, top, right, bottom));
+		return this;
+	}
 	
 	public abstract Rect region();
 	
 	/**
 	 * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
 	 */
-	public abstract BitmapDecoder region(Rect region);
+	public BitmapDecoder region(Rect region) {
+		return region(region.left, region.top, region.right, region.bottom);
+	}
 
 	/**
 	 * Directly draw the image to canvas without any unnecessary scaling.
@@ -211,9 +344,104 @@ public abstract class BitmapDecoder {
 	 */
 	public abstract BitmapDecoder useBuiltInDecoder(boolean force);
 	
+	public abstract BitmapDecoder filterBitmap(boolean filter);
+	
 	public abstract Bitmap decode();
 	public abstract BitmapDecoder clone();
 	
+	protected void resolveQueries() {
+		if (queriesResolved) return;
+		
+		ratioWidth = ratioHeight = 1f;
+
+		if (region != null) {
+			RECT.recycle(region);
+		}
+		region = null;
+		
+		queriesResolved = true;
+		if (queries == null) return;
+		
+		for (Query r: queries) {
+			if (r instanceof ScaleTo) {
+				ScaleTo scaleTo = (ScaleTo) r;
+				
+				final float densityRatio = getDensityRatio();
+				int w = (region == null ? (int) Math.ceil(sourceWidth() * densityRatio) : region.width());
+				int h = (region == null ? (int) Math.ceil(sourceHeight() * densityRatio) : region.height());
+
+				int targetWidth, targetHeight;
+				if (scaleTo.width == 0) {
+					targetHeight = scaleTo.height;
+					targetWidth = AspectRatioCalculator.fitWidth(w, h, targetHeight);
+				} else if (scaleTo.height == 0) {
+					targetWidth = scaleTo.width;
+					targetHeight = AspectRatioCalculator.fitHeight(w, h, targetWidth);
+				} else {
+					targetWidth = scaleTo.width;
+					targetHeight = scaleTo.height;
+				}
+				
+				ratioWidth = (float) targetWidth / w;
+				ratioHeight = (float) targetHeight / h;
+			} else if (r instanceof ScaleBy) {
+				ScaleBy scaleBy = (ScaleBy) r;
+				
+				ratioWidth *= scaleBy.width;
+				ratioHeight *= scaleBy.height;
+			} else if (r instanceof Region) {
+				Region rr = (Region) r;
+				
+				if (region == null) {
+					int left = (int) Math.round(rr.left / ratioWidth);
+					int top = (int) Math.round(rr.top / ratioHeight);
+					int right = (int) Math.round(rr.right / ratioWidth);
+					int bottom = (int) Math.round(rr.bottom / ratioHeight);
+					
+					region = RECT.obtainNotReset();
+					
+					// Check boundaries
+					region.left = Math.max(0, Math.min(left, sourceWidth()));
+					region.top = Math.max(0, Math.min(top, sourceHeight()));
+					region.right = Math.max(region.left, Math.min(right, sourceWidth()));
+					region.bottom = Math.max(region.top, Math.min(bottom, sourceHeight()));
+				} else {
+					int left = region.left + (int) Math.round(rr.left / ratioWidth);
+					int top = region.top + (int) Math.round(rr.top / ratioHeight);
+					int right = region.left + (int) Math.round((rr.right - rr.left) / ratioWidth);
+					int bottom = region.top + (int) Math.round((rr.bottom - rr.top) / ratioHeight);
+					
+					// Check boundaries
+					region.left = Math.max(0, Math.min(left, region.right));
+					region.top = Math.max(0, Math.min(top, region.bottom));
+					region.right = Math.max(region.left, Math.min(right, region.right));
+					region.bottom = Math.max(region.top, Math.min(bottom, region.bottom));
+				}
+			}
+		}
+	}
+	
+	protected boolean queriesEquals(BitmapDecoder other) {
+		if (queries == null) {
+			return other.queries == null || other.queries.isEmpty();
+		} else {
+			if (queries.size() != other.queries.size()) return false;
+
+			Iterator<Query> it1 = queries.iterator();
+			Iterator<Query> it2 = other.queries.iterator();
+			
+			while (it1.hasNext()) {
+				if (!it2.hasNext() || !it1.next().equals(it2.next())) return false;
+			}
+			
+			return true;
+		}
+	}
+	
+	protected int queriesHash() {
+		return (queries == null ? 0 : queries.hashCode());
+	}
+
 	/**
 	 * Request the decoder to cancel the decoding job currently working.
 	 * This should be called by another thread.
@@ -260,41 +488,18 @@ public abstract class BitmapDecoder {
 	}
 	
 	/**
-	 * Equivalent to <code>scaleBy(widthRatio, heightRatio, true)</code>.
-	 */
-	public BitmapDecoder scaleBy(float widthRatio, float heightRatio) {
-		return scaleBy(widthRatio, heightRatio, true);
-	}
-
-	/**
-	 * Equivalent to <code>scaleBy(ratio, ratio, scaleFilter)</code>.
-	 */
-	public BitmapDecoder scaleBy(float ratio, boolean scaleFilter) {
-		return scaleBy(ratio, ratio, scaleFilter);
-	}
-
-	/**
-	 * Equivalent to <code>scaleBy(ratio, ratio, true)</code>.
+	 * Equivalent to <code>scaleBy(ratio, ratio)</code>.
 	 */
 	public BitmapDecoder scaleBy(float ratio) {
-		return scaleBy(ratio, ratio, true);
+		return scaleBy(ratio, ratio);
 	}
 
-	/**
-	 * Equivalent to <code>scale(width, height, true)</code>.
-	 */
-	public BitmapDecoder scale(int width, int height) {
-		return scale(width, height, true);
-	}
-	
 	public BitmapDecoder region(int width, int height) {
-		final Rect prevRegion = region();
-		if (prevRegion == null) {
-			return region(0, 0, width, height);
-		} else {
-			return region(prevRegion.left, prevRegion.top,
-					prevRegion.left + width, prevRegion.top + height);
-		}
+		return region(0, 0, width, height);
+	}
+
+	protected float getDensityRatio() {
+		return 1f;
 	}
 	
 	//

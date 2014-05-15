@@ -4,7 +4,6 @@ import static agu.caching.ResourcePool.CANVAS;
 import static agu.caching.ResourcePool.MATRIX;
 import static agu.caching.ResourcePool.PAINT;
 import static agu.caching.ResourcePool.RECT;
-import agu.scaling.AspectRatioCalculator;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -17,8 +16,6 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 	private boolean scaleFilter;
 	private Rect region;
 	private boolean mutable = false;
-	private int targetWidth;
-	private int targetHeight;
 	private Config targetConfig;
 	
 	InternalBitmapDecoder(Bitmap bitmap) {
@@ -57,14 +54,12 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 	
 	@Override
 	public Bitmap decode() {
-		if (targetWidth == 0 || targetHeight == 0) {
-			throw new IllegalArgumentException("Both width and height must be positive and non-zero.");
-		}
+		resolveQueries();
 		
 		final boolean redraw = !((targetConfig == null || bitmap.getConfig().equals(targetConfig)) && !mutable);
 		
 		if (region != null) {
-			if (targetWidth == 0 && targetHeight == 0) {
+			if (ratioWidth == 1f && ratioHeight == 1f) {
 				if (!redraw) {
 					return Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height());
 				} else {
@@ -73,9 +68,7 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 			} else {
 				if (!redraw) {
 					Matrix m = MATRIX.obtain();
-					m.setScale(
-							(float) targetWidth / region.width(),
-							(float) targetHeight / region.height());
+					m.setScale(ratioWidth, ratioHeight);
 					
 					Bitmap b = Bitmap.createBitmap(bitmap,
 							region.left, region.top,
@@ -86,14 +79,27 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 					
 					return b;
 				} else {
-					return redraw(bitmap, region, targetWidth, targetHeight);
+					return redraw(bitmap, region,
+							(int) Math.round(ratioWidth * region.width()),
+							(int) Math.round(ratioHeight * region.height()));
 				}
 			}
-		} else if (targetWidth != 0 && targetHeight != 0) {
+		} else if (ratioWidth != 1f || ratioHeight != 1f) {
 			if (!redraw) {
-				return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, scaleFilter);
+				Matrix m = MATRIX.obtain();
+				m.setScale(ratioWidth, ratioHeight);
+				
+				Bitmap b = Bitmap.createBitmap(bitmap,
+						0, 0, bitmap.getWidth(), bitmap.getHeight(),
+						m, scaleFilter);
+				
+				MATRIX.recycle(m);
+				
+				return b;
 			} else {
-				return redraw(bitmap, null, targetWidth, targetHeight);
+				return redraw(bitmap, null,
+						(int) Math.round(ratioWidth * bitmap.getWidth()),
+						(int) Math.round(ratioHeight * bitmap.getHeight()));
 			}
 		} else {
 			if (!redraw) {
@@ -104,45 +110,6 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 		}
 	}
 	
-	@Override
-	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
-		this.scaleFilter = scaleFilter;
-		
-		if (width == 0 && height != 0) {
-			targetWidth = AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), height);
-			targetHeight = height;
-		} else if (height == 0 && width != 0) {
-			targetWidth = width;
-			targetHeight = AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), width);
-		} else {
-			targetWidth = width;
-			targetHeight = height;
-		}
-
-		return this;
-	}
-
-	@Override
-	public BitmapDecoder scaleBy(float widthRatio, float heightRatio,
-			boolean scaleFilter) {
-		
-		if (widthRatio <= 0 || heightRatio <= 0) {
-			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
-		}
-		
-		if (targetWidth != 0 && targetHeight != 0) {
-			return scale(
-					(int) (targetWidth * widthRatio),
-					(int) (targetHeight * heightRatio),
-					scaleFilter);
-		} else {
-			return scale(
-					(int) (sourceWidth() * widthRatio),
-					(int) (sourceHeight() * heightRatio),
-					scaleFilter);
-		}
-	}
-
 	@Override
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (region == null) {
@@ -170,28 +137,6 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 
 	@Override
 	public void cancel() {
-	}
-
-	@Override
-	public int width() {
-		if (targetWidth != 0) {
-			return targetWidth;
-		} else if (region != null) {
-			return region.width();
-		} else {
-			return sourceWidth();
-		}
-	}
-
-	@Override
-	public int height() {
-		if (targetHeight != 0) {
-			return targetHeight;
-		} else if (region != null) {
-			return region.height();
-		} else {
-			return sourceHeight();
-		}
 	}
 
 	@Override
@@ -243,7 +188,7 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 		final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
 		final int hashConfig = (targetConfig == null ? 0 : targetConfig.hashCode());
 		
-		return hashBitmap ^ hashRegion ^ hashOptions ^ hashConfig ^ targetWidth ^ targetHeight;
+		return hashBitmap ^ hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
 	}
 	
 	@Override
@@ -256,8 +201,12 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 				(region == null ? d.region == null : region.equals(d.region)) &&
 				mutable == d.mutable &&
 				scaleFilter == d.scaleFilter &&
-				(targetConfig == null ? d.targetConfig == null : targetConfig.equals(d.targetConfig)) &&
-				targetWidth == d.targetWidth &&
-				targetHeight == d.targetHeight;
+				(targetConfig == null ? d.targetConfig == null : targetConfig.equals(d.targetConfig));
+	}
+	
+	@Override
+	public BitmapDecoder filterBitmap(boolean filter) {
+		scaleFilter = filter;
+		return this;
 	}
 }

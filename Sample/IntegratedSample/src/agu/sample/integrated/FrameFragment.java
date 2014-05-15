@@ -4,6 +4,7 @@ import agu.bitmap.BitmapDecoder;
 import agu.compat.DisplayCompat;
 import agu.scaling.BitmapFrameBuilder;
 import agu.scaling.FrameAlignment;
+import agu.scaling.FrameMode;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -46,31 +47,31 @@ public class FrameFragment extends Fragment {
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
 				.align(FrameAlignment.LEFT_OR_TOP)
-				.fitIn();
+				.build(FrameMode.FIT_IN);
 		imageFitInLeft.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
 				.align(FrameAlignment.CENTER)
-				.fitIn();
+				.build(FrameMode.FIT_IN);
 		imageFitInCenter.setImageBitmap(bitmap);
 
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
 				.background(transparentBackground)
 				.align(FrameAlignment.RIGHT_OR_BOTTOM)
-				.fitIn();
+				.build(FrameMode.FIT_IN);
 		imageFitInRight.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.align(FrameAlignment.LEFT_OR_TOP).cutOut();
+				.align(FrameAlignment.LEFT_OR_TOP).build(FrameMode.CUT_OUT);
 		imageCutOutTop.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.align(FrameAlignment.CENTER).cutOut();
+				.align(FrameAlignment.CENTER).build(FrameMode.CUT_OUT);
 		imageCutOutCenter.setImageBitmap(bitmap);
 		
 		bitmap = new BitmapFrameBuilder(amanda, imageWidth, imageWidth)
-				.align(FrameAlignment.RIGHT_OR_BOTTOM).cutOut();
+				.align(FrameAlignment.RIGHT_OR_BOTTOM).build(FrameMode.CUT_OUT);
 		imageCutOutBottom.setImageBitmap(bitmap);
 	}
 }

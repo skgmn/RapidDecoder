@@ -8,9 +8,9 @@ import static agu.caching.ResourcePool.RECT;
 import java.io.InputStream;
 
 import agu.bitmap.decoder.AguDecoder;
-import agu.scaling.AspectRatioCalculator;
 import agu.util.Cloner;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
@@ -25,17 +25,12 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public static final int SIZE_AUTO = 0;
 
 	protected Options opts;
-	protected Rect region;
 	protected boolean mutable;
 	private boolean scaleFilter = true;
 	private boolean useBuiltInDecoder = false;
 	
 	private int width;
 	private int height;
-	private int targetWidth;
-	private int targetHeight;
-	private float ratioWidth = 1;
-	private float ratioHeight = 1;
 	
 	private MemCacheEnabler<?> memCacheEnabler;
 	
@@ -45,15 +40,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	private float adjustedHeightRatio;
 	
 	protected ExternalBitmapDecoder() {
+		super();
 		opts = OPTIONS.obtain();
 	}
 	
 	protected ExternalBitmapDecoder(ExternalBitmapDecoder other) {
-		opts = Cloner.clone(other.opts);
+		super(other);
 		
-		if (other.region != null) {
-			region = RECT.obtain(other.region);
-		}
+		opts = Cloner.clone(other.opts);
 		
 		mutable = other.mutable;
 		scaleFilter = other.scaleFilter;
@@ -61,10 +55,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		width = other.width;
 		height = other.height;
-		targetWidth = other.targetWidth;
-		targetHeight = other.targetHeight;
-		ratioWidth = other.ratioWidth;
-		ratioHeight = other.ratioHeight;
 		
 		if (other.memCacheEnabler != null) {
 			setMemCacheEnabler(other.memCacheEnabler.clone());
@@ -106,32 +96,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		return height;
 	}
 	
-	@Override
-	public int width() {
-		if (targetWidth != 0) {
-			return targetWidth;
-		} else if (targetHeight != 0) {
-			return autoWidth();
-		} else if (region != null) {
-			return (int) Math.ceil(region.width() * ratioWidth);
-		} else {
-			return (int) Math.ceil(sourceWidth() * getDensityRatio() * ratioWidth);
-		}
-	}
-
-	@Override
-	public int height() {
-		if (targetHeight != 0) {
-			return targetHeight;
-		} else if (targetWidth != 0) {
-			return autoHeight();
-		} else if (region != null) {
-			return (int) Math.ceil(region.height() * ratioHeight);
-		} else {
-			return (int) Math.ceil(sourceHeight() * getDensityRatio() * ratioHeight);
-		}
-	}
-	
 	void setMemCacheEnabler(MemCacheEnabler<?> enabler) {
 		enabler.setBitmapDecoder(this);
 		memCacheEnabler = enabler;
@@ -162,38 +126,16 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		opts.mCancel = false;
 		adjustedDensityRatio = 0;
-
-		// Setup target size.
 		
-		int finalWidth = 0;
-		int finalHeight = 0;
-
-		if (this.targetWidth != 0 || this.targetHeight != 0) {
-			if (targetWidth == 0) {
-				finalWidth = autoWidth();
-				finalHeight = targetHeight;
-			} else if (finalHeight == 0) {
-				finalWidth = targetWidth;
-				finalHeight = autoHeight();
-			} else {
-				finalWidth = this.targetWidth;
-				finalHeight = this.targetHeight;
-			}
-		} else if (region != null && (ratioWidth != 1 || ratioHeight != 1)) {
-			finalWidth = (int) Math.ceil(region.width() * ratioWidth);
-			finalHeight = (int) Math.ceil(region.height() * ratioHeight);
-		}
+		//
 		
+		resolveQueries();
+
 		// Setup sample size.
 		
-		final boolean postScaleTo = (finalWidth != 0 && finalHeight != 0);
-		final boolean postScaleBy = (region == null && (ratioWidth != 1 || ratioHeight != 1));
+		final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
 
-		if (postScaleTo) {
-			opts.inScaled = false;
-			opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
-					finalWidth, finalHeight);
-		} else if (postScaleBy) {
+		if (postScaleBy) {
 			opts.inScaled = false;
 			opts.inSampleSize = calculateInSampleSizeByRatio();
 		} else {
@@ -210,18 +152,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		// Scale it finally.
 		
-		if (postScaleTo || postScaleBy) {
+		if (postScaleBy) {
 			bitmap.setDensity(Bitmap.DENSITY_NONE);
 			Bitmap bitmap2;
 			
-			if (postScaleTo) {
-				bitmap2 = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, scaleFilter);
-			} else {
-				Matrix m = MATRIX.obtain();
-				m.setScale(adjustedWidthRatio, adjustedHeightRatio);
-				bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, scaleFilter);
-				MATRIX.recycle(m);
-			}
+			Matrix m = MATRIX.obtain();
+			m.setScale(adjustedWidthRatio, adjustedHeightRatio);
+			bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, scaleFilter);
+			MATRIX.recycle(m);
 			
 			if (bitmap != bitmap2) {
 				bitmap.recycle();
@@ -245,14 +183,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	private int calculateInSampleSizeByRatio() {
 		final float densityRatio = getDensityRatio();
 		
-		adjustedWidthRatio = densityRatio * ratioWidth;
-		adjustedHeightRatio = densityRatio * ratioHeight;
+		adjustedWidthRatio = ratioWidth * densityRatio;
+		adjustedHeightRatio = ratioHeight * densityRatio;
 		
 		int sampleSize = 1;
-		while (adjustedWidthRatio <= 0.5 && adjustedHeightRatio <= 0.5) {
+		while (adjustedWidthRatio <= 0.5f && adjustedHeightRatio <= 0.5f) {
 			sampleSize *= 2;
-			adjustedWidthRatio *= 2;
-			adjustedHeightRatio *= 2;
+			adjustedWidthRatio *= 2f;
+			adjustedHeightRatio *= 2f;
 		}
 		
 		return sampleSize;
@@ -282,10 +220,10 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 			
 			region = RECT.obtainNotReset();
 			
-			region.left = (int) (this.region.left / densityRatio);
-			region.top = (int) (this.region.top / densityRatio);
-			region.right = (int) (this.region.right / densityRatio);
-			region.bottom = (int) (this.region.bottom / densityRatio);
+			region.left = (int) Math.round(this.region.left / densityRatio);
+			region.top = (int) Math.round(this.region.top / densityRatio);
+			region.right = (int) Math.round(this.region.right / densityRatio);
+			region.bottom = (int) Math.round(this.region.bottom / densityRatio);
 			
 			recycleRegion = true;
 		} else {
@@ -295,9 +233,12 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		//
 		
+		final boolean regional = region != null &&
+				!(region.left == 0 && region.top == 0 &&
+				region.width() == sourceWidth() && region.height() == sourceHeight());
 		final boolean useBuiltInDecoder =
 				this.useBuiltInDecoder ||
-				(mutable && Build.VERSION.SDK_INT < 11) ||
+				(mutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
 				(opts.inSampleSize > 1 && !scaleFilter);
 		
 		onDecodingStarted(useBuiltInDecoder);
@@ -305,17 +246,11 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		final Bitmap bitmap;
 		try {
 			if (useBuiltInDecoder) {
-				bitmap = aguDecode();
+				bitmap = aguDecode(region);
 			} else {
-				if (region != null &&
-						!(region.left == 0 && region.top == 0 &&
-						region.width() == sourceWidth() && region.height() == sourceHeight())) {
-					
+				if (regional) {
 					bitmap = decodeRegional(opts, region);
 				} else {
-					if (Build.VERSION.SDK_INT >= 11) {
-						opts.inMutable = mutable;
-					}
 					return decode(opts);
 				}
 			}
@@ -372,74 +307,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		}
 	}
 	
-	@Override
-	public BitmapDecoder scale(int width, int height, boolean scaleFilter) {
-		if (width < 0 || height < 0) {
-			throw new IllegalArgumentException("Both width and height should be positive.");
-		}
-
-		targetWidth = width;
-		targetHeight = height;
-		ratioWidth = ratioHeight = 1;
-		
-		this.scaleFilter = scaleFilter;
-		return this;
-	}
-	
-	@Override
-	public BitmapDecoder scaleBy(float widthRatio, float heightRatio, boolean scaleFilter) {
-		if (widthRatio <= 0 || heightRatio <= 0) {
-			throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
-		}
-		
-		if (targetWidth != 0 && targetHeight != 0) {
-			return scale(
-					(int) Math.round(targetWidth * widthRatio),
-					(int) Math.round(targetHeight * heightRatio),
-					scaleFilter);
-		} else {
-			this.ratioWidth = widthRatio;
-			this.ratioHeight = heightRatio;
-			this.scaleFilter = scaleFilter;
-			return this;
-		}
-	}
-
-	@Override
-	public BitmapDecoder region(Rect region) {
-		if (region == null) {
-			if (this.region != null) {
-				RECT.recycle(this.region);
-			}
-			this.region = null;
-			return this;
-		} else {
-			return region(region.left, region.top, region.right, region.bottom);
-		}
-	}
-	
-	@Override
-	public BitmapDecoder region(int left, int top, int right, int bottom) {
-		if (region == null) {
-			region = RECT.obtainNotReset();
-		}
-		region.set(left, top, right, bottom);
-		
-		return this;
-	}
-	
+	@SuppressLint("NewApi")
 	@Override
 	public ExternalBitmapDecoder mutable(boolean mutable) {
 		this.mutable = mutable;
+		if (Build.VERSION.SDK_INT >= 11) {
+			opts.inMutable = mutable;
+		}
 		return this;
-	}
-	
-	private int autoWidth() {
-		return AspectRatioCalculator.fitHeight(sourceWidth(), sourceHeight(), targetHeight);
-	}
-	
-	private int autoHeight() {
-		return AspectRatioCalculator.fitWidth(sourceWidth(), sourceHeight(), targetWidth);
 	}
 	
 	protected abstract Bitmap decode(Options opts);
@@ -453,16 +328,12 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	protected void onDecodingFinished() {
 	}
 	
-	@SuppressLint("NewApi")
+	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
 	protected Bitmap decodeRegional(Options opts, Rect region) {
-		if (Build.VERSION.SDK_INT >= 10 && !useBuiltInDecoder) {
-			adjustDensityRatio(false);
-			
-			final BitmapRegionDecoder d = createBitmapRegionDecoder();
-			return (d == null ? null : d.decodeRegion(region, opts));
-		} else {
-			return aguDecode();
-		}
+		adjustDensityRatio(false);
+		
+		final BitmapRegionDecoder d = createBitmapRegionDecoder();
+		return (d == null ? null : d.decodeRegion(region, opts));
 	}
 	
 	private static int calculateInSampleSize(int width, int height, int reqWidth, int reqHeight) {
@@ -484,7 +355,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	    return inSampleSize;
 	}
 
-	protected Bitmap aguDecode() {
+	protected Bitmap aguDecode(Rect region) {
 		final InputStream in = getInputStream();
 		if (in == null) return null;
 		
@@ -523,10 +394,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		return this;
 	}
 
-	protected float getDensityRatio() {
-		return 1f;
-	}
-	
 	@Override
 	public BitmapDecoder config(Config config) {
 		opts.inPreferredConfig = config;
@@ -557,11 +424,9 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	public int hashCode() {
 		final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
 		final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
-		final int hashRatioWidth = Float.floatToIntBits(ratioWidth);
-		final int hashRatioHeight = Float.floatToIntBits(ratioHeight);
 		final int hashConfig = (opts.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS : opts.inPreferredConfig.hashCode());
 		
-		return hashRegion ^ hashOptions ^ hashRatioWidth ^ hashRatioHeight ^ hashConfig ^ targetWidth ^ targetHeight;
+		return hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
 	}
 	
 	@Override
@@ -577,9 +442,12 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 				(config1 == null ? config2 == null : config1.equals(config2)) &&
 				mutable == d.mutable &&
 				scaleFilter == d.scaleFilter &&
-				targetWidth == d.targetWidth &&
-				targetHeight == d.targetHeight &&
-				ratioWidth == d.ratioWidth &&
-				ratioHeight == d.ratioHeight;
+				queriesEquals(d);
+	}
+	
+	@Override
+	public BitmapDecoder filterBitmap(boolean filter) {
+		scaleFilter = filter;
+		return this;
 	}
 }
