@@ -177,11 +177,6 @@ public class InternalBitmapDecoder extends BitmapDecoder {
 	}
 	
 	@Override
-	public Rect region() {
-		return region;
-	}
-	
-	@Override
 	public int hashCode() {
 		final int hashBitmap = bitmap.hashCode();
 		final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());

@@ -319,8 +319,6 @@ public abstract class BitmapDecoder {
 		return this;
 	}
 	
-	public abstract Rect region();
-	
 	/**
 	 * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
 	 */
@@ -393,10 +391,10 @@ public abstract class BitmapDecoder {
 				Region rr = (Region) r;
 				
 				if (region == null) {
-					int left = (int) Math.round(rr.left / ratioWidth);
-					int top = (int) Math.round(rr.top / ratioHeight);
-					int right = (int) Math.round(rr.right / ratioWidth);
-					int bottom = (int) Math.round(rr.bottom / ratioHeight);
+					int left = (int) Math.floor(rr.left / ratioWidth);
+					int top = (int) Math.floor(rr.top / ratioHeight);
+					int right = (int) Math.floor(rr.right / ratioWidth);
+					int bottom = (int) Math.floor(rr.bottom / ratioHeight);
 					
 					region = RECT.obtainNotReset();
 					
@@ -406,10 +404,10 @@ public abstract class BitmapDecoder {
 					region.right = Math.max(region.left, Math.min(right, sourceWidth()));
 					region.bottom = Math.max(region.top, Math.min(bottom, sourceHeight()));
 				} else {
-					int left = region.left + (int) Math.round(rr.left / ratioWidth);
-					int top = region.top + (int) Math.round(rr.top / ratioHeight);
-					int right = region.left + (int) Math.round((rr.right - rr.left) / ratioWidth);
-					int bottom = region.top + (int) Math.round((rr.bottom - rr.top) / ratioHeight);
+					int left = region.left + (int) Math.floor(rr.left / ratioWidth);
+					int top = region.top + (int) Math.floor(rr.top / ratioHeight);
+					int right = region.left + (int) Math.floor((rr.right - rr.left) / ratioWidth);
+					int bottom = region.top + (int) Math.floor((rr.bottom - rr.top) / ratioHeight);
 					
 					// Check boundaries
 					region.left = Math.max(0, Math.min(left, region.right));
@@ -500,6 +498,15 @@ public abstract class BitmapDecoder {
 
 	protected float getDensityRatio() {
 		return 1f;
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			RECT.recycle(region);
+		} finally {
+			super.finalize();
+		}
 	}
 	
 	//

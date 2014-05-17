@@ -65,7 +65,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	protected void finalize() throws Throwable {
 		try {
 			OPTIONS.recycle(opts);
-			RECT.recycle(region);
 		} finally {
 			super.finalize();
 		}
@@ -413,11 +412,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 				}
 			}
 		}
-	}
-	
-	@Override
-	public Rect region() {
-		return region;
 	}
 	
 	@Override
