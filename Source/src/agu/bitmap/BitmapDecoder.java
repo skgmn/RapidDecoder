@@ -2,6 +2,7 @@ package agu.bitmap;
 
 import static agu.caching.ResourcePool.POINT;
 import static agu.caching.ResourcePool.RECT;
+import static agu.caching.ResourcePool.RECTF;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -30,6 +31,7 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Build;
 import android.view.Display;
@@ -129,10 +131,10 @@ public abstract class BitmapDecoder {
 	}
 	
 	protected static class ScaleTo extends Query {
-		public int width;
-		public int height;
+		public float width;
+		public float height;
 		
-		public ScaleTo(int width, int height) {
+		public ScaleTo(float width, float height) {
 			this.width = width;
 			this.height = height;
 		}
@@ -201,9 +203,8 @@ public abstract class BitmapDecoder {
 	 */
 	public int width() {
 		resolveQueries();
-		
-		int w = (region == null ? (int) Math.ceil(sourceWidth() * getDensityRatio()) : region.width());
-		return (int) Math.ceil(w * ratioWidth);
+		return (int) Math.ceil(
+				(region == null ? sourceWidth() : region.width()) * ratioWidth);
 	}
 
 	/**
@@ -211,9 +212,8 @@ public abstract class BitmapDecoder {
 	 */
 	public int height() {
 		resolveQueries();
-		
-		int h = (region == null ? (int) Math.ceil(sourceHeight() * getDensityRatio()) : region.height());
-		return (int) Math.ceil(h * ratioHeight);
+		return (int) Math.ceil(
+				(region == null ? sourceHeight() : region.height()) * ratioHeight);
 	}
 	
 	/**
@@ -273,8 +273,8 @@ public abstract class BitmapDecoder {
 		if (lastRequest != null) {
 			if (lastRequest instanceof ScaleTo) {
 				ScaleTo scaleTo = (ScaleTo) lastRequest;
-				scaleTo.width = (int) Math.ceil(scaleTo.width * widthRatio);
-				scaleTo.height = (int) Math.ceil(scaleTo.height * heightRatio);
+				scaleTo.width = scaleTo.width * widthRatio;
+				scaleTo.height = scaleTo.height * heightRatio;
 				
 				return this;
 			} else if (lastRequest instanceof ScaleBy) {
@@ -350,7 +350,8 @@ public abstract class BitmapDecoder {
 	protected void resolveQueries() {
 		if (queriesResolved) return;
 		
-		ratioWidth = ratioHeight = 1f;
+		final float densityRatio = getDensityRatio();
+		ratioWidth = ratioHeight = densityRatio;
 
 		if (region != null) {
 			RECT.recycle(region);
@@ -360,15 +361,16 @@ public abstract class BitmapDecoder {
 		queriesResolved = true;
 		if (queries == null) return;
 		
+		RectF regionf = null;
+		
 		for (Query r: queries) {
 			if (r instanceof ScaleTo) {
 				ScaleTo scaleTo = (ScaleTo) r;
 				
-				final float densityRatio = getDensityRatio();
-				int w = (region == null ? (int) Math.ceil(sourceWidth() * densityRatio) : region.width());
-				int h = (region == null ? (int) Math.ceil(sourceHeight() * densityRatio) : region.height());
+				float w = (regionf == null ? sourceWidth() : regionf.width());
+				float h = (regionf == null ? sourceHeight() : regionf.height());
 
-				int targetWidth, targetHeight;
+				float targetWidth, targetHeight;
 				if (scaleTo.width == 0) {
 					targetHeight = scaleTo.height;
 					targetWidth = AspectRatioCalculator.fitWidth(w, h, targetHeight);
@@ -380,8 +382,8 @@ public abstract class BitmapDecoder {
 					targetHeight = scaleTo.height;
 				}
 				
-				ratioWidth = (float) targetWidth / w;
-				ratioHeight = (float) targetHeight / h;
+				ratioWidth = targetWidth / w;
+				ratioHeight = targetHeight / h;
 			} else if (r instanceof ScaleBy) {
 				ScaleBy scaleBy = (ScaleBy) r;
 				
@@ -390,32 +392,41 @@ public abstract class BitmapDecoder {
 			} else if (r instanceof Region) {
 				Region rr = (Region) r;
 				
-				if (region == null) {
-					int left = (int) Math.floor(rr.left / ratioWidth);
-					int top = (int) Math.floor(rr.top / ratioHeight);
-					int right = (int) Math.floor(rr.right / ratioWidth);
-					int bottom = (int) Math.floor(rr.bottom / ratioHeight);
+				if (regionf == null) {
+					final float left = rr.left / ratioWidth;
+					final float top = rr.top / ratioHeight;
+					final float right = rr.right / ratioWidth;
+					final float bottom = rr.bottom / ratioHeight;
 					
-					region = RECT.obtainNotReset();
+					regionf = RECTF.obtainNotReset();
 					
 					// Check boundaries
-					region.left = Math.max(0, Math.min(left, sourceWidth()));
-					region.top = Math.max(0, Math.min(top, sourceHeight()));
-					region.right = Math.max(region.left, Math.min(right, sourceWidth()));
-					region.bottom = Math.max(region.top, Math.min(bottom, sourceHeight()));
+					regionf.left = Math.max(0, Math.min(left, sourceWidth()));
+					regionf.top = Math.max(0, Math.min(top, sourceHeight()));
+					regionf.right = Math.max(regionf.left, Math.min(right, sourceWidth()));
+					regionf.bottom = Math.max(regionf.top, Math.min(bottom, sourceHeight()));
 				} else {
-					int left = region.left + (int) Math.floor(rr.left / ratioWidth);
-					int top = region.top + (int) Math.floor(rr.top / ratioHeight);
-					int right = region.left + (int) Math.floor((rr.right - rr.left) / ratioWidth);
-					int bottom = region.top + (int) Math.floor((rr.bottom - rr.top) / ratioHeight);
+					final float left = region.left + (rr.left / ratioWidth);
+					final float top = region.top + (rr.top / ratioHeight);
+					final float right = region.left + ((rr.right - rr.left) / ratioWidth);
+					final float bottom = region.top + ((rr.bottom - rr.top) / ratioHeight);
 					
 					// Check boundaries
-					region.left = Math.max(0, Math.min(left, region.right));
-					region.top = Math.max(0, Math.min(top, region.bottom));
-					region.right = Math.max(region.left, Math.min(right, region.right));
-					region.bottom = Math.max(region.top, Math.min(bottom, region.bottom));
+					regionf.left = Math.max(0, Math.min(left, regionf.right));
+					regionf.top = Math.max(0, Math.min(top, regionf.bottom));
+					regionf.right = Math.max(regionf.left, Math.min(right, regionf.right));
+					regionf.bottom = Math.max(regionf.top, Math.min(bottom, regionf.bottom));
 				}
 			}
+		}
+
+		if (regionf != null) {
+			region = RECT.obtain(
+					(int) Math.round(regionf.left),
+					(int) Math.round(regionf.top),
+					(int) Math.round(regionf.right),
+					(int) Math.round(regionf.bottom));
+			RECTF.recycle(regionf);
 		}
 	}
 	

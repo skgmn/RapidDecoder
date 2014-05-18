@@ -62,11 +62,19 @@ public class AspectRatioCalculator {
 	
 	public static int fitWidth(int width, int height, int targetWidth) {
 		final double ratio = (double) height / width;
-		return (int) (ratio * targetWidth);
+		return (int) Math.round(ratio * targetWidth);
 	}
 	
 	public static int fitHeight(int width, int height, int targetHeight) {
 		final double ratio = (double) width / height;
-		return (int) (ratio * targetHeight);
+		return (int) Math.round(ratio * targetHeight);
+	}
+	
+	public static float fitWidth(float width, float height, float targetWidth) {
+		return (height / width) * targetWidth;
+	}
+	
+	public static float fitHeight(float width, float height, float targetHeight) {
+		return (width / height) * targetHeight;
 	}
 }
