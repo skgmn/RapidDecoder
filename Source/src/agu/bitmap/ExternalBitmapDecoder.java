@@ -35,6 +35,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	
 	// Temporary variables
 	private float adjustedDensityRatio;
+	private float adjustedWidthRatio;
+	private float adjustedHeightRatio;
 	
 	protected ExternalBitmapDecoder() {
 		super();
@@ -152,7 +154,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 			Bitmap bitmap2;
 			
 			Matrix m = MATRIX.obtain();
-			m.setScale(ratioWidth, ratioHeight);
+			m.setScale(adjustedWidthRatio, adjustedHeightRatio);
 			bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, scaleFilter);
 			MATRIX.recycle(m);
 			
@@ -176,11 +178,14 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	}
 	
 	private int calculateInSampleSizeByRatio() {
+		adjustedWidthRatio = ratioWidth;
+		adjustedHeightRatio = ratioHeight;
+		
 		int sampleSize = 1;
-		while (ratioWidth <= 0.5f && ratioHeight <= 0.5f) {
+		while (adjustedWidthRatio <= 0.5f && adjustedHeightRatio <= 0.5f) {
 			sampleSize *= 2;
-			ratioWidth *= 2f;
-			ratioHeight *= 2f;
+			adjustedWidthRatio *= 2f;
+			adjustedHeightRatio *= 2f;
 		}
 		
 		return sampleSize;
