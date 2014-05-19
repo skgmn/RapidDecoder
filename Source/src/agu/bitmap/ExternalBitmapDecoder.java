@@ -3,7 +3,6 @@ package agu.bitmap;
 import static agu.caching.ResourcePool.MATRIX;
 import static agu.caching.ResourcePool.OPTIONS;
 import static agu.caching.ResourcePool.PAINT;
-import static agu.caching.ResourcePool.RECT;
 
 import java.io.InputStream;
 
@@ -36,12 +35,11 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	
 	// Temporary variables
 	private float adjustedDensityRatio;
-	private float adjustedWidthRatio;
-	private float adjustedHeightRatio;
 	
 	protected ExternalBitmapDecoder() {
 		super();
 		opts = OPTIONS.obtain();
+		opts.inScaled = false;
 	}
 	
 	protected ExternalBitmapDecoder(ExternalBitmapDecoder other) {
@@ -135,10 +133,8 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
 
 		if (postScaleBy) {
-			opts.inScaled = false;
 			opts.inSampleSize = calculateInSampleSizeByRatio();
 		} else {
-			opts.inScaled = true;
 			opts.inSampleSize = 1;
 		}
 		
@@ -156,7 +152,7 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 			Bitmap bitmap2;
 			
 			Matrix m = MATRIX.obtain();
-			m.setScale(adjustedWidthRatio, adjustedHeightRatio);
+			m.setScale(ratioWidth, ratioHeight);
 			bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, scaleFilter);
 			MATRIX.recycle(m);
 			
@@ -180,25 +176,20 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	}
 	
 	private int calculateInSampleSizeByRatio() {
-		final float densityRatio = getDensityRatio();
-		
-		adjustedWidthRatio = ratioWidth * densityRatio;
-		adjustedHeightRatio = ratioHeight * densityRatio;
-		
 		int sampleSize = 1;
-		while (adjustedWidthRatio <= 0.5f && adjustedHeightRatio <= 0.5f) {
+		while (ratioWidth <= 0.5f && ratioHeight <= 0.5f) {
 			sampleSize *= 2;
-			adjustedWidthRatio *= 2f;
-			adjustedHeightRatio *= 2f;
+			ratioWidth *= 2f;
+			ratioHeight *= 2f;
 		}
 		
 		return sampleSize;
 	}
 
 	private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
+		resolveQueries();
 		opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
 				targetWidth, targetHeight);
-		opts.inScaled = false;
 		
 		return executeDecoding();
 	}
@@ -209,29 +200,6 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 	 */
 	@SuppressLint("NewApi")
 	protected Bitmap executeDecoding() {
-		// Adjust region.
-		
-		final Rect region;
-		final boolean recycleRegion;
-		
-		if (this.region != null && getDensityRatio() != 1) {
-			final float densityRatio = getDensityRatio();
-			
-			region = RECT.obtainNotReset();
-			
-			region.left = (int) Math.round(this.region.left / densityRatio);
-			region.top = (int) Math.round(this.region.top / densityRatio);
-			region.right = (int) Math.round(this.region.right / densityRatio);
-			region.bottom = (int) Math.round(this.region.bottom / densityRatio);
-			
-			recycleRegion = true;
-		} else {
-			region = this.region;
-			recycleRegion = false;
-		}
-		
-		//
-		
 		final boolean regional = region != null &&
 				!(region.left == 0 && region.top == 0 &&
 				region.width() == sourceWidth() && region.height() == sourceHeight());
@@ -242,51 +210,18 @@ public abstract class ExternalBitmapDecoder extends BitmapDecoder {
 		
 		onDecodingStarted(useBuiltInDecoder);
 		
-		final Bitmap bitmap;
 		try {
 			if (useBuiltInDecoder) {
-				bitmap = aguDecode(region);
+				return aguDecode(region);
 			} else {
 				if (regional) {
-					bitmap = decodeRegional(opts, region);
+					return decodeRegional(opts, region);
 				} else {
 					return decode(opts);
 				}
 			}
 		} finally {
-			if (recycleRegion) {
-				RECT.recycle(region);
-			}
 			onDecodingFinished();
-		}
-		
-		// Scale corresponds to the desired density.
-		
-		if (bitmap == null || opts.mCancel) return null;
-		
-		if (opts.inScaled) {
-			final int newWidth;
-			final int newHeight;
-			
-			if (this.region != null) {
-				newWidth = this.region.width();
-				newHeight = this.region.height();
-			} else {
-				newWidth = (int) (bitmap.getWidth() * adjustedDensityRatio);
-				newHeight = (int) (bitmap.getHeight() * adjustedDensityRatio);
-			}
-			
-			bitmap.setDensity(Bitmap.DENSITY_NONE);
-			final Bitmap bitmap2 = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, scaleFilter);
-			
-			bitmap2.setDensity(opts.inTargetDensity);
-			
-			if (bitmap != bitmap2) {
-				bitmap.recycle();
-			}
-			return bitmap2;
-		} else {
-			return bitmap;
 		}
 	}
 	

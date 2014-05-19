@@ -41,8 +41,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(bitmap.getWidth(), bitmap2.getWidth());
 		assertEquals(bitmap.getHeight(), bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		d = BitmapDecoder.from(res, id).useBuiltInDecoder();
@@ -51,8 +51,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(bitmap.getWidth(), bitmap2.getWidth());
 		assertEquals(bitmap.getHeight(), bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		d = BitmapDecoder.from(res, id).region(10, 10, 100, 90);
@@ -61,8 +61,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(90, bitmap2.getWidth());
 		assertEquals(80, bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 
 		d = BitmapDecoder.from(res, id).region(10, 10, 100, 90).scaleBy(0.7f, 0.8f);
@@ -71,8 +71,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(63, bitmap2.getWidth());
 		assertEquals(64, bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 
 		d = BitmapDecoder.from(res, id).region(10, 10, 100, 90).useBuiltInDecoder();
@@ -81,8 +81,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(90, bitmap2.getWidth());
 		assertEquals(80, bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 
 		d = BitmapDecoder.from(res, id).region(10, 10, 100, 90).scaleBy(0.7f, 0.8f).useBuiltInDecoder();
@@ -91,8 +91,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(63, bitmap2.getWidth());
 		assertEquals(64, bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		d = BitmapDecoder.from(res, id).scale(210, 220);
@@ -101,8 +101,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals(210, bitmap2.getWidth());
 		assertEquals(220, bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		final float SCALE_FACTOR = 0.5f;
@@ -113,8 +113,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals((int) Math.ceil(bitmap.getWidth() * SCALE_FACTOR), bitmap2.getWidth());
 		assertEquals((int) Math.ceil(bitmap.getHeight() * SCALE_FACTOR), bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		d = BitmapDecoder.from(res, id).scaleBy(SCALE_FACTOR).useBuiltInDecoder();
@@ -123,8 +123,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		bitmap2 = d.decode();
 		assertEquals((int) Math.ceil(bitmap.getWidth() * SCALE_FACTOR), bitmap2.getWidth());
 		assertEquals((int) Math.ceil(bitmap.getHeight() * SCALE_FACTOR), bitmap2.getHeight());
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 		bitmap2.recycle();
 		
 		// region after scale
@@ -135,8 +135,8 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
-		assertEquals(w, bitmap2.getWidth());
-		assertEquals(h, bitmap2.getHeight());
+		assertEquals(bitmap2.getWidth(), w);
+		assertEquals(bitmap2.getHeight(), h);
 
 		bitmap2.recycle();
 	}

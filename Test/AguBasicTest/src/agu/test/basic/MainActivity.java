@@ -28,27 +28,21 @@ public class MainActivity extends Activity {
 		BitmapDecoder.initMemoryCache(this);
 		BitmapDecoder.initDiskCache(this);
 		
-		Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.artist_kim_2)/*.scaleBy(0.5f)*/.region(0, 0, 100, 100).decode();
-		imageView.setImageBitmap(bitmap);
-		
-		Log.e("asdf", "width = " + bitmap.getWidth());
-		Log.e("asdf", "height = " + bitmap.getHeight());
-		
-//		Button button = (Button) findViewById(R.id.button);
-//		button.setOnClickListener(new OnClickListener() {
-//			@Override
-//			public void onClick(View v) {
-//				AsyncBitmapLoader loader = new AsyncBitmapLoader();
-//				loader.load(
-//						BitmapDecoder
-//								.from(MainActivity.this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
-//								.scaleBy(0.8f),
-////								.from(MainActivity.this, Uri.parse("http://upload.wikimedia.org/wikipedia/commons/4/4e/Pleiades_large.jpg"))
-////								.scaleBy(0.1f),
-//						new ImageViewBinder(imageView)
-//								.effect(new FadeInEffect(500)));
-//			}
-//		});
+		Button button = (Button) findViewById(R.id.button);
+		button.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				AsyncBitmapLoader loader = new AsyncBitmapLoader();
+				loader.load(
+						BitmapDecoder
+								.from(MainActivity.this, Uri.parse("http://upload.inven.co.kr/upload/2012/10/31/bbs/i3758565816.jpg"))
+								.scaleBy(0.8f),
+//								.from(MainActivity.this, Uri.parse("http://upload.wikimedia.org/wikipedia/commons/4/4e/Pleiades_large.jpg"))
+//								.scaleBy(0.1f),
+						new ImageViewBinder(imageView)
+								.effect(new FadeInEffect(500)));
+			}
+		});
 
 //		imageView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
 //			@SuppressWarnings("deprecation")
