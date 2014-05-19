@@ -203,7 +203,7 @@ public abstract class BitmapDecoder {
 	 */
 	public int width() {
 		resolveQueries();
-		return (int) Math.ceil(
+		return (int) Math.round(
 				(region == null ? sourceWidth() : region.width()) * ratioWidth);
 	}
 
@@ -212,7 +212,7 @@ public abstract class BitmapDecoder {
 	 */
 	public int height() {
 		resolveQueries();
-		return (int) Math.ceil(
+		return (int) Math.round(
 				(region == null ? sourceHeight() : region.height()) * ratioHeight);
 	}
 	

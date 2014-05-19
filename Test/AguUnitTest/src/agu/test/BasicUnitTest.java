@@ -24,7 +24,7 @@ public class BasicUnitTest extends AndroidTestCase {
 	}
 	
 	public void testDecoding() {
-//		decodingTest(R.drawable.android);
+		decodingTest(R.drawable.android);
 		decodingTest(R.drawable.pond);
 	}
 	
