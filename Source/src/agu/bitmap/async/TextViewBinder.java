@@ -56,16 +56,14 @@ public class TextViewBinder extends BitmapBinder {
 	
 	@Override
 	public void execute(final AsyncBitmapLoaderJob job) {
-		job.setDelegate(new BitmapDecoderDelegate() {
-			@Override
-			public Bitmap decode(BitmapDecoder decoder) {
-				if (mWidth != 0 && mHeight != 0 && mFrameMode != null) {
+		if (mWidth != 0 && mHeight != 0 && mFrameMode != null) {
+			job.setDelegate(new BitmapDecoderDelegate() {
+				@Override
+				public Bitmap decode(BitmapDecoder decoder) {
 					return new BitmapFrameBuilder(decoder, mWidth, mHeight, mFrameOptions).build(mFrameMode);
-				} else {
-					return decoder.decode();
 				}
-			}
-		});
+			});
+		}
 		job.start();
 	}
 }

@@ -73,7 +73,7 @@ public abstract class BitmapDecoder {
 			if (sMemCache != null) {
 				sMemCache.evictAll();
 			}
-			sMemCache = new BitmapLruCache<Object>(size, true);
+			sMemCache = new BitmapLruCache<Object>(size, false);
 		}
 	}
 	
