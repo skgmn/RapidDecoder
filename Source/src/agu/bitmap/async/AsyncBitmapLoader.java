@@ -87,12 +87,17 @@ public class AsyncBitmapLoader {
 	}
 	
 	public void cancel(Object singletonKey) {
-		if (mSingletonLoaders == null) return;
+		if (mSingletonLoaders == null || singletonKey == null) return;
 		
 		final Loader loader = mSingletonLoaders.remove(singletonKey);
 		if (loader != null) {
 			loader.cancel();
 		}
+	}
+	
+	public void cancel(BitmapBinder binder) {
+		if (binder == null) return;
+		cancel(binder.singletonKey());
 	}
 	
 	public void cancelAll() {

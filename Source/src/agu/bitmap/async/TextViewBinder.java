@@ -66,4 +66,9 @@ public class TextViewBinder extends BitmapBinder {
 		}
 		job.start();
 	}
+	
+	@Override
+	Object singletonKey() {
+		return mTextView.get();
+	}
 }
