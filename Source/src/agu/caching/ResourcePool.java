@@ -169,7 +169,10 @@ public abstract class ResourcePool<T> {
 	public static class CanvasPool extends ResourcePool<Canvas> {
 		private Field Canvas_mNativeCanvas;
 		private Field Canvas_mBitmap;
-		private Method Canvas_native_setBitmap;
+		private Field Canvas_mGL;
+		private Field Canvas_mDensity;
+		private Method Canvas_initRaster;
+		private Method Canvas_finalizer;
 		
 		@Override
 		protected Canvas newInstance() {
@@ -181,27 +184,53 @@ public abstract class ResourcePool<T> {
 			if (Build.VERSION.SDK_INT >= 14) {
 				obj.setBitmap(null);
 				return true;
+			} else if (Build.VERSION.SDK_INT >= 11) {
+				// No source available for Honeycomb.
+				return false;
 			} else {
 				// Canvas.setBitmap(null) throws an NullPointerException before API Level 14.
 				
 				try {
 					if (Canvas_mNativeCanvas == null) {
 						Canvas_mNativeCanvas = Canvas.class.getDeclaredField("mNativeCanvas");
+						Canvas_mNativeCanvas.setAccessible(true);
 					}
 					if (Canvas_mBitmap == null) {
 						Canvas_mBitmap = Canvas.class.getDeclaredField("mBitmap");
+						Canvas_mBitmap.setAccessible(true);
 					}
-					if (Canvas_native_setBitmap == null) {
-						Canvas_native_setBitmap = Canvas.class.getDeclaredMethod("native_setBitmap", Integer.TYPE, Integer.TYPE);
+					if (Canvas_mGL == null) {
+						Canvas_mGL = Canvas.class.getDeclaredField("mGL");
+						Canvas_mGL.setAccessible(true);
+					}
+					if (Canvas_initRaster == null) {
+						Canvas_initRaster = Canvas.class.getDeclaredMethod("initRaster", Integer.TYPE);
+						Canvas_initRaster.setAccessible(true);
+					}
+					if (Canvas_mDensity == null) {
+						Canvas_mDensity = Canvas.class.getDeclaredField("mDensity");
+						Canvas_mDensity.setAccessible(true);
+					}
+					if (Canvas_finalizer == null) {
+						Canvas_finalizer = Canvas.class.getDeclaredMethod("finalizer", Integer.TYPE);
+						Canvas_finalizer.setAccessible(true);
 					}
 					
-					Canvas_mNativeCanvas.setAccessible(true);
-					Canvas_native_setBitmap.setAccessible(true);
-					Canvas_mBitmap.setAccessible(true);
+					Object gl = Canvas_mGL.get(obj);
+					if (gl != null) {
+						return false;
+					}
 					
-					final int nativeCanvas = Canvas_mNativeCanvas.getInt(obj);
-					Canvas_native_setBitmap.invoke(null, nativeCanvas, 0);
+					int nativeCanvas = Canvas_mNativeCanvas.getInt(obj);
+					if (nativeCanvas != 0) {
+						Canvas_finalizer.invoke(null, nativeCanvas);
+					}
+					
+					int nullCanvas = (Integer) Canvas_initRaster.invoke(null, 0);
+					Canvas_mNativeCanvas.set(obj, nullCanvas);
+					
 					Canvas_mBitmap.set(obj, null);
+					Canvas_mDensity.set(obj, Bitmap.DENSITY_NONE);
 					
 					return true;
 				} catch (Exception e) {
