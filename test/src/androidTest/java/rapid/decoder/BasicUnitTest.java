@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.test.AndroidTestCase;
 
+import rapid.decoder.test.R;
+
 public class BasicUnitTest extends AndroidTestCase {
 	private Resources res;
 
@@ -38,6 +40,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(bitmap.getWidth(), bitmap2.getWidth());
 		assertEquals(bitmap.getHeight(), bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -48,6 +51,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(bitmap.getWidth(), bitmap2.getWidth());
 		assertEquals(bitmap.getHeight(), bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -58,6 +62,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(90, bitmap2.getWidth());
 		assertEquals(80, bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -68,6 +73,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(63, bitmap2.getWidth());
 		assertEquals(64, bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -78,6 +84,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(90, bitmap2.getWidth());
 		assertEquals(80, bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -88,6 +95,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(63, bitmap2.getWidth());
 		assertEquals(64, bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -98,6 +106,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(210, bitmap2.getWidth());
 		assertEquals(220, bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -110,6 +119,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals((int) Math.ceil(bitmap.getWidth() * SCALE_FACTOR), bitmap2.getWidth());
 		assertEquals((int) Math.ceil(bitmap.getHeight() * SCALE_FACTOR), bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -120,6 +130,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals((int) Math.ceil(bitmap.getWidth() * SCALE_FACTOR), bitmap2.getWidth());
 		assertEquals((int) Math.ceil(bitmap.getHeight() * SCALE_FACTOR), bitmap2.getHeight());
 		assertEquals(bitmap2.getWidth(), w);
@@ -134,6 +145,7 @@ public class BasicUnitTest extends AndroidTestCase {
 		w = d.width();
 		h = d.height();
 		bitmap2 = d.decode();
+        assertNotNull(bitmap2);
 		assertEquals(bitmap2.getWidth(), w);
 		assertEquals(bitmap2.getHeight(), h);
 
