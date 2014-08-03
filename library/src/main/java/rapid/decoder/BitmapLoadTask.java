@@ -6,7 +6,7 @@ import java.lang.ref.WeakReference;
 
 public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeResult> {
     private Decodable mDecodable;
-    private BitmapLoader.OnBitmapDecodedListener mListener;
+    private Decodable.OnBitmapDecodedListener mListener;
     private WeakReference<Object> mWeakKey;
     private Object mStrongKey;
 

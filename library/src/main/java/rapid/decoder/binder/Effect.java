@@ -9,9 +9,11 @@ import rapid.decoder.cache.CacheSource;
 
 public abstract class Effect {
     public interface EffectTarget {
-        Drawable getDrawable();
+        int getDrawableCount();
 
-        void setDrawable(Drawable d);
+        Drawable getDrawable(int index);
+
+        void setDrawable(int index, Drawable d);
 
         void postDelayed(Runnable r, int delay);
     }
@@ -25,7 +27,10 @@ public abstract class Effect {
         @Override
         public void apply(Context context, EffectTarget target, Drawable newDrawable,
                           CacheSource cacheSource) {
-            target.setDrawable(newDrawable);
+            int count = target.getDrawableCount();
+            for (int i = 0; i < count; ++i) {
+                target.setDrawable(i, newDrawable);
+            }
         }
     };
 
@@ -33,22 +38,26 @@ public abstract class Effect {
         @Override
         public void apply(Context context, final EffectTarget target, final Drawable newDrawable,
                           CacheSource cacheSource) {
-            Drawable oldDrawable = target.getDrawable();
-            if (oldDrawable == null) {
-                oldDrawable = new ColorDrawable(0);
-            }
-            final TransitionDrawable d = new TransitionDrawable(new Drawable[]{oldDrawable, newDrawable});
-            int duration = context.getResources().getInteger(DURATION_ID);
-            d.startTransition(duration);
-            target.setDrawable(d);
-            target.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (target.getDrawable() == d) {
-                        target.setDrawable(newDrawable);
-                    }
+            int count = target.getDrawableCount();
+            for (int i = 0; i < count; ++i) {
+                Drawable oldDrawable = target.getDrawable(i);
+                if (oldDrawable == null) {
+                    oldDrawable = new ColorDrawable(0);
                 }
-            }, duration);
+                final TransitionDrawable d = new TransitionDrawable(new Drawable[]{oldDrawable, newDrawable});
+                int duration = context.getResources().getInteger(DURATION_ID);
+                d.startTransition(duration);
+                target.setDrawable(i, d);
+                final int finalI = i;
+                target.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (target.getDrawable(finalI) == d) {
+                            target.setDrawable(finalI, newDrawable);
+                        }
+                    }
+                }, duration);
+            }
         }
     };
 

@@ -27,13 +27,18 @@ public class ImageViewBinder extends ViewBitmapBinder<ImageView> implements Effe
     }
 
     @Override
-    public Drawable getDrawable() {
+    public int getDrawableCount() {
+        return 1;
+    }
+
+    @Override
+    public Drawable getDrawable(int index) {
         ImageView v = getView();
         return v != null ? v.getDrawable() : null;
     }
 
     @Override
-    public void setDrawable(Drawable d) {
+    public void setDrawable(int index, Drawable d) {
         ImageView v = getView();
         if (v != null) {
             v.setImageDrawable(d);

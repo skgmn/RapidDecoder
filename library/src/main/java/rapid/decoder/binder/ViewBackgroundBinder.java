@@ -33,14 +33,14 @@ public class ViewBackgroundBinder extends ViewBitmapBinder<View> implements Effe
     }
 
     @Override
-    public Drawable getDrawable() {
+    public Drawable getDrawable(int index) {
         View v = getView();
         return v != null ? v.getBackground() : null;
     }
 
     @SuppressWarnings("deprecation")
     @Override
-    public void setDrawable(Drawable d) {
+    public void setDrawable(int index, Drawable d) {
         View v = getView();
         if (v != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -49,5 +49,10 @@ public class ViewBackgroundBinder extends ViewBitmapBinder<View> implements Effe
                 v.setBackgroundDrawable(d);
             }
         }
+    }
+
+    @Override
+    public int getDrawableCount() {
+        return 1;
     }
 }
