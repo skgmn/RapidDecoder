@@ -15,12 +15,17 @@ android {
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                abiFilters "armeabi", "armeabi-v7a"
+                moduleName "decoder"
+                ldLibs "z", "log", "jnigraphics"
+            }
         }
         debug {
             ndk {
                 abiFilters "armeabi", "armeabi-v7a"
                 moduleName "decoder"
-                ldLibs "jnigraphics", "z", "log"
+                ldLibs "z", "log", "jnigraphics"
             }
         }
     }

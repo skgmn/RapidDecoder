@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
+import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.Decodable;
@@ -29,7 +30,6 @@ public abstract class FramedDecoder implements Decodable {
         frameHeight = other.frameHeight;
     }
 
-    @SuppressWarnings("UnusedDeclaration")
     public FramedDecoder background(Drawable d) {
         this.background = d;
         return this;
@@ -66,5 +66,34 @@ public abstract class FramedDecoder implements Decodable {
                 rectDest).createAndDraw(frameWidth, frameHeight, rectDest, background);
         RECT.recycle(rectDest);
         return bitmap;
+    }
+
+    // Factory methods
+
+    public static FramedDecoder newInstance(BitmapDecoder decoder, int frameWidth,
+                                            int frameHeight, ImageView.ScaleType scaleType) {
+
+        if (ImageView.ScaleType.MATRIX.equals(scaleType)) {
+            return new MatrixFramedDecoder(decoder, frameWidth, frameHeight);
+        } else if (ImageView.ScaleType.FIT_XY.equals(scaleType)) {
+            return new FitXYFramedDecoder(decoder, frameWidth, frameHeight);
+        } else if (ImageView.ScaleType.FIT_START.equals(scaleType)) {
+            return new FitGravityFramedDecoder(decoder, frameWidth, frameHeight,
+                    FitGravityFramedDecoder.GRAVITY_START);
+        } else if (ImageView.ScaleType.FIT_CENTER.equals(scaleType)) {
+            return new FitGravityFramedDecoder(decoder, frameWidth, frameHeight,
+                    FitGravityFramedDecoder.GRAVITY_CENTER);
+        } else if (ImageView.ScaleType.FIT_END.equals(scaleType)) {
+            return new FitGravityFramedDecoder(decoder, frameWidth, frameHeight,
+                    FitGravityFramedDecoder.GRAVITY_END);
+        } else if (ImageView.ScaleType.CENTER.equals(scaleType)) {
+            return new CenterFramedDecoder(decoder, frameWidth, frameHeight);
+        } else if (ImageView.ScaleType.CENTER_CROP.equals(scaleType)) {
+            return new CenterCropFramedDecoder(decoder, frameWidth, frameHeight);
+        } else if (ImageView.ScaleType.CENTER_INSIDE.equals(scaleType)) {
+            return new CenterInsideFramedDecoder(decoder, frameWidth, frameHeight);
+        } else {
+            throw new IllegalArgumentException("scaleType");
+        }
     }
 }

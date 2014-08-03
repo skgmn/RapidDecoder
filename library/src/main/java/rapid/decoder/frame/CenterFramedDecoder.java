@@ -6,7 +6,7 @@ import android.support.annotation.Nullable;
 import rapid.decoder.BitmapDecoder;
 
 @SuppressWarnings("UnusedDeclaration")
-public class CenterFramedDecoder extends FramedDecoder {
+class CenterFramedDecoder extends FramedDecoder {
     public CenterFramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
         super(decoder, frameWidth, frameHeight);
     }

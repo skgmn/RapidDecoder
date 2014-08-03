@@ -250,8 +250,7 @@ public abstract class BitmapDecoder implements Decodable {
 
         queriesResolved = false;
 
-        int index = queries.size() - 1;
-        Query lastRequest = (queries == null ? null : queries.get(index));
+        Query lastRequest = (queries == null ? null : queries.get(queries.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -260,7 +259,7 @@ public abstract class BitmapDecoder implements Decodable {
 
                 return this;
             } else if (lastRequest instanceof ScaleBy) {
-                queries.remove(index);
+                queries.remove(queries.size() - 1);
             }
         }
 
@@ -285,8 +284,7 @@ public abstract class BitmapDecoder implements Decodable {
 
         queriesResolved = false;
 
-        int index = queries.size() - 1;
-        Query lastRequest = (queries == null ? null : queries.get(index));
+        Query lastRequest = (queries == null ? null : queries.get(queries.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -473,7 +471,8 @@ public abstract class BitmapDecoder implements Decodable {
         if (queries == null) {
             return other.queries == null || other.queries.isEmpty();
         } else {
-            if (queries.size() != other.queries.size()) return false;
+            int otherSize = (other.queries == null ? 0 : other.queries.size());
+            if (queries.size() != otherSize) return false;
 
             Iterator<Query> it1 = queries.iterator();
             Iterator<Query> it2 = other.queries.iterator();

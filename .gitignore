@@ -12,6 +12,7 @@ gen
 build
 out
 lib
+jniLibs
 
 target
 pom.xml.*
