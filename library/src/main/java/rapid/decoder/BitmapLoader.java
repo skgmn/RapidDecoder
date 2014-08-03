@@ -18,6 +18,7 @@ import android.support.annotation.Nullable;
 import java.io.InputStream;
 
 import rapid.decoder.builtin.BuiltInDecoder;
+import rapid.decoder.cache.CacheSource;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -403,5 +404,17 @@ public abstract class BitmapLoader extends BitmapDecoder {
     public BitmapDecoder filterBitmap(boolean filter) {
         scaleFilter = filter;
         return this;
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return opts.mCancel;
+    }
+
+    @Override
+    public void decode(@NonNull DecodeResult out) {
+        // TODO: Implement this
+        out.bitmap = decode();
+        out.cacheSource = CacheSource.NOT_CACHED;
     }
 }

@@ -10,6 +10,9 @@ import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import rapid.decoder.binder.BitmapBinder;
+import rapid.decoder.cache.CacheSource;
+
 import static rapid.decoder.cache.ResourcePool.*;
 
 public class BitmapTransformer extends BitmapDecoder {
@@ -112,6 +115,17 @@ public class BitmapTransformer extends BitmapDecoder {
 	}
 
     @Override
+    public void decode(@NonNull DecodeResult out) {
+        out.bitmap = decode();
+        out.cacheSource = CacheSource.MEMORY;
+    }
+
+    @Override
+    public void decode(@NonNull OnBitmapDecodedListener listener) {
+        listener.onBitmapDecoded(decode(), CacheSource.MEMORY);
+    }
+
+    @Override
 	public BitmapDecoder region(int left, int top, int right, int bottom) {
 		if (region == null) {
 			region = RECT.obtainNotReset();
@@ -147,7 +161,19 @@ public class BitmapTransformer extends BitmapDecoder {
 		return this;
 	}
 
-	@Override
+    @Override
+    public void into(BitmapBinder binder) {
+        DecodeResult result = new DecodeResult();
+        decode(result);
+        binder.bind(result.bitmap, result.cacheSource);
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return false;
+    }
+
+    @Override
 	public BitmapDecoder region(Rect region) {
 		if (region == null) {
 			if (this.region != null) {

@@ -4,15 +4,17 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.Decodable;
+import rapid.decoder.cache.CacheSource;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
-public abstract class FramedDecoder implements Decodable {
+public abstract class FramedDecoder extends Decodable {
     protected BitmapDecoder decoder;
     protected Drawable background;
     protected int frameWidth;
@@ -66,6 +68,23 @@ public abstract class FramedDecoder implements Decodable {
                 rectDest).createAndDraw(frameWidth, frameHeight, rectDest, background);
         RECT.recycle(rectDest);
         return bitmap;
+    }
+
+    @Override
+    public void cancel() {
+        decoder.cancel();
+    }
+
+    @Override
+    public void decode(@NonNull DecodeResult out) {
+        // TODO Implement this
+        out.bitmap = decode();
+        out.cacheSource = CacheSource.NOT_CACHED;
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return decoder.isCancelled();
     }
 
     // Factory methods
