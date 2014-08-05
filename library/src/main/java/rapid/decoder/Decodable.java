@@ -24,17 +24,29 @@ public abstract class Decodable {
     }
 
     public void into(final BitmapBinder binder) {
-        Object key = binder.key();
-        if (key == null) return;
+        View v = binder.getView();
+        if (v == null) return;
 
+        final BackgroundTaskRecord record = BitmapDecoder.sTaskManager.register(v, false);
+        binder.runAfterReady(new BitmapBinder.OnReadyListener() {
+            @Override
+            public void onReady(View v) {
+                if (record.isStale) return;
+                loadBitmapWhenReady(record, binder, v);
+            }
+        });
+    }
+
+    protected void loadBitmapWhenReady(BackgroundTaskRecord record, final BitmapBinder binder,
+                                       View v) {
         BitmapLoadTask task = new BitmapLoadTask(this, new OnBitmapDecodedListener() {
             @Override
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
                 binder.bind(bitmap, cacheSource);
             }
         });
-        task.setKey(key, binder.isKeyStrong());
-        BitmapDecoder.execute(task);
+        task.setKey(v, false);
+        record.execute(task);
     }
 
     public void into(View v) {
@@ -48,7 +60,7 @@ public abstract class Decodable {
     public void decode(@NonNull OnBitmapDecodedListener listener) {
         BitmapLoadTask task = new BitmapLoadTask(this, listener);
         task.setKey(this, false);
-        BitmapDecoder.execute(task);
+        BitmapDecoder.sTaskManager.execute(task);
     }
 
     public abstract void cancel();

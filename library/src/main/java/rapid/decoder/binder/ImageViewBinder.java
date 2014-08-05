@@ -6,13 +6,9 @@ import android.widget.ImageView;
 
 import rapid.decoder.cache.CacheSource;
 
-public class ImageViewBinder extends ViewBitmapBinder<ImageView> implements Effect.EffectTarget {
+public class ImageViewBinder extends BitmapBinder<ImageView> {
     public ImageViewBinder(ImageView v) {
         super(v);
-    }
-
-    public ImageViewBinder(ImageView v, Effect effect) {
-        super(v, effect);
     }
 
     @Override
@@ -23,12 +19,17 @@ public class ImageViewBinder extends ViewBitmapBinder<ImageView> implements Effe
         Drawable d = createDrawable(v.getContext(), bitmap);
         if (d == null) return;
 
-        mEffect.apply(v.getContext(), this, d, cacheSource);
+        effect().apply(v.getContext(), this, d, cacheSource);
     }
 
     @Override
     public int getDrawableCount() {
         return 1;
+    }
+
+    @Override
+    public boolean isDrawableEnabled(int index) {
+        return true;
     }
 
     @Override

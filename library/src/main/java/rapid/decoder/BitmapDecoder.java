@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
@@ -15,12 +14,12 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.Display;
 import android.view.WindowManager;
+import android.widget.ImageView;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -29,15 +28,14 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.WeakHashMap;
 
 import rapid.decoder.cache.BitmapLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
+import rapid.decoder.frame.FramedDecoder;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -185,51 +183,7 @@ public abstract class BitmapDecoder extends Decodable {
     // Async jobs
     //
 
-    private static WeakHashMap<Object, BitmapLoadTask> sWeakJobs;
-    private static HashMap<Object, BitmapLoadTask> sStrongJobs;
-
-    static boolean removeJob(Object key) {
-        return key != null && (sWeakJobs != null && sWeakJobs.remove(key) != null || sStrongJobs
-                != null && sStrongJobs.remove(key) != null);
-    }
-
-    public static void execute(BitmapLoadTask task) {
-        boolean isStrong;
-        Object key = task.getStrongKey();
-        if (key != null) {
-            isStrong = true;
-        } else {
-            key = task.getWeakKey();
-            if (key == null) return;
-            isStrong = false;
-        }
-        if (isStrong) {
-            if (sStrongJobs == null) {
-                sStrongJobs = new HashMap<Object, BitmapLoadTask>();
-            } else {
-                BitmapLoadTask prevTask = sStrongJobs.get(key);
-                if (prevTask != null) {
-                    prevTask.cancel();
-                }
-            }
-            sStrongJobs.put(key, task);
-        } else {
-            if (sWeakJobs == null) {
-                sWeakJobs = new WeakHashMap<Object, BitmapLoadTask>();
-            } else {
-                BitmapLoadTask prevTask = sWeakJobs.get(key);
-                if (prevTask != null) {
-                    prevTask.cancel();
-                }
-            }
-            sWeakJobs.put(key, task);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, task);
-        } else {
-            task.execute();
-        }
-    }
+    static BackgroundTaskManager sTaskManager = new BackgroundTaskManager();
 
     //
     //
@@ -622,6 +576,14 @@ public abstract class BitmapDecoder extends Decodable {
             super.finalize();
         }
     }
+    
+    //
+    // Frame
+    //
+
+    public FramedDecoder frame(int frameWidth, int frameHeight, ImageView.ScaleType scaleType) {
+        return FramedDecoder.newInstance(this, frameWidth, frameHeight, scaleType);
+    }
 
     //
     // from()
@@ -763,14 +725,5 @@ public abstract class BitmapDecoder extends Decodable {
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapDecoder from(@NonNull Bitmap bitmap) {
         return new BitmapTransformer(bitmap);
-    }
-
-    public static BitmapDecoder from(Cursor cursor, int columnIndex) {
-        return from(cursor.getBlob(columnIndex));
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(Cursor cursor, String columnName) {
-        return from(cursor, cursor.getColumnIndex(columnName));
     }
 }

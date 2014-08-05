@@ -7,13 +7,9 @@ import android.view.View;
 
 import rapid.decoder.cache.CacheSource;
 
-public class ViewBackgroundBinder extends ViewBitmapBinder<View> implements Effect.EffectTarget {
+public class ViewBackgroundBinder extends BitmapBinder<View> {
     public ViewBackgroundBinder(View v) {
         super(v);
-    }
-
-    public ViewBackgroundBinder(View v, Effect effect) {
-        super(v, effect);
     }
 
     @SuppressWarnings("deprecation")
@@ -25,11 +21,7 @@ public class ViewBackgroundBinder extends ViewBitmapBinder<View> implements Effe
         Drawable d = createDrawable(v.getContext(), bitmap);
         if (d == null) return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            v.setBackground(d);
-        } else {
-            v.setBackgroundDrawable(d);
-        }
+        effect().apply(v.getContext(), this, d, cacheSource);
     }
 
     @Override
@@ -54,5 +46,10 @@ public class ViewBackgroundBinder extends ViewBitmapBinder<View> implements Effe
     @Override
     public int getDrawableCount() {
         return 1;
+    }
+
+    @Override
+    public boolean isDrawableEnabled(int index) {
+        return true;
     }
 }

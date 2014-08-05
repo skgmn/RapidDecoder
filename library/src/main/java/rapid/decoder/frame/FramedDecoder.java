@@ -87,11 +87,8 @@ public abstract class FramedDecoder extends Decodable {
         return decoder.isCancelled();
     }
 
-    // Factory methods
-
-    public static FramedDecoder newInstance(BitmapDecoder decoder, int frameWidth,
-                                            int frameHeight, ImageView.ScaleType scaleType) {
-
+    public static FramedDecoder newInstance(BitmapDecoder decoder, int frameWidth, int frameHeight,
+                                            ImageView.ScaleType scaleType) {
         if (ImageView.ScaleType.MATRIX.equals(scaleType)) {
             return new MatrixFramedDecoder(decoder, frameWidth, frameHeight);
         } else if (ImageView.ScaleType.FIT_XY.equals(scaleType)) {

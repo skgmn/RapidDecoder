@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -31,6 +32,8 @@ public class MainActivity extends ActionBarActivity {
         mDrawer = (DrawerLayout) findViewById(R.id.drawer);
         ListView listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);
 
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setHomeButtonEnabled(true);
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawer, R.drawable.ic_navigation_drawer,
                 0, 0) {
 
@@ -77,6 +80,9 @@ public class MainActivity extends ActionBarActivity {
                 break;
             case 3:
                 fragment = new FrameFragment();
+                break;
+            case 4:
+                fragment = new GalleryFragment();
                 break;
             default:
                 return;

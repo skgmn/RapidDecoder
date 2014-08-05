@@ -11,6 +11,8 @@ public abstract class Effect {
     public interface EffectTarget {
         int getDrawableCount();
 
+        boolean isDrawableEnabled(int index);
+
         Drawable getDrawable(int index);
 
         void setDrawable(int index, Drawable d);
@@ -29,6 +31,7 @@ public abstract class Effect {
                           CacheSource cacheSource) {
             int count = target.getDrawableCount();
             for (int i = 0; i < count; ++i) {
+                if (!target.isDrawableEnabled(i)) continue;
                 target.setDrawable(i, newDrawable);
             }
         }
@@ -40,6 +43,7 @@ public abstract class Effect {
                           CacheSource cacheSource) {
             int count = target.getDrawableCount();
             for (int i = 0; i < count; ++i) {
+                if (!target.isDrawableEnabled(i)) continue;
                 Drawable oldDrawable = target.getDrawable(i);
                 if (oldDrawable == null) {
                     oldDrawable = new ColorDrawable(0);

@@ -7,29 +7,19 @@ import android.widget.TextView;
 
 import rapid.decoder.cache.CacheSource;
 
-public class TextViewBinder extends ViewBitmapBinder<TextView> implements Effect.EffectTarget {
-    private int[] mGravities = new int[4];
-    private int mGravityCount;
+public class TextViewBinder extends BitmapBinder<TextView> {
+    private static final int[] sGravityMask = new int[] {
+            Gravity.LEFT,
+            Gravity.TOP,
+            Gravity.RIGHT,
+            Gravity.BOTTOM
+    };
+
+    private int mGravity;
 
     public TextViewBinder(TextView v, int gravity) {
-        this(v, Effect.FADE_IN_IF_NOT_CACHED, gravity);
-    }
-
-    public TextViewBinder(TextView v, Effect effect, int gravity) {
-        super(v, effect);
-
-        if ((gravity & Gravity.LEFT) == Gravity.LEFT) {
-            mGravities[mGravityCount++] = Gravity.LEFT;
-        }
-        if ((gravity & Gravity.TOP) == Gravity.TOP) {
-            mGravities[mGravityCount++] = Gravity.TOP;
-        }
-        if ((gravity & Gravity.RIGHT) == Gravity.RIGHT) {
-            mGravities[mGravityCount++] = Gravity.RIGHT;
-        }
-        if ((gravity & Gravity.BOTTOM) == Gravity.BOTTOM) {
-            mGravities[mGravityCount++] = Gravity.BOTTOM;
-        }
+        super(v);
+        mGravity = gravity;
     }
 
     @Override
@@ -40,12 +30,18 @@ public class TextViewBinder extends ViewBitmapBinder<TextView> implements Effect
         Drawable d = createDrawable(v.getContext(), bitmap);
         if (d == null) return;
 
-        mEffect.apply(v.getContext(), this, d, cacheSource);
+        effect().apply(v.getContext(), this, d, cacheSource);
     }
 
     @Override
     public int getDrawableCount() {
-        return mGravityCount;
+        return 4;
+    }
+
+    @Override
+    public boolean isDrawableEnabled(int index) {
+        int mask = sGravityMask[index];
+        return (mGravity & mask) == mask;
     }
 
     private Drawable getCompoundDrawable(int gravity) {
@@ -101,12 +97,12 @@ public class TextViewBinder extends ViewBitmapBinder<TextView> implements Effect
 
     @Override
     public Drawable getDrawable(int index) {
-        return getCompoundDrawable(mGravities[index]);
+        return getCompoundDrawable(sGravityMask[index]);
     }
 
     @Override
     public void setDrawable(int index, Drawable d) {
-        setCompoundDrawable(mGravities[index], d);
+        setCompoundDrawable(sGravityMask[index], d);
     }
 
     @Override

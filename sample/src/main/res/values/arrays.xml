@@ -6,6 +6,7 @@
         <item>Regional decoding sample</item>
         <item>Mutable decoding sample</item>
         <item>FramedDecoder sample</item>
+        <item>Gallery sample</item>
     </string-array>
     
 </resources>

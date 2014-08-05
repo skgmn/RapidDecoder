@@ -34,25 +34,26 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
 
     @Override
     protected void onPostExecute(Decodable.DecodeResult result) {
-        if (BitmapDecoder.removeJob(getKey())) {
+        BackgroundTaskRecord record = BitmapDecoder.sTaskManager.remove(getKey());
+        if (record != null && !record.isStale) {
+            record.isStale = true;
             mListener.onBitmapDecoded(result.bitmap, result.cacheSource);
         }
     }
 
     Object getKey() {
-        return mStrongKey != null ? mStrongKey : mWeakKey;
+        return mStrongKey != null ? mStrongKey : mWeakKey.get();
     }
 
-    Object getStrongKey() {
-        return mStrongKey;
-    }
-
-    Object getWeakKey() {
-        return mWeakKey != null ? mWeakKey.get() : null;
+    boolean isKeyStrong() {
+        return mStrongKey != null;
     }
 
     public void cancel() {
-        BitmapDecoder.removeJob(getKey());
+        BackgroundTaskRecord record = BitmapDecoder.sTaskManager.remove(getKey());
+        if (record != null) {
+            record.isStale = true;
+        }
         mDecodable.cancel();
     }
 }
