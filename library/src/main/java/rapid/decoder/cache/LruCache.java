@@ -60,7 +60,7 @@ public class LruCache<K, V> {
      * head of the queue. This returns null if a value is not cached and cannot
      * be created.
      */
-    public final V get(K key) {
+    public V get(K key) {
         if (key == null) {
             throw new NullPointerException("key == null");
         }

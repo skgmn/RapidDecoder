@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
@@ -20,6 +19,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.Display;
 import android.view.WindowManager;
+import android.widget.ImageView;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -35,10 +35,11 @@ import rapid.decoder.cache.BitmapLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
+import rapid.decoder.frame.FramedDecoder;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
-public abstract class BitmapDecoder implements Decodable {
+public abstract class BitmapDecoder extends Decodable {
     static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
     private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
@@ -50,6 +51,10 @@ public abstract class BitmapDecoder implements Decodable {
 
     protected static final int HASHCODE_NULL_REGION = 0x09DF79A9;
     protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
+
+    //
+    // Cache
+    //
 
     private static final long DEFAULT_CACHE_SIZE = 4 * 1024 * 1024; // 4MB
 
@@ -78,7 +83,7 @@ public abstract class BitmapDecoder implements Decodable {
             if (sMemCache != null) {
                 sMemCache.evictAll();
             }
-            sMemCache = new BitmapLruCache<Object>(size, false);
+            sMemCache = new BitmapLruCache<Object>(size);
         }
     }
 
@@ -135,12 +140,9 @@ public abstract class BitmapDecoder implements Decodable {
     // Queries
     //
 
-    private static final int INITIAL_QUERY_LIST_CAPACITY = 3;
+    private static final int INITIAL_REQUEST_LIST_CAPACITY = 3;
 
-    protected static class Query {
-    }
-
-    protected static class ScaleTo extends Query {
+    protected static class ScaleTo {
         public float width;
         public float height;
 
@@ -150,7 +152,7 @@ public abstract class BitmapDecoder implements Decodable {
         }
     }
 
-    protected static class ScaleBy extends Query {
+    protected static class ScaleBy {
         public float width;
         public float height;
 
@@ -160,7 +162,7 @@ public abstract class BitmapDecoder implements Decodable {
         }
     }
 
-    protected static class Region extends Query {
+    protected static class Region {
         public int left;
         public int top;
         public int right;
@@ -174,8 +176,18 @@ public abstract class BitmapDecoder implements Decodable {
         }
     }
 
-    protected ArrayList<Query> queries;
-    private boolean queriesResolved = false;
+    protected ArrayList<Object> requests;
+    private boolean requestsResolved = false;
+
+    //
+    // Async jobs
+    //
+
+    static BackgroundTaskManager sTaskManager = new BackgroundTaskManager();
+
+    //
+    //
+    //
 
     protected float ratioWidth = 1;
     protected float ratioHeight = 1;
@@ -185,17 +197,17 @@ public abstract class BitmapDecoder implements Decodable {
     }
 
     protected BitmapDecoder(BitmapDecoder other) {
-        if (other.queries != null) {
-            queries = new ArrayList<Query>(INITIAL_QUERY_LIST_CAPACITY);
-            queries.addAll(other.queries);
+        if (other.requests != null) {
+            requests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
+            requests.addAll(other.requests);
         }
     }
 
-    protected void addRequest(Query request) {
-        if (queries == null) {
-            queries = new ArrayList<Query>(INITIAL_QUERY_LIST_CAPACITY);
+    protected void addRequest(Object request) {
+        if (requests == null) {
+            requests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
         }
-        queries.add(request);
+        requests.add(request);
     }
 
     /**
@@ -248,9 +260,9 @@ public abstract class BitmapDecoder implements Decodable {
             throw new IllegalArgumentException();
         }
 
-        queriesResolved = false;
+        requestsResolved = false;
 
-        Query lastRequest = (queries == null ? null : queries.get(queries.size() - 1));
+        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -259,7 +271,7 @@ public abstract class BitmapDecoder implements Decodable {
 
                 return this;
             } else if (lastRequest instanceof ScaleBy) {
-                queries.remove(queries.size() - 1);
+                requests.remove(requests.size() - 1);
             }
         }
 
@@ -282,9 +294,9 @@ public abstract class BitmapDecoder implements Decodable {
             throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
         }
 
-        queriesResolved = false;
+        requestsResolved = false;
 
-        Query lastRequest = (queries == null ? null : queries.get(queries.size() - 1));
+        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -316,9 +328,9 @@ public abstract class BitmapDecoder implements Decodable {
             throw new IllegalArgumentException();
         }
 
-        queriesResolved = false;
+        requestsResolved = false;
 
-        Query lastRequest = (queries == null ? null : queries.get(queries.size() - 1));
+        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof Region) {
                 Region region = (Region) lastRequest;
@@ -393,7 +405,7 @@ public abstract class BitmapDecoder implements Decodable {
     }
 
     protected void resolveQueries() {
-        if (queriesResolved) return;
+        if (requestsResolved) return;
 
         final float densityRatio = getDensityRatio();
         ratioWidth = ratioHeight = densityRatio;
@@ -403,10 +415,10 @@ public abstract class BitmapDecoder implements Decodable {
         }
         region = null;
 
-        queriesResolved = true;
-        if (queries == null) return;
+        requestsResolved = true;
+        if (requests == null) return;
 
-        for (Query r : queries) {
+        for (Object r : requests) {
             if (r instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) r;
 
@@ -468,14 +480,14 @@ public abstract class BitmapDecoder implements Decodable {
     }
 
     protected boolean queriesEquals(BitmapDecoder other) {
-        if (queries == null) {
-            return other.queries == null || other.queries.isEmpty();
+        if (requests == null) {
+            return other.requests == null || other.requests.isEmpty();
         } else {
-            int otherSize = (other.queries == null ? 0 : other.queries.size());
-            if (queries.size() != otherSize) return false;
+            int otherSize = (other.requests == null ? 0 : other.requests.size());
+            if (requests.size() != otherSize) return false;
 
-            Iterator<Query> it1 = queries.iterator();
-            Iterator<Query> it2 = other.queries.iterator();
+            Iterator<Object> it1 = requests.iterator();
+            Iterator<Object> it2 = other.requests.iterator();
 
             while (it1.hasNext()) {
                 if (!it2.hasNext() || !it1.next().equals(it2.next())) return false;
@@ -486,7 +498,7 @@ public abstract class BitmapDecoder implements Decodable {
     }
 
     protected int queriesHash() {
-        return (queries == null ? 0 : queries.hashCode());
+        return (requests == null ? 0 : requests.hashCode());
     }
 
     /**
@@ -564,6 +576,14 @@ public abstract class BitmapDecoder implements Decodable {
             super.finalize();
         }
     }
+    
+    //
+    // Frame
+    //
+
+    public FramedDecoder frame(int frameWidth, int frameHeight, ImageView.ScaleType scaleType) {
+        return FramedDecoder.newInstance(this, frameWidth, frameHeight, scaleType);
+    }
 
     //
     // from()
@@ -634,7 +654,8 @@ public abstract class BitmapDecoder implements Decodable {
             String resName = segments.get(1);
             int id = res.getIdentifier(resName, "drawable", packageName);
             if (id == 0) {
-                throw new IllegalArgumentException(String.format(MESSAGE_RESOURCE_NOT_FOUND, resName));
+                throw new IllegalArgumentException(String.format(MESSAGE_RESOURCE_NOT_FOUND,
+                        resName));
             }
 
             return new ResourceLoader(res, id);
@@ -644,7 +665,8 @@ public abstract class BitmapDecoder implements Decodable {
             }
 
             try {
-                StreamLoader d = new StreamLoader(context.getContentResolver().openInputStream(uri));
+                StreamLoader d = new StreamLoader(context.getContentResolver().openInputStream
+                        (uri));
                 synchronized (sMemCacheLock) {
                     if (sMemCache != null) {
                         d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
@@ -703,14 +725,5 @@ public abstract class BitmapDecoder implements Decodable {
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapDecoder from(@NonNull Bitmap bitmap) {
         return new BitmapTransformer(bitmap);
-    }
-
-    public static BitmapDecoder from(Cursor cursor, int columnIndex) {
-        return from(cursor.getBlob(columnIndex));
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(Cursor cursor, String columnName) {
-        return from(cursor, cursor.getColumnIndex(columnName));
     }
 }
