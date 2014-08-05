@@ -33,9 +33,10 @@ public class MainActivity extends ActionBarActivity {
         ListView listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);
 
         ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeButtonEnabled(true);
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawer, R.drawable.ic_navigation_drawer,
-                0, 0) {
+                R.string.drawer_open, R.string.drawer_close) {
 
             @Override
             public void onDrawerClosed(View v) {
@@ -62,7 +63,14 @@ public class MainActivity extends ActionBarActivity {
         });
 
         mDrawer.setDrawerListener(mDrawerToggle);
+        supportInvalidateOptionsMenu();
         loadContent(0);
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        mDrawerToggle.syncState();
     }
 
     private void loadContent(int index) {

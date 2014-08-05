@@ -8,13 +8,13 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.Decodable;
+import rapid.decoder.NextLayoutInspector;
 import rapid.decoder.cache.CacheSource;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramedDecoderCreator;
@@ -64,14 +64,10 @@ public abstract class BitmapBinder<T extends View> implements Effect.EffectTarge
         if (v == null) return;
 
         if (v.isLayoutRequested() && hasNoWrapContentLayoutParam(v)) {
-            v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver
-                    .OnGlobalLayoutListener() {
-                @SuppressWarnings("deprecation")
+            NextLayoutInspector.inspectNextLayout(v, new NextLayoutInspector.OnNextLayoutListener
+                    () {
                 @Override
-                public void onGlobalLayout() {
-                    View v = getView();
-                    if (v == null) return;
-                    v.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                public void onNextLayout(View v) {
                     listener.onReady(v);
                 }
             });

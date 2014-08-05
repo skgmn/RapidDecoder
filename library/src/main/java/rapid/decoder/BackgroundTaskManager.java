@@ -47,7 +47,7 @@ class BackgroundTaskManager {
     }
 
     private static void cancelRecord(Map<Object, BackgroundTaskRecord> map, Object key) {
-        BackgroundTaskRecord record = map.get(key);
+        BackgroundTaskRecord record = map.remove(key);
         if (record != null) {
             record.isStale = true;
             BitmapLoadTask task = record.getTask();

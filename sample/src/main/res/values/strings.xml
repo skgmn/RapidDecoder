@@ -14,5 +14,7 @@
     <string name="fit_end">FitEnd</string>
     <string name="center_crop">CenterCrop</string>
     <string name="center_inside">CenterInside</string>
+    <string name="drawer_open">Open drawer</string>
+    <string name="drawer_close">Close drawer</string>
 
 </resources>
