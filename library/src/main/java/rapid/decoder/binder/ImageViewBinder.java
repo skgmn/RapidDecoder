@@ -6,7 +6,7 @@ import android.widget.ImageView;
 
 import rapid.decoder.cache.CacheSource;
 
-public class ImageViewBinder extends BitmapBinder<ImageView> {
+public class ImageViewBinder extends ViewBinder<ImageView> {
     public ImageViewBinder(ImageView v) {
         super(v);
     }

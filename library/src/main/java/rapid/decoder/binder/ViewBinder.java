@@ -12,23 +12,21 @@ import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 
-import rapid.decoder.BitmapDecoder;
-import rapid.decoder.Decodable;
 import rapid.decoder.NextLayoutInspector;
 import rapid.decoder.cache.CacheSource;
-import rapid.decoder.frame.FramedDecoder;
-import rapid.decoder.frame.FramedDecoderCreator;
+import rapid.decoder.frame.FramingAlgorithm;
+import rapid.decoder.frame.ScaleTypeFraming;
 
-public abstract class BitmapBinder<T extends View> implements Effect.EffectTarget {
+public abstract class ViewBinder<T extends View> implements Effect.EffectTarget {
     public interface OnReadyListener {
         void onReady(View v);
     }
 
     private Effect mEffect;
-    private FramedDecoderCreator mFrameCreator;
+    private FramingAlgorithm mFraming;
     private WeakReference<T> mView;
 
-    public BitmapBinder(T v) {
+    public ViewBinder(T v) {
         mView = new WeakReference<T>(v);
     }
 
@@ -48,22 +46,15 @@ public abstract class BitmapBinder<T extends View> implements Effect.EffectTarge
         }
     }
 
-    public BitmapBinder<T> scaleType(final ImageView.ScaleType scaleType) {
-        framedDecoderCreator(new FramedDecoderCreator() {
-            @Override
-            public Decodable createFramedDecoder(BitmapDecoder decoder, int frameWidth,
-                                                 int frameHeight) {
-                return FramedDecoder.newInstance(decoder, frameWidth, frameHeight, scaleType);
-            }
-        });
-        return this;
+    public ViewBinder<T> scaleType(final ImageView.ScaleType scaleType) {
+        return framing(new ScaleTypeFraming(scaleType));
     }
 
     public void runAfterReady(final OnReadyListener listener) {
         View v = getView();
         if (v == null) return;
 
-        if (v.isLayoutRequested() && hasNoWrapContentLayoutParam(v)) {
+        if (v.isLayoutRequested() && !shouldWrapContent(v)) {
             NextLayoutInspector.inspectNextLayout(v, new NextLayoutInspector.OnNextLayoutListener
                     () {
                 @Override
@@ -76,10 +67,10 @@ public abstract class BitmapBinder<T extends View> implements Effect.EffectTarge
         }
     }
 
-    private static boolean hasNoWrapContentLayoutParam(View v) {
+    private static boolean shouldWrapContent(View v) {
         ViewGroup.LayoutParams lp = v.getLayoutParams();
-        return lp.width != ViewGroup.LayoutParams.WRAP_CONTENT &&
-                lp.height != ViewGroup.LayoutParams.WRAP_CONTENT;
+        return lp.width == ViewGroup.LayoutParams.WRAP_CONTENT &&
+                lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
     }
 
     public abstract void bind(Bitmap bitmap, CacheSource cacheSource);
@@ -89,17 +80,18 @@ public abstract class BitmapBinder<T extends View> implements Effect.EffectTarge
         return mEffect == null ? Effect.FADE_IN_IF_NOT_CACHED : mEffect;
     }
 
-    public BitmapBinder effect(Effect effect) {
+    @SuppressWarnings("UnusedDeclaration")
+    public ViewBinder effect(Effect effect) {
         mEffect = effect;
         return this;
     }
 
-    protected void framedDecoderCreator(FramedDecoderCreator creator) {
-        mFrameCreator = creator;
+    public ViewBinder<T> framing(FramingAlgorithm creator) {
+        mFraming = creator;
+        return this;
     }
 
-    public Decodable createFramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
-        return mFrameCreator != null ? mFrameCreator.createFramedDecoder(decoder, frameWidth,
-                frameHeight) : decoder;
+    public FramingAlgorithm framing() {
+        return mFraming;
     }
 }

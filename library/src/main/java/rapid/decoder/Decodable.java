@@ -8,7 +8,7 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.ImageView;
 
-import rapid.decoder.binder.BitmapBinder;
+import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.binder.ImageViewBinder;
 import rapid.decoder.binder.ViewBackgroundBinder;
 import rapid.decoder.cache.CacheSource;
@@ -23,12 +23,12 @@ public abstract class Decodable {
         public CacheSource cacheSource;
     }
 
-    public void into(final BitmapBinder binder) {
+    public void into(final ViewBinder binder) {
         View v = binder.getView();
         if (v == null) return;
 
         final BackgroundTaskRecord record = BitmapDecoder.sTaskManager.register(v, false);
-        binder.runAfterReady(new BitmapBinder.OnReadyListener() {
+        binder.runAfterReady(new ViewBinder.OnReadyListener() {
             @Override
             public void onReady(View v) {
                 if (record.isStale) return;
@@ -37,8 +37,9 @@ public abstract class Decodable {
         });
     }
 
-    protected void loadBitmapWhenReady(BackgroundTaskRecord record, final BitmapBinder binder,
-                                       View v) {
+    void loadBitmapWhenReady(BackgroundTaskRecord record, final ViewBinder binder,
+                             View v) {
+
         BitmapLoadTask task = new BitmapLoadTask(this, new OnBitmapDecodedListener() {
             @Override
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
@@ -46,7 +47,11 @@ public abstract class Decodable {
             }
         });
         task.setKey(v, false);
+        setupLoadTask(task, v, binder);
         record.execute(task);
+    }
+
+    protected void setupLoadTask(BitmapLoadTask task, View v, ViewBinder<?> binder) {
     }
 
     public void into(View v) {
@@ -75,6 +80,9 @@ public abstract class Decodable {
 
     public abstract Decodable mutate();
 
-
     public abstract boolean isCancelled();
+
+    public abstract int width();
+
+    public abstract int height();
 }

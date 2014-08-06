@@ -58,7 +58,7 @@ class BackgroundTaskManager {
     }
 
     public void execute(BitmapLoadTask task) {
-        Object key = task.getKey();
+        Object key = task.key();
         if (key == null) return;
 
         BackgroundTaskRecord record = register(key, task.isKeyStrong());

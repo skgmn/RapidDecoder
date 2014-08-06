@@ -55,8 +55,12 @@ public class NextLayoutInspector {
             View v = mViewRef.get();
             if (v == null) return;
 
-            v.post(this);
-            v.getViewTreeObserver().addOnGlobalLayoutListener(this);
+            if (!v.isLayoutRequested()) {
+                mListener.onNextLayout(v);
+            } else {
+                v.post(this);
+                v.getViewTreeObserver().addOnGlobalLayoutListener(this);
+            }
         }
 
         @Override

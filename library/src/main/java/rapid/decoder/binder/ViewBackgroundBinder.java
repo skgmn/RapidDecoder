@@ -7,7 +7,7 @@ import android.view.View;
 
 import rapid.decoder.cache.CacheSource;
 
-public class ViewBackgroundBinder extends BitmapBinder<View> {
+public class ViewBackgroundBinder extends ViewBinder<View> {
     public ViewBackgroundBinder(View v) {
         super(v);
     }

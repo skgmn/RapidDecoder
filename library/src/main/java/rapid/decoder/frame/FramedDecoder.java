@@ -87,6 +87,16 @@ public abstract class FramedDecoder extends Decodable {
         return decoder.isCancelled();
     }
 
+    @Override
+    public int width() {
+        return frameWidth;
+    }
+
+    @Override
+    public int height() {
+        return frameHeight;
+    }
+
     public static FramedDecoder newInstance(BitmapDecoder decoder, int frameWidth, int frameHeight,
                                             ImageView.ScaleType scaleType) {
         if (ImageView.ScaleType.MATRIX.equals(scaleType)) {

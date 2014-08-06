@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import rapid.decoder.binder.BitmapBinder;
+import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.cache.CacheSource;
 
 import static rapid.decoder.cache.ResourcePool.*;
@@ -162,7 +162,7 @@ public class BitmapTransformer extends BitmapDecoder {
 	}
 
     @Override
-    public void into(BitmapBinder binder) {
+    public void into(ViewBinder binder) {
         DecodeResult result = new DecodeResult();
         decode(result);
         binder.bind(result.bitmap, result.cacheSource);

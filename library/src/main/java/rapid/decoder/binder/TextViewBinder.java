@@ -7,7 +7,7 @@ import android.widget.TextView;
 
 import rapid.decoder.cache.CacheSource;
 
-public class TextViewBinder extends BitmapBinder<TextView> {
+public class TextViewBinder extends ViewBinder<TextView> {
     private static final int[] sGravityMask = new int[] {
             Gravity.LEFT,
             Gravity.TOP,
