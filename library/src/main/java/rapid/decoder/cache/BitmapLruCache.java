@@ -36,7 +36,12 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
         Bitmap bitmap = super.get(key);
         if (bitmap != null) return bitmap;
 
-        bitmap = mRemovedBitmaps.get(key).get();
+        WeakReference<Bitmap> ref = mRemovedBitmaps.get(key);
+        if (ref == null) {
+            return null;
+        }
+
+        bitmap = ref.get();
         if (bitmap == null) {
             mRemovedBitmaps.remove(key);
             return null;

@@ -3,7 +3,6 @@ package rapid.decoder.frame;
 import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
-import rapid.decoder.Decodable;
 
 public class ScaleTypeFraming extends FramingAlgorithm {
     private ImageView.ScaleType mScaleType;
@@ -13,7 +12,7 @@ public class ScaleTypeFraming extends FramingAlgorithm {
     }
 
     @Override
-    public Decodable createFramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
+    public FramedDecoder createFramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
         return FramedDecoder.newInstance(decoder, frameWidth, frameHeight, mScaleType);
     }
 }

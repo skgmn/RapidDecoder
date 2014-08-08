@@ -51,35 +51,29 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
                     break;
 
                 case AUTOSIZE_WIDTH:
-                    frameWidth = mMinWidth;
-                    frameHeight = AspectRatioCalculator.getHeight(mDecodable.width(),
-                            mDecodable.height(), frameWidth);
-                    break;
-
-                case AUTOSIZE_HEIGHT:
                     frameHeight = mMinHeight;
                     frameWidth = AspectRatioCalculator.getWidth(mDecodable.width(),
                             mDecodable.height(), frameHeight);
                     break;
 
-                case AUTOSIZE_BOTH:
-                    int width = mDecodable.width();
-                    int height = mDecodable.height();
-
+                case AUTOSIZE_HEIGHT:
                     frameWidth = mMinWidth;
-                    frameHeight = AspectRatioCalculator.getHeight(width, height, frameWidth);
-                    if (frameHeight >= mMinHeight && frameHeight <= mMaxHeight) break;
+                    frameHeight = AspectRatioCalculator.getHeight(mDecodable.width(),
+                            mDecodable.height(), frameWidth);
+                    break;
 
-                    frameWidth = Math.min(width, mMaxWidth);
-                    frameHeight = AspectRatioCalculator.getHeight(width, height, frameWidth);
-                    if (frameHeight >= mMinHeight && frameHeight <= mMaxHeight) break;
+                case AUTOSIZE_BOTH:
+                    int width = frameWidth = mDecodable.width();
+                    int height = frameHeight = mDecodable.height();
 
-                    frameHeight = mMinHeight;
-                    frameWidth = AspectRatioCalculator.getWidth(width, height, frameHeight);
-                    if (frameWidth >= mMinWidth && frameWidth <= mMinWidth) break;
-
-                    frameHeight = Math.min(height, mMaxHeight);
-                    frameWidth = AspectRatioCalculator.getWidth(width, height, frameHeight);
+                    for (int j = Math.min(width, mMaxWidth); j > 0; --j) {
+                        int i = AspectRatioCalculator.getHeight(width, height, j);
+                        if (i >= mMinHeight && j <= mMaxHeight) {
+                            frameWidth = j;
+                            frameHeight = i;
+                            break;
+                        }
+                    }
                     break;
 
                 default:

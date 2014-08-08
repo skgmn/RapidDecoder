@@ -58,7 +58,7 @@ public class BitmapTransformer extends BitmapDecoder {
 	
 	@Override
 	public Bitmap decode() {
-		resolveQueries();
+		resolveRequests();
 		
 		final boolean redraw = !((targetConfig == null || bitmap.getConfig().equals(targetConfig)) && !mutable);
 		

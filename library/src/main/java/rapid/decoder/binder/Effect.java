@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.util.Log;
 
 import rapid.decoder.cache.CacheSource;
 
@@ -69,6 +70,8 @@ public abstract class Effect {
         @Override
         public void apply(Context context, EffectTarget target, Drawable newDrawable,
                           CacheSource cacheSource) {
+
+            Log.e("asdf", "cache source = " + cacheSource);
             if (CacheSource.MEMORY.equals(cacheSource)) {
                 NO_EFFECT.apply(context, target, newDrawable, cacheSource);
             } else {

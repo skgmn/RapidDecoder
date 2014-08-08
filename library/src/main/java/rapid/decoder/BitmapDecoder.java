@@ -192,6 +192,7 @@ public abstract class BitmapDecoder extends Decodable {
     protected float ratioWidth = 1;
     protected float ratioHeight = 1;
     protected Rect region;
+    protected int hashCode;
 
     protected BitmapDecoder() {
     }
@@ -208,6 +209,7 @@ public abstract class BitmapDecoder extends Decodable {
             requests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
         }
         requests.add(request);
+        hashCode = 0;
     }
 
     /**
@@ -224,7 +226,7 @@ public abstract class BitmapDecoder extends Decodable {
      * @return The estimated width of decoded image.
      */
     public int width() {
-        resolveQueries();
+        resolveRequests();
         return (int) Math.ceil(
                 (region == null ? sourceWidth() : region.width()) * ratioWidth);
     }
@@ -233,7 +235,7 @@ public abstract class BitmapDecoder extends Decodable {
      * @return The estimated height of decoded image.
      */
     public int height() {
-        resolveQueries();
+        resolveRequests();
         return (int) Math.ceil(
                 (region == null ? sourceHeight() : region.height()) * ratioHeight);
     }
@@ -404,7 +406,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected void resolveQueries() {
+    protected void resolveRequests() {
         if (requestsResolved) return;
 
         final float densityRatio = getDensityRatio();
@@ -576,7 +578,7 @@ public abstract class BitmapDecoder extends Decodable {
             super.finalize();
         }
     }
-    
+
     //
     // Frame
     //
@@ -604,8 +606,12 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(String pathName) {
-        return new FileLoader(pathName);
+    public static BitmapDecoder from(String urlOrPath) {
+        if (urlOrPath.contains("://")) {
+            return from(Uri.parse(urlOrPath));
+        } else {
+            return new FileLoader(urlOrPath);
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -620,10 +626,18 @@ public abstract class BitmapDecoder extends Decodable {
 
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapDecoder from(Uri uri) {
-        return from(null, uri);
+        return from(null, uri, true);
+    }
+
+    public static BitmapDecoder from(Uri uri, boolean useCache) {
+        return from(null, uri, useCache);
     }
 
     public static BitmapDecoder from(Context context, final Uri uri) {
+        return from(context, uri, true);
+    }
+
+    public static BitmapDecoder from(Context context, final Uri uri, boolean useCache) {
         String scheme = uri.getScheme();
 
         if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -658,7 +672,7 @@ public abstract class BitmapDecoder extends Decodable {
                         resName));
             }
 
-            return new ResourceLoader(res, id);
+            return new ResourceLoader(res, id).memCacheEnabled(useCache);
         } else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
             if (context == null) {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
@@ -667,26 +681,23 @@ public abstract class BitmapDecoder extends Decodable {
             try {
                 StreamLoader d = new StreamLoader(context.getContentResolver().openInputStream
                         (uri));
-                synchronized (sMemCacheLock) {
-                    if (sMemCache != null) {
-                        d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
-                    }
-                }
-                return d;
+                d.id = uri;
+                return d.memCacheEnabled(useCache);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
         } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
-            return new FileLoader(uri.getPath());
+            return new FileLoader(uri.getPath()).memCacheEnabled(useCache);
         } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
             String uriString = uri.toString();
             BitmapLoader d = null;
 
             synchronized (sDiskCacheLock) {
-                if (sDiskCache != null) {
+                if (useCache && sDiskCache != null) {
                     InputStream in = sDiskCache.get(uriString);
                     if (in != null) {
                         d = new StreamLoader(in);
+                        d.isFromDiskCache = true;
                     }
                 }
 
@@ -703,20 +714,15 @@ public abstract class BitmapDecoder extends Decodable {
                             }
                         }
                     }));
-                    if (sDiskCache != null) {
+                    if (useCache && sDiskCache != null) {
                         sd.setCacheOutputStream(sDiskCache.getOutputStream(uriString));
                     }
-
                     d = sd;
                 }
             }
 
-            synchronized (sMemCacheLock) {
-                if (sMemCache != null) {
-                    d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
-                }
-            }
-            return d;
+            d.id = uri;
+            return d.memCacheEnabled(useCache);
         } else {
             throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
         }

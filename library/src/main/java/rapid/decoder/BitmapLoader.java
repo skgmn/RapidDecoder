@@ -14,11 +14,13 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.builtin.BuiltInDecoder;
@@ -33,15 +35,19 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @SuppressWarnings("UnusedDeclaration")
     public static final int SIZE_AUTO = 0;
 
+    private static AtomicReference<DecodeResult> sDecodeResultRef = new AtomicReference
+            <DecodeResult>();
+
     protected Options opts;
     protected boolean mutable;
     private boolean scaleFilter = true;
     private boolean useBuiltInDecoder = false;
+    private boolean memCacheEnabled = true;
+    Object id;
+    boolean isFromDiskCache;
 
     private int width;
     private int height;
-
-    private MemCacheEnabler<?> memCacheEnabler;
 
     // Temporary variables
     private float adjustedDensityRatio;
@@ -57,6 +63,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected BitmapLoader(BitmapLoader other) {
         super(other);
 
+        id = other.id;
+
         opts = Cloner.clone(other.opts);
 
         mutable = other.mutable;
@@ -65,10 +73,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         width = other.width;
         height = other.height;
-
-        if (other.memCacheEnabler != null) {
-            setMemCacheEnabler(other.memCacheEnabler.clone());
-        }
     }
 
     @Override
@@ -105,86 +109,33 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return height;
     }
 
-    void setMemCacheEnabler(MemCacheEnabler<?> enabler) {
-        enabler.setBitmapDecoder(this);
-        memCacheEnabler = enabler;
-    }
-
-    private Object getCacheKey() {
-        return memCacheEnabler != null ? memCacheEnabler : this;
-    }
-
     public Bitmap getCachedBitmap() {
         synchronized (sMemCacheLock) {
             if (sMemCache == null) return null;
-            return sMemCache.get(getCacheKey());
+            return sMemCache.get(this);
         }
     }
 
     @Override
     public Bitmap decode() {
-        final boolean memCacheSupported = (memCacheEnabler != null || isMemCacheSupported());
-        if (memCacheSupported) {
-            final Bitmap cachedBitmap = getCachedBitmap();
-            if (cachedBitmap != null) {
-                return cachedBitmap;
-            }
-        }
-
-        // reset
-
-        opts.mCancel = false;
-        adjustedDensityRatio = 0;
-
-        //
-
-        resolveQueries();
-
-        // Setup sample size.
-
-        final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
-        if (postScaleBy) {
-            opts.inSampleSize = calculateInSampleSizeByRatio();
-        } else {
-            opts.inSampleSize = 1;
-        }
-
-        // Execute actual decoding
-
-        if (opts.mCancel) return null;
-
-        Bitmap bitmap = executeDecoding();
-        if (bitmap == null) return null;
-
-        // Scale it finally.
-
-        if (postScaleBy) {
-            bitmap.setDensity(Bitmap.DENSITY_NONE);
-            Bitmap bitmap2;
-
-            Matrix m = MATRIX.obtain();
-            m.setScale(adjustedWidthRatio, adjustedHeightRatio);
-            bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
-                    scaleFilter);
-            MATRIX.recycle(m);
-
-            if (bitmap != bitmap2) {
-                bitmap.recycle();
-            }
-
-            bitmap2.setDensity(opts.inTargetDensity);
-            bitmap = bitmap2;
-        }
-
-        if (memCacheSupported) {
-            synchronized (sMemCacheLock) {
-                if (sMemCache != null) {
-                    sMemCache.put(getCacheKey(), bitmap);
-                }
-            }
-        }
-
+        DecodeResult result = obtainResultObject();
+        decode(result);
+        Bitmap bitmap = result.bitmap;
+        recycleResultObject(result);
         return bitmap;
+    }
+
+    protected static DecodeResult obtainResultObject() {
+        DecodeResult result = sDecodeResultRef.getAndSet(null);
+        if (result == null) {
+            result = new DecodeResult();
+        }
+        return result;
+    }
+
+    protected static void recycleResultObject(DecodeResult result) {
+        result.bitmap = null;
+        sDecodeResultRef.set(result);
     }
 
     private int calculateInSampleSizeByRatio() {
@@ -202,7 +153,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
-        resolveQueries();
+        resolveRequests();
         opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
                 targetWidth, targetHeight);
         return executeDecoding();
@@ -383,12 +334,18 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public int hashCode() {
+        if (hashCode != 0) {
+            return hashCode;
+        }
+
+        final int hashId = (id != null ? id.hashCode() : 0);
         final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
         final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
         final int hashConfig = (opts.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS :
                 opts.inPreferredConfig.hashCode());
 
-        return hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
+        hashCode = hashId ^ hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
+        return hashCode;
     }
 
     @Override
@@ -402,6 +359,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         return (region == null ? d.region == null : region.equals(d.region)) &&
                 (config1 == null ? config2 == null : config1.equals(config2)) &&
+                (id == null ? d.id == null : id.equals(d.id)) &&
                 mutable == d.mutable &&
                 scaleFilter == d.scaleFilter &&
                 queriesEquals(d);
@@ -413,6 +371,12 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return this;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    BitmapLoader memCacheEnabled(boolean useCache) {
+        this.memCacheEnabled = useCache;
+        return this;
+    }
+
     @Override
     public boolean isCancelled() {
         return opts.mCancel;
@@ -420,9 +384,74 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public void decode(@NonNull DecodeResult out) {
-        // TODO: Implement this
-        out.bitmap = decode();
-        out.cacheSource = CacheSource.NOT_CACHED;
+        final boolean memCacheEnabled = this.memCacheEnabled && isMemCacheSupported();
+        if (memCacheEnabled) {
+            final Bitmap cachedBitmap = getCachedBitmap();
+            if (cachedBitmap != null) {
+                out.bitmap = cachedBitmap;
+                out.cacheSource = CacheSource.MEMORY;
+                return;
+            }
+        }
+
+        out.bitmap = null;
+
+        // reset
+
+        opts.mCancel = false;
+        adjustedDensityRatio = 0;
+
+        //
+
+        resolveRequests();
+
+        // Setup sample size.
+
+        final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
+        if (postScaleBy) {
+            opts.inSampleSize = calculateInSampleSizeByRatio();
+        } else {
+            opts.inSampleSize = 1;
+        }
+
+        // Execute actual decoding
+
+        if (opts.mCancel) return;
+
+        Bitmap bitmap = executeDecoding();
+        if (bitmap == null) return;
+
+        // Scale it finally.
+
+        if (postScaleBy) {
+            bitmap.setDensity(Bitmap.DENSITY_NONE);
+            Bitmap bitmap2;
+
+            Matrix m = MATRIX.obtain();
+            m.setScale(adjustedWidthRatio, adjustedHeightRatio);
+            bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
+                    scaleFilter);
+            MATRIX.recycle(m);
+
+            if (bitmap != bitmap2) {
+                bitmap.recycle();
+            }
+
+            bitmap2.setDensity(opts.inTargetDensity);
+            bitmap = bitmap2;
+        }
+
+        if (memCacheEnabled) {
+            synchronized (sMemCacheLock) {
+                if (sMemCache != null) {
+                    Log.e("asdf", "cached ");
+                    sMemCache.put(this, bitmap);
+                }
+            }
+        }
+
+        out.bitmap = bitmap;
+        out.cacheSource = isFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
     }
 
     protected void setupLoadTask(BitmapLoadTask task, View v, ViewBinder<?> binder) {
@@ -437,7 +466,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                             getMaxWidth(v), getMaxHeight(v));
                 } else {
                     task.setFraming(framing, BitmapLoadTask.AUTOSIZE_WIDTH,
-                            ViewCompat.getMinimumWidth(v), ViewCompat.getMinimumHeight(v),
+                            ViewCompat.getMinimumWidth(v), v.getHeight(),
                             getMaxWidth(v), 0);
                 }
             } else if (lp.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
