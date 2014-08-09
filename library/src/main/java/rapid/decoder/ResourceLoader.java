@@ -55,8 +55,8 @@ class ResourceLoader extends BitmapLoader {
 		if (densityRatio == 0) {
 			decodeBounds();
 
-			if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-				densityRatio = (float) opts.inTargetDensity / opts.inDensity;
+			if (mOptions.inDensity != 0 && mOptions.inTargetDensity != 0) {
+				densityRatio = (float) mOptions.inTargetDensity / mOptions.inDensity;
 			} else {
 				densityRatio = 1;
 			}

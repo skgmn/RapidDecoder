@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.ImageView;
 
@@ -15,13 +14,14 @@ import rapid.decoder.cache.CacheSource;
 import static rapid.decoder.cache.ResourcePool.*;
 
 public abstract class FramedDecoder extends Decodable {
-    protected BitmapDecoder decoder;
+    protected BitmapDecoder mDecoder;
     protected Drawable background;
     protected int frameWidth;
     protected int frameHeight;
+    protected CacheSource mCacheSource;
 
     public FramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
-        this.decoder = decoder;
+        mDecoder = decoder;
         this.frameWidth = frameWidth;
         this.frameHeight = frameHeight;
     }
@@ -58,33 +58,27 @@ public abstract class FramedDecoder extends Decodable {
 
     @Override
     public void draw(Canvas cv, Rect bounds) {
-        setRegion(decoder, bounds.width(), bounds.height(), null).draw(cv, bounds);
+        setRegion(mDecoder, bounds.width(), bounds.height(), null).draw(cv, bounds);
     }
 
     @Override
     public Bitmap decode() {
         Rect rectDest = RECT.obtainNotReset();
-        Bitmap bitmap = setRegion(decoder, frameWidth, frameHeight,
-                rectDest).createAndDraw(frameWidth, frameHeight, rectDest, background);
+        BitmapDecoder decoder = setRegion(mDecoder, frameWidth, frameHeight, rectDest);
+        Bitmap bitmap = decoder.createAndDraw(frameWidth, frameHeight, rectDest, background);
         RECT.recycle(rectDest);
+        mCacheSource = decoder.cacheSource();
         return bitmap;
     }
 
     @Override
     public void cancel() {
-        decoder.cancel();
-    }
-
-    @Override
-    public void decode(@NonNull DecodeResult out) {
-        // TODO Implement this
-        out.bitmap = decode();
-        out.cacheSource = CacheSource.NOT_CACHED;
+        mDecoder.cancel();
     }
 
     @Override
     public boolean isCancelled() {
-        return decoder.isCancelled();
+        return mDecoder.isCancelled();
     }
 
     @Override
@@ -95,6 +89,11 @@ public abstract class FramedDecoder extends Decodable {
     @Override
     public int height() {
         return frameHeight;
+    }
+
+    @Override
+    public CacheSource cacheSource() {
+        return mCacheSource;
     }
 
     public static FramedDecoder newInstance(BitmapDecoder decoder, int frameWidth, int frameHeight,

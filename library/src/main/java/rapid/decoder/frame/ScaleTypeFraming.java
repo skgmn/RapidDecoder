@@ -4,7 +4,7 @@ import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
 
-public class ScaleTypeFraming extends FramingAlgorithm {
+public class ScaleTypeFraming extends FramingMethod {
     private ImageView.ScaleType mScaleType;
 
     public ScaleTypeFraming(ImageView.ScaleType scaleType) {

@@ -32,7 +32,7 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
 
         BitmapDecoder.initDiskCache(this);
-        BitmapDecoder.initMemoryCache(this);
+        BitmapDecoder.initMemoryCache(32 * 1024 * 1024);
 
         mDrawer = (DrawerLayout) findViewById(R.id.drawer);
         ListView listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);

@@ -63,7 +63,7 @@ public class BitmapTransformer extends BitmapDecoder {
 		final boolean redraw = !((targetConfig == null || bitmap.getConfig().equals(targetConfig)) && !mutable);
 		
 		if (region != null) {
-			if (ratioWidth == 1f && ratioHeight == 1f) {
+			if (mRatioWidth == 1f && mRatioHeight == 1f) {
 				if (!redraw) {
 					return Bitmap.createBitmap(bitmap, region.left, region.top, region.width(), region.height());
 				} else {
@@ -72,7 +72,7 @@ public class BitmapTransformer extends BitmapDecoder {
 			} else {
 				if (!redraw) {
 					Matrix m = MATRIX.obtain();
-					m.setScale(ratioWidth, ratioHeight);
+					m.setScale(mRatioWidth, mRatioHeight);
 					
 					Bitmap b = Bitmap.createBitmap(bitmap,
 							region.left, region.top,
@@ -84,14 +84,14 @@ public class BitmapTransformer extends BitmapDecoder {
 					return b;
 				} else {
 					return redraw(bitmap, region,
-							Math.round(ratioWidth * region.width()),
-							Math.round(ratioHeight * region.height()));
+							Math.round(mRatioWidth * region.width()),
+							Math.round(mRatioHeight * region.height()));
 				}
 			}
-		} else if (ratioWidth != 1f || ratioHeight != 1f) {
+		} else if (mRatioWidth != 1f || mRatioHeight != 1f) {
 			if (!redraw) {
 				Matrix m = MATRIX.obtain();
-				m.setScale(ratioWidth, ratioHeight);
+				m.setScale(mRatioWidth, mRatioHeight);
 
 				Bitmap b = Bitmap.createBitmap(bitmap,
 						0, 0, bitmap.getWidth(), bitmap.getHeight(),
@@ -102,8 +102,8 @@ public class BitmapTransformer extends BitmapDecoder {
 				return b;
 			} else {
 				return redraw(bitmap, null,
-                        Math.round(ratioWidth * bitmap.getWidth()),
-                        Math.round(ratioHeight * bitmap.getHeight()));
+                        Math.round(mRatioWidth * bitmap.getWidth()),
+                        Math.round(mRatioHeight * bitmap.getHeight()));
 			}
 		} else {
 			if (!redraw) {
@@ -113,12 +113,6 @@ public class BitmapTransformer extends BitmapDecoder {
 			}
 		}
 	}
-
-    @Override
-    public void decode(@NonNull DecodeResult out) {
-        out.bitmap = decode();
-        out.cacheSource = CacheSource.MEMORY;
-    }
 
     @Override
     public void decode(@NonNull OnBitmapDecodedListener listener) {
@@ -156,16 +150,19 @@ public class BitmapTransformer extends BitmapDecoder {
 
 	@NonNull
     @Override
-	public BitmapDecoder mutate() {
+	public BitmapTransformer mutate() {
 		// TODO: Implement this
 		return this;
 	}
 
     @Override
     public void into(ViewBinder binder) {
-        DecodeResult result = new DecodeResult();
-        decode(result);
-        binder.bind(result.bitmap, result.cacheSource);
+        binder.bind(decode(), false);
+    }
+
+    @Override
+    public CacheSource cacheSource() {
+        return CacheSource.MEMORY;
     }
 
     @Override
@@ -240,11 +237,10 @@ public class BitmapTransformer extends BitmapDecoder {
 	@Override
 	public int hashCode() {
 		final int hashBitmap = bitmap.hashCode();
-		final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
 		final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
 		final int hashConfig = (targetConfig == null ? 0 : targetConfig.hashCode());
 		
-		return hashBitmap ^ hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
+		return hashBitmap ^ hashOptions ^ hashConfig ^ requestsHash();
 	}
 	
 	@Override

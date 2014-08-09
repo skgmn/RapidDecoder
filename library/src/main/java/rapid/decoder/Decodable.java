@@ -18,11 +18,6 @@ public abstract class Decodable {
         void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource);
     }
 
-    public static class DecodeResult {
-        public Bitmap bitmap;
-        public CacheSource cacheSource;
-    }
-
     public void into(final ViewBinder binder) {
         View v = binder.getView();
         if (v == null) return;
@@ -30,25 +25,25 @@ public abstract class Decodable {
         final BackgroundTaskRecord record = BitmapDecoder.sTaskManager.register(v, false);
         binder.runAfterReady(new ViewBinder.OnReadyListener() {
             @Override
-            public void onReady(View v) {
+            public void onReady(View v, boolean async) {
                 if (record.isStale) return;
-                loadBitmapWhenReady(record, binder, v);
+                loadBitmapWhenReady(record, binder, v, async);
             }
         });
     }
 
-    void loadBitmapWhenReady(BackgroundTaskRecord record, final ViewBinder binder,
-                             View v) {
-
+    BitmapLoadTask loadBitmapWhenReady(BackgroundTaskRecord record, final ViewBinder binder,
+                             View v, boolean async) {
         BitmapLoadTask task = new BitmapLoadTask(this, new OnBitmapDecodedListener() {
             @Override
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
-                binder.bind(bitmap, cacheSource);
+                binder.bind(bitmap, true);
             }
         });
         task.setKey(v, false);
         setupLoadTask(task, v, binder);
         record.execute(task);
+        return task;
     }
 
     protected void setupLoadTask(BitmapLoadTask task, View v, ViewBinder<?> binder) {
@@ -68,12 +63,12 @@ public abstract class Decodable {
         BitmapDecoder.sTaskManager.execute(task);
     }
 
+    public abstract CacheSource cacheSource();
+
     public abstract void cancel();
 
     @Nullable
     public abstract Bitmap decode();
-
-    public abstract void decode(@NonNull DecodeResult out);
 
     @SuppressWarnings("UnusedDeclaration")
     public abstract void draw(Canvas cv, Rect bounds);

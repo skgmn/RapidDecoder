@@ -19,8 +19,8 @@ class CenterFramedDecoder extends FramedDecoder {
     protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
                              @Nullable Rect outDest) {
 
-        int width = decoder.width();
-        int height = decoder.height();
+        int width = mDecoder.width();
+        int height = mDecoder.height();
         if (width > frameWidth) {
             if (outSrc != null) {
                 outSrc.left = (width - frameWidth) / 2;

@@ -1,13 +1,15 @@
 package rapid.decoder;
 
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
 import java.lang.ref.WeakReference;
 
+import rapid.decoder.cache.CacheSource;
 import rapid.decoder.frame.AspectRatioCalculator;
-import rapid.decoder.frame.FramingAlgorithm;
+import rapid.decoder.frame.FramingMethod;
 
-public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeResult> {
+public class BitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
     public static final int AUTOSIZE_NONE = 0;
     public static final int AUTOSIZE_WIDTH = 1;
     public static final int AUTOSIZE_HEIGHT = 2;
@@ -17,7 +19,7 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
     private Decodable.OnBitmapDecodedListener mListener;
     private WeakReference<Object> mWeakKey;
     private Object mStrongKey;
-    private FramingAlgorithm mFraming;
+    private FramingMethod mFraming;
     private int mAutoSizeMode = AUTOSIZE_NONE;
     private int mMinWidth;
     private int mMinHeight;
@@ -40,7 +42,7 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
     }
 
     @Override
-    protected Decodable.DecodeResult doInBackground(Object... params) {
+    protected Object[] doInBackground(Object... params) {
         Decodable d = mDecodable;
         if (mFraming != null && mDecodable instanceof BitmapDecoder) {
             int frameWidth, frameHeight;
@@ -88,17 +90,17 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
             }
         }
 
-        Decodable.DecodeResult result = new Decodable.DecodeResult();
-        d.decode(result);
-        return result;
+        Bitmap bitmap = d.decode();
+        CacheSource cacheSource = d.cacheSource();
+        return new Object[] { bitmap, cacheSource };
     }
 
     @Override
-    protected void onPostExecute(Decodable.DecodeResult result) {
+    protected void onPostExecute(Object[] result) {
         BackgroundTaskRecord record = BitmapDecoder.sTaskManager.remove(key());
         if (record != null && !record.isStale) {
             record.isStale = true;
-            mListener.onBitmapDecoded(result.bitmap, result.cacheSource);
+            mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
         }
     }
 
@@ -118,7 +120,7 @@ public class BitmapLoadTask extends AsyncTask<Object, Object, Decodable.DecodeRe
         mDecodable.cancel();
     }
 
-    public void setFraming(FramingAlgorithm framing, int autoSizeMode, int minWidth,
+    public void setFraming(FramingMethod framing, int autoSizeMode, int minWidth,
                            int minHeight, int maxWidth, int maxHeight) {
         mFraming = framing;
         mAutoSizeMode = autoSizeMode;
