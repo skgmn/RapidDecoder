@@ -18,6 +18,7 @@ import rapid.decoder.frame.FramingMethod;
 public abstract class Decodable {
     public interface OnBitmapDecodedListener {
         void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource);
+        void onCancel();
     }
 
     private boolean mIsMemoryCacheEnabled = true;
@@ -63,6 +64,11 @@ public abstract class Decodable {
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
                 binder.bind(bitmap, true);
             }
+
+            @Override
+            public void onCancel() {
+                binder.recycle();
+            }
         });
         task.setKey(v, false);
         task.setFrameBuilder(frameBuilder);
@@ -75,9 +81,9 @@ public abstract class Decodable {
 
     public void into(View v) {
         if (v instanceof ImageView) {
-            into(new ImageViewBinder((ImageView) v));
+            into(ImageViewBinder.obtain((ImageView) v));
         } else {
-            into(new ViewBackgroundBinder(v));
+            into(ViewBackgroundBinder.obtain(v));
         }
     }
 

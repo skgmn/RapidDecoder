@@ -1,23 +1,27 @@
 package rapid.decoder.binder;
 
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
+import rapid.decoder.cache.ResourcePool;
+
 public class ImageViewBinder extends ViewBinder<ImageView> {
-    public ImageViewBinder(ImageView v) {
-        super(v);
+    private static final ResourcePool<ImageViewBinder> POOL = new Pool<ImageViewBinder>() {
+        @Override
+        protected ImageViewBinder newInstance() {
+            return new ImageViewBinder();
+        }
+    };
+
+    public static ImageViewBinder obtain(ImageView v) {
+        ImageViewBinder binder = POOL.obtainNotReset();
+        binder.init(v);
+        return binder;
     }
 
     @Override
-    public void bind(Bitmap bitmap, boolean isAsync) {
-        final ImageView v = getView();
-        if (v == null) return;
-
-        Drawable d = createDrawable(v.getContext(), bitmap);
-        if (d == null) return;
-
-        effect().apply(v.getContext(), this, d, isAsync);
+    public void recycle() {
+        POOL.recycle(this);
     }
 
     @Override

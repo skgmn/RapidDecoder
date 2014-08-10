@@ -16,6 +16,8 @@ public abstract class Effect {
         void setDrawable(int index, Drawable d);
 
         void postDelayed(Runnable r, int delay);
+
+        void dispose();
     }
 
     private static final int DURATION_ID = android.R.integer.config_mediumAnimTime;
@@ -32,6 +34,7 @@ public abstract class Effect {
                 if (!target.isDrawableEnabled(i)) continue;
                 target.setDrawable(i, newDrawable);
             }
+            target.dispose();
         }
     };
 
@@ -57,6 +60,7 @@ public abstract class Effect {
                         if (target.getDrawable(finalI) == d) {
                             target.setDrawable(finalI, newDrawable);
                         }
+                        target.dispose();
                     }
                 }, duration);
             }

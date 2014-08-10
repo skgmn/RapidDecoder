@@ -31,10 +31,11 @@ public class LoadIntoViewTask extends AsyncTask<Object, Object, Object[]> {
 
     @Override
     protected Object[] doInBackground(Object... params) {
-        Decodable d;
+        Decodable d = null;
         if (mFrameBuilder != null) {
             d = mFrameBuilder.getFramedDecoder(false);
-        } else {
+        }
+        if (d == null) {
             d = mDecodable;
         }
 
@@ -49,6 +50,8 @@ public class LoadIntoViewTask extends AsyncTask<Object, Object, Object[]> {
         if (record != null && !record.isStale) {
             record.isStale = true;
             mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
+        } else {
+            mListener.onCancel();
         }
     }
 

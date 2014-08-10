@@ -1,12 +1,20 @@
 package rapid.decoder.binder;
 
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
 
+import rapid.decoder.cache.ResourcePool;
+
 public class TextViewBinder extends ViewBinder<TextView> {
+    private static final ResourcePool<TextViewBinder> POOL = new Pool<TextViewBinder>() {
+        @Override
+        protected TextViewBinder newInstance() {
+            return new TextViewBinder();
+        }
+    };
+
     private static final int[] sGravityMask = new int[]{
             Gravity.LEFT,
             Gravity.TOP,
@@ -18,8 +26,14 @@ public class TextViewBinder extends ViewBinder<TextView> {
     private int mWidth;
     private int mHeight;
 
-    public TextViewBinder(TextView v, int gravity, int width, int height) {
-        super(v);
+    public static TextViewBinder obtain(TextView v, int gravity, int width, int height) {
+        TextViewBinder binder = POOL.obtainNotReset();
+        binder.init(v, gravity, width, height);
+        return binder;
+    }
+
+    protected void init(TextView v, int gravity, int width, int height) {
+        init(v);
         mGravity = gravity;
         mWidth = width;
         mHeight = height;
@@ -32,19 +46,13 @@ public class TextViewBinder extends ViewBinder<TextView> {
     }
 
     @Override
-    public void bind(Bitmap bitmap, boolean isAsync) {
-        final TextView v = getView();
-        if (v == null) return;
-
-        Drawable d = createDrawable(v.getContext(), bitmap);
-        if (d == null) return;
-
-        effect().apply(v.getContext(), this, d, isAsync);
+    public int getDrawableCount() {
+        return 4;
     }
 
     @Override
-    public int getDrawableCount() {
-        return 4;
+    public void recycle() {
+        POOL.recycle(this);
     }
 
     @Override

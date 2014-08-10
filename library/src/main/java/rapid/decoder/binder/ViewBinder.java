@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 
 import rapid.decoder.NextLayoutInspector;
+import rapid.decoder.cache.ResourcePool;
 import rapid.decoder.compat.ImageViewCompat;
 import rapid.decoder.compat.ViewCompat;
 import rapid.decoder.frame.FramingMethod;
@@ -23,12 +24,29 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         void onReady(View v, boolean async);
     }
 
+    protected static abstract class Pool<T extends ViewBinder<?>> extends ResourcePool<T> {
+        @Override
+        protected boolean onRecycle(T obj) {
+            obj.reset();
+            return true;
+        }
+    }
+
     private Effect mEffect;
     private FramingMethod mFraming;
     private WeakReference<T> mView;
 
-    public ViewBinder(T v) {
+    protected ViewBinder() {
+    }
+
+    protected void init(T v) {
         mView = new WeakReference<T>(v);
+    }
+
+    protected void reset() {
+        mEffect = null;
+        mFraming = null;
+        mView = null;
     }
 
     @Nullable
@@ -36,8 +54,12 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return mView.get();
     }
 
-    public Drawable createDrawable(Context context, Bitmap bitmap) {
-        return new BitmapDrawable(context.getResources(), bitmap);
+    public Drawable createDrawable(Context context, @Nullable Bitmap bitmap) {
+        if (bitmap == null) {
+            return null;
+        } else {
+            return new BitmapDrawable(context.getResources(), bitmap);
+        }
     }
 
     public void postDelayed(Runnable r, int delay) {
@@ -75,7 +97,25 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
                 lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
     }
 
-    public abstract void bind(Bitmap bitmap, boolean isAsync);
+    public void recycle() {
+    }
+
+    @Override
+    public void dispose() {
+        recycle();
+    }
+
+    public void bind(Bitmap bitmap, boolean isAsync) {
+        View v = getView();
+        if (v != null) {
+            Drawable d = createDrawable(v.getContext(), bitmap);
+            if (d != null) {
+                effect().apply(v.getContext(), this, d, isAsync);
+                return;
+            }
+        }
+        recycle();
+    }
 
     @NonNull
     public Effect effect() {

@@ -111,7 +111,7 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                                 return createRoundedImage(getContext(), bitmap);
                             }
                         })
-                        .into(new TextViewBinder(textView, Gravity.LEFT, imageSize,
+                        .into(TextViewBinder.obtain(textView, Gravity.LEFT, imageSize,
                                 imageSize).scaleType(ImageView.ScaleType.CENTER_CROP));
             }
         }

@@ -1,25 +1,29 @@
 package rapid.decoder.binder;
 
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
 
+import rapid.decoder.cache.ResourcePool;
+
 public class ViewBackgroundBinder extends ViewBinder<View> {
-    public ViewBackgroundBinder(View v) {
-        super(v);
+    private static final ResourcePool<ViewBackgroundBinder> POOL = new Pool<ViewBackgroundBinder>
+            () {
+        @Override
+        protected ViewBackgroundBinder newInstance() {
+            return new ViewBackgroundBinder();
+        }
+    };
+
+    public static ViewBackgroundBinder obtain(View v) {
+        ViewBackgroundBinder binder = POOL.obtainNotReset();
+        binder.init(v);
+        return binder;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public void bind(Bitmap bitmap, boolean isAsync) {
-        View v = getView();
-        if (v == null) return;
-
-        Drawable d = createDrawable(v.getContext(), bitmap);
-        if (d == null) return;
-
-        effect().apply(v.getContext(), this, d, isAsync);
+    public void recycle() {
+        POOL.recycle(this);
     }
 
     @Override

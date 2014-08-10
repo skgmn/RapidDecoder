@@ -77,7 +77,7 @@ public class GalleryFragment extends Fragment implements LoaderManager.LoaderCal
             imageView.setImageDrawable(new ColorDrawable(0xffcccccc));
             String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Thumbnails
                     .DATA));
-            BitmapDecoder.from(path).into(new ImageViewBinder(imageView).scaleType(ImageView
+            BitmapDecoder.from(path).into(ImageViewBinder.obtain(imageView).scaleType(ImageView
                     .ScaleType.CENTER_CROP));
         }
     }
