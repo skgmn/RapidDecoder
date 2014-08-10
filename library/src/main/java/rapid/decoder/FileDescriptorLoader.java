@@ -1,10 +1,5 @@
 package rapid.decoder;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +7,11 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 import android.support.annotation.NonNull;
+
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 class FileDescriptorLoader extends BitmapLoader {
 	private FileDescriptor fd;
@@ -66,7 +66,7 @@ class FileDescriptorLoader extends BitmapLoader {
 	}
 
 	@Override
-	protected boolean isMemCacheSupported() {
+	public boolean isMemoryCacheSupported() {
 		return false;
 	}
 }

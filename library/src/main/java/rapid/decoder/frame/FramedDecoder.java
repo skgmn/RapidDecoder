@@ -63,12 +63,35 @@ public abstract class FramedDecoder extends Decodable {
 
     @Override
     public Bitmap decode() {
+        return decode(false);
+    }
+
+    private Bitmap decode(boolean fromCache) {
         Rect rectDest = RECT.obtainNotReset();
         BitmapDecoder decoder = setRegion(mDecoder, frameWidth, frameHeight, rectDest);
-        Bitmap bitmap = decoder.createAndDraw(frameWidth, frameHeight, rectDest, background);
+        Bitmap bitmap;
+        if (fromCache) {
+            if (decoder.isMemoryCacheSupported()) {
+                bitmap = decoder.getCachedBitmap();
+            } else {
+                bitmap = null;
+            }
+        } else {
+            bitmap = decoder.createAndDraw(frameWidth, frameHeight, rectDest, background);
+        }
         RECT.recycle(rectDest);
         mCacheSource = decoder.cacheSource();
         return bitmap;
+    }
+
+    @Override
+    public Bitmap getCachedBitmap() {
+        return decode(true);
+    }
+
+    @Override
+    public boolean isMemoryCacheSupported() {
+        return mDecoder.isMemoryCacheSupported();
     }
 
     @Override

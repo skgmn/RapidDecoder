@@ -61,7 +61,7 @@ class FileBitmapLoader extends BitmapLoader {
     }
 
 	@Override
-	protected boolean isMemCacheSupported() {
+	public boolean isMemoryCacheSupported() {
 		return true;
 	}
 }

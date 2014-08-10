@@ -50,14 +50,14 @@ class BackgroundTaskManager {
         BackgroundTaskRecord record = map.remove(key);
         if (record != null) {
             record.isStale = true;
-            BitmapLoadTask task = record.getTask();
+            LoadIntoViewTask task = record.getTask();
             if (task != null) {
                 task.cancel();
             }
         }
     }
 
-    public void execute(BitmapLoadTask task) {
+    public void execute(LoadIntoViewTask task) {
         Object key = task.key();
         if (key == null) return;
 

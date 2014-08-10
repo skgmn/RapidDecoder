@@ -8,10 +8,12 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.ImageView;
 
-import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.binder.ImageViewBinder;
 import rapid.decoder.binder.ViewBackgroundBinder;
+import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.cache.CacheSource;
+import rapid.decoder.frame.FramedDecoder;
+import rapid.decoder.frame.FramingMethod;
 
 public abstract class Decodable {
     public interface OnBitmapDecodedListener {
@@ -32,21 +34,41 @@ public abstract class Decodable {
         });
     }
 
-    BitmapLoadTask loadBitmapWhenReady(BackgroundTaskRecord record, final ViewBinder binder,
+    void loadBitmapWhenReady(BackgroundTaskRecord record, final ViewBinder binder,
                              View v, boolean async) {
-        BitmapLoadTask task = new BitmapLoadTask(this, new OnBitmapDecodedListener() {
+
+        ViewFrameBuilder frameBuilder = null;
+        FramingMethod framing = binder.framing();
+        if (framing != null) {
+            frameBuilder = setupFrameBuilder(v, framing);
+            if (frameBuilder != null) {
+                frameBuilder.prepareFraming();
+                if (!async) {
+                    FramedDecoder framedDecoder = frameBuilder.getFramedDecoder(true);
+                    if (framedDecoder != null) {
+                        Bitmap bitmap = framedDecoder.getCachedBitmap();
+                        if (bitmap != null) {
+                            binder.bind(bitmap, false);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        LoadIntoViewTask task = new LoadIntoViewTask(this, new OnBitmapDecodedListener() {
             @Override
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
                 binder.bind(bitmap, true);
             }
         });
         task.setKey(v, false);
-        setupLoadTask(task, v, binder);
+        task.setFrameBuilder(frameBuilder);
         record.execute(task);
-        return task;
     }
 
-    protected void setupLoadTask(BitmapLoadTask task, View v, ViewBinder<?> binder) {
+    protected ViewFrameBuilder setupFrameBuilder(View v, FramingMethod framing) {
+        return null;
     }
 
     public void into(View v) {
@@ -58,9 +80,17 @@ public abstract class Decodable {
     }
 
     public void decode(@NonNull OnBitmapDecodedListener listener) {
-        BitmapLoadTask task = new BitmapLoadTask(this, listener);
+        LoadIntoViewTask task = new LoadIntoViewTask(this, listener);
         task.setKey(this, false);
         BitmapDecoder.sTaskManager.execute(task);
+    }
+
+    public boolean isMemoryCacheSupported() {
+        return false;
+    }
+
+    public Bitmap getCachedBitmap() {
+        return null;
     }
 
     public abstract CacheSource cacheSource();

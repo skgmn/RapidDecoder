@@ -6,7 +6,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -56,7 +55,6 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
 
         if ((v.getWidth() == 0 || v.getHeight() == 0) && v.isLayoutRequested() &&
                 !shouldWrapContent(v)) {
-            Log.e("asdf", "layout async");
             NextLayoutInspector.inspectNextLayout(v, new NextLayoutInspector.OnNextLayoutListener
                     () {
                 @Override
@@ -65,7 +63,6 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
                 }
             });
         } else {
-            Log.e("asdf", "layout sync");
             listener.onReady(v, false);
         }
     }

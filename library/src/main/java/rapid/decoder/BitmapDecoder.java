@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import rapid.decoder.cache.BitmapLruCache;
+import rapid.decoder.cache.BitmapMetaLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
@@ -60,6 +61,7 @@ public abstract class BitmapDecoder extends Decodable {
 
     protected static final Object sMemCacheLock = new Object();
     protected static BitmapLruCache<Object> sMemCache;
+    protected static BitmapMetaLruCache sMetaCache;
 
     static final Object sDiskCacheLock = new Object();
     static DiskLruCache sDiskCache;
@@ -84,6 +86,7 @@ public abstract class BitmapDecoder extends Decodable {
                 sMemCache.evictAll();
             }
             sMemCache = new BitmapLruCache<Object>(size);
+            sMetaCache = new BitmapMetaLruCache(32);
         }
     }
 
@@ -102,6 +105,9 @@ public abstract class BitmapDecoder extends Decodable {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
                 sMemCache.evictAll();
+            }
+            if (sMetaCache != null) {
+                sMetaCache.evictAll();
             }
         }
     }
