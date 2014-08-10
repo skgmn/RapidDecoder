@@ -1,6 +1,5 @@
 package rapid.decoder;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -36,7 +35,6 @@ class ByteArrayBitmapLoader extends BitmapLoader {
 		length = other.length;
 	}
 
-	@SuppressLint("NewApi")
 	@Override
 	protected Bitmap decode(Options opts) {
 		return BitmapFactory.decodeByteArray(data, offset, length, opts);

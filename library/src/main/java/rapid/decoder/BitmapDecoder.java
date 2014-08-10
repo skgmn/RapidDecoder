@@ -88,7 +88,7 @@ public abstract class BitmapDecoder extends Decodable {
                 sMemCache.evictAll();
             }
             sMemCache = new BitmapLruCache<Object>(size);
-            sMetaCache = new BitmapMetaLruCache(32);
+            sMetaCache = new BitmapMetaLruCache(500);
         }
     }
 
@@ -799,7 +799,7 @@ public abstract class BitmapDecoder extends Decodable {
                                     final String columnName, final String selection,
                                     final String[] selectionArgs,
                                     final String sortOrder) {
-        StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+        return new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
             public InputStream openInputStream() {
                 Cursor cursor = resolver.query(uri, new String[]{columnName}, selection,
@@ -821,7 +821,6 @@ public abstract class BitmapDecoder extends Decodable {
                 }
             }
         }));
-        return loader;
     }
 
     public static BitmapLoader from(final SQLiteDatabase db, final String tableName,
@@ -829,7 +828,7 @@ public abstract class BitmapDecoder extends Decodable {
                                     final String[] selectionArgs,
                                     final String groupBy, final String having,
                                     final String orderBy) {
-        StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+        return new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
             public InputStream openInputStream() {
                 Cursor cursor = db.query(tableName, new String[]{columnName}, selection,
@@ -851,6 +850,5 @@ public abstract class BitmapDecoder extends Decodable {
                 }
             }
         }));
-        return loader;
     }
 }

@@ -38,6 +38,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     private int mSourceWidth;
     private int mSourceHeight;
+    private boolean mBoundsDecoded;
 
     // Temporary variables
     private float mAdjustedDensityRatio;
@@ -86,6 +87,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     protected void decodeBounds() {
+        if (mBoundsDecoded) return;
+
         BitmapMeta meta = getCachedMeta();
         if (meta != null) {
             mSourceWidth = meta.width();
@@ -98,6 +101,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         mOptions.inJustDecodeBounds = true;
         decode(mOptions);
         mOptions.inJustDecodeBounds = false;
+        mBoundsDecoded = true;
 
         mSourceWidth = Math.max(0, mOptions.outWidth);
         mSourceHeight = Math.max(0, mOptions.outHeight);
@@ -253,20 +257,19 @@ public abstract class BitmapLoader extends BitmapDecoder {
                         (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
                         (mOptions.inSampleSize > 1 && !mScaleFilter);
 
+        if (useBuiltInDecoder || regional) {
+            decodeBounds();
+        }
         onDecodingStarted(useBuiltInDecoder);
 
-        try {
-            if (useBuiltInDecoder) {
-                return decodeBuiltIn(mRegion);
+        if (useBuiltInDecoder) {
+            return decodeBuiltIn(mRegion);
+        } else {
+            if (regional) {
+                return decodeRegional(mOptions, mRegion);
             } else {
-                if (regional) {
-                    return decodeRegional(mOptions, mRegion);
-                } else {
-                    return decode(mOptions);
-                }
+                return decode(mOptions);
             }
-        } finally {
-            onDecodingFinished();
         }
     }
 
@@ -290,9 +293,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 
     protected void onDecodingStarted(boolean builtInDecoder) {
-    }
-
-    protected void onDecodingFinished() {
     }
 
     @Nullable
