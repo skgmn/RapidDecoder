@@ -15,17 +15,13 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import java.io.InputStream;
 
-import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.builtin.BuiltInDecoder;
+import rapid.decoder.cache.BitmapMetaInfo;
 import rapid.decoder.cache.CacheSource;
-import rapid.decoder.compat.ImageViewCompat;
-import rapid.decoder.compat.ViewCompat;
-import rapid.decoder.frame.FramingAlgorithm;
+import rapid.decoder.frame.FramingMethod;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -33,15 +29,17 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @SuppressWarnings("UnusedDeclaration")
     public static final int SIZE_AUTO = 0;
 
-    protected Options opts;
-    protected boolean mutable;
-    private boolean scaleFilter = true;
-    private boolean useBuiltInDecoder = false;
+    protected Options mOptions;
+    protected boolean mIsMutable;
+    private boolean mScaleFilter = true;
+    private boolean mUseBuiltInDecoder = false;
+    private boolean memCacheEnabled = true;
+    private Object mId;
+    boolean isFromDiskCache;
+    protected CacheSource mCacheSource;
 
     private int width;
     private int height;
-
-    private MemCacheEnabler<?> memCacheEnabler;
 
     // Temporary variables
     private float adjustedDensityRatio;
@@ -50,43 +48,52 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     protected BitmapLoader() {
         super();
-        opts = OPTIONS.obtain();
-        opts.inScaled = false;
+        mOptions = OPTIONS.obtain();
+        mOptions.inScaled = false;
     }
 
     protected BitmapLoader(BitmapLoader other) {
         super(other);
 
-        opts = Cloner.clone(other.opts);
+        mId = other.mId;
 
-        mutable = other.mutable;
-        scaleFilter = other.scaleFilter;
-        useBuiltInDecoder = other.useBuiltInDecoder;
+        mOptions = Cloner.clone(other.mOptions);
+
+        mIsMutable = other.mIsMutable;
+        mScaleFilter = other.mScaleFilter;
+        mUseBuiltInDecoder = other.mUseBuiltInDecoder;
 
         width = other.width;
         height = other.height;
-
-        if (other.memCacheEnabler != null) {
-            setMemCacheEnabler(other.memCacheEnabler.clone());
-        }
     }
 
     @Override
     protected void finalize() throws Throwable {
         try {
-            OPTIONS.recycle(opts);
+            OPTIONS.recycle(mOptions);
         } finally {
             super.finalize();
         }
     }
 
     protected void decodeBounds() {
-        opts.inJustDecodeBounds = true;
-        decode(opts);
-        opts.inJustDecodeBounds = false;
+        if (isMemCacheEnabled()) {
+            Bitmap cachedBitmap = getCachedBitmap();
+            if (cachedBitmap != null) {
+                width = cachedBitmap.getWidth();
+                height = cachedBitmap.getHeight();
+                mOptions.inDensity = 0;
+                mOptions.inTargetDensity = 0;
+                return;
+            }
+        }
 
-        width = opts.outWidth;
-        height = opts.outHeight;
+        mOptions.inJustDecodeBounds = true;
+        decode(mOptions);
+        mOptions.inJustDecodeBounds = false;
+
+        width = mOptions.outWidth;
+        height = mOptions.outHeight;
     }
 
     @Override
@@ -105,53 +112,45 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return height;
     }
 
-    void setMemCacheEnabler(MemCacheEnabler<?> enabler) {
-        enabler.setBitmapDecoder(this);
-        memCacheEnabler = enabler;
-    }
-
-    private Object getCacheKey() {
-        return memCacheEnabler != null ? memCacheEnabler : this;
-    }
-
     public Bitmap getCachedBitmap() {
         synchronized (sMemCacheLock) {
             if (sMemCache == null) return null;
-            return sMemCache.get(getCacheKey());
+            return sMemCache.get(this);
         }
     }
 
     @Override
     public Bitmap decode() {
-        final boolean memCacheSupported = (memCacheEnabler != null || isMemCacheSupported());
-        if (memCacheSupported) {
+        final boolean memCacheEnabled = isMemCacheEnabled();
+        if (memCacheEnabled) {
             final Bitmap cachedBitmap = getCachedBitmap();
             if (cachedBitmap != null) {
+                mCacheSource = CacheSource.MEMORY;
                 return cachedBitmap;
             }
         }
 
         // reset
 
-        opts.mCancel = false;
+        mOptions.mCancel = false;
         adjustedDensityRatio = 0;
 
         //
 
-        resolveQueries();
+        resolveRequests();
 
         // Setup sample size.
 
-        final boolean postScaleBy = (ratioWidth != 1 || ratioHeight != 1);
+        final boolean postScaleBy = (mRatioWidth != 1 || mRatioHeight != 1);
         if (postScaleBy) {
-            opts.inSampleSize = calculateInSampleSizeByRatio();
+            mOptions.inSampleSize = calculateInSampleSizeByRatio();
         } else {
-            opts.inSampleSize = 1;
+            mOptions.inSampleSize = 1;
         }
 
         // Execute actual decoding
 
-        if (opts.mCancel) return null;
+        if (mOptions.mCancel) return null;
 
         Bitmap bitmap = executeDecoding();
         if (bitmap == null) return null;
@@ -165,31 +164,42 @@ public abstract class BitmapLoader extends BitmapDecoder {
             Matrix m = MATRIX.obtain();
             m.setScale(adjustedWidthRatio, adjustedHeightRatio);
             bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
-                    scaleFilter);
+                    mScaleFilter);
             MATRIX.recycle(m);
 
             if (bitmap != bitmap2) {
                 bitmap.recycle();
             }
 
-            bitmap2.setDensity(opts.inTargetDensity);
+            bitmap2.setDensity(mOptions.inTargetDensity);
             bitmap = bitmap2;
         }
 
-        if (memCacheSupported) {
+        if (memCacheEnabled) {
             synchronized (sMemCacheLock) {
                 if (sMemCache != null) {
-                    sMemCache.put(getCacheKey(), bitmap);
+                    sMemCache.put(this, bitmap);
+                }
+                if (sMetaCache != null && mId != null) {
+                    BitmapMetaInfo meta = new BitmapMetaInfo();
+                    meta.width = sourceWidth();
+                    meta.height = sourceHeight();
+                    sMetaCache.put(mId, meta);
                 }
             }
         }
 
+        mCacheSource = isFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
         return bitmap;
     }
 
+    private boolean isMemCacheEnabled() {
+        return this.memCacheEnabled && isMemoryCacheSupported();
+    }
+
     private int calculateInSampleSizeByRatio() {
-        adjustedWidthRatio = ratioWidth;
-        adjustedHeightRatio = ratioHeight;
+        adjustedWidthRatio = mRatioWidth;
+        adjustedHeightRatio = mRatioHeight;
 
         int sampleSize = 1;
         while (adjustedWidthRatio <= 0.5f && adjustedHeightRatio <= 0.5f) {
@@ -202,32 +212,44 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
-        resolveQueries();
-        opts.inSampleSize = calculateInSampleSize(regionWidth(), regionHeight(),
+        boolean memCacheEnabled = isMemCacheEnabled();
+        synchronized (sMemCacheLock) {
+            memCacheEnabled &= (sMemCache != null);
+        }
+        if (memCacheEnabled) {
+            return decode();
+        }
+
+        resolveRequests();
+        mOptions.inSampleSize = calculateSampleSize(regionWidth(), regionHeight(),
                 targetWidth, targetHeight);
-        return executeDecoding();
+
+        Bitmap bitmap = executeDecoding();
+        mCacheSource = isFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
+        return bitmap;
     }
 
     @SuppressLint("NewApi")
     protected Bitmap executeDecoding() {
-        final boolean regional = region != null &&
-                !(region.left == 0 && region.top == 0 &&
-                        region.width() == width() && region.height() == height());
+        final boolean regional = mRegion != null &&
+                !(mRegion.left == 0 && mRegion.top == 0 &&
+                        mRegion.width() == width() && mRegion.height() == height());
         final boolean useBuiltInDecoder =
-                this.useBuiltInDecoder ||
-                        (mutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
-                        (opts.inSampleSize > 1 && !scaleFilter);
+                this.mUseBuiltInDecoder ||
+                        (regional && Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1) ||
+                        (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
+                        (mOptions.inSampleSize > 1 && !mScaleFilter);
 
         onDecodingStarted(useBuiltInDecoder);
 
         try {
             if (useBuiltInDecoder) {
-                return builtInDecode(region);
+                return decodeBuiltIn(mRegion);
             } else {
                 if (regional) {
-                    return decodeRegional(opts, region);
+                    return decodeRegional(mOptions, mRegion);
                 } else {
-                    return decode(opts);
+                    return decode(mOptions);
                 }
             }
         } finally {
@@ -238,10 +260,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @SuppressLint("NewApi")
     @Override
     public BitmapLoader mutable(boolean mutable) {
-        this.mutable = mutable;
+        this.mIsMutable = mutable;
         if (Build.VERSION.SDK_INT >= 11) {
-            opts.inMutable = mutable;
+            mOptions.inMutable = mutable;
         }
+        mHashCode = 0;
         return this;
     }
 
@@ -250,8 +273,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected abstract InputStream getInputStream();
 
     protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
-
-    protected abstract boolean isMemCacheSupported();
 
     protected void onDecodingStarted(boolean builtInDecoder) {
     }
@@ -267,7 +288,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return (d == null ? null : d.decodeRegion(region, opts));
     }
 
-    private static int calculateInSampleSize(int width, int height, int reqWidth, int reqHeight) {
+    private static int calculateSampleSize(int width, int height, int reqWidth, int reqHeight) {
         // Raw height and width of image
         int inSampleSize = 1;
 
@@ -286,7 +307,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return inSampleSize;
     }
 
-    protected Bitmap builtInDecode(Rect region) {
+    protected Bitmap decodeBuiltIn(Rect region) {
         final InputStream in = getInputStream();
         if (in == null) return null;
 
@@ -294,24 +315,24 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         final BuiltInDecoder d = new BuiltInDecoder(in);
         d.setRegion(region);
-        d.setUseFilter(scaleFilter);
+        d.setUseFilter(mScaleFilter);
 
-        final Bitmap bitmap = d.decode(opts);
+        final Bitmap bitmap = d.decode(mOptions);
         d.close();
 
-        return mutable ? bitmap : Bitmap.createBitmap(bitmap);
+        return mIsMutable ? bitmap : Bitmap.createBitmap(bitmap);
     }
 
     @Override
     public void cancel() {
-        opts.requestCancelDecode();
+        mOptions.requestCancelDecode();
     }
 
     @Override
     public void draw(Canvas cv, Rect rectDest) {
         final Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
 
-        final Paint p = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+        final Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
         cv.drawBitmap(bitmap, null, rectDest, p);
         PAINT.recycle(p);
 
@@ -330,7 +351,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == width && rectDest.bottom
                 == height) {
 
-            bitmap2 = Bitmap.createScaledBitmap(bitmap, width, height, scaleFilter);
+            bitmap2 = Bitmap.createScaledBitmap(bitmap, width, height, mScaleFilter);
         } else {
             bitmap2 = Bitmap.createBitmap(width, height, bitmap.getConfig());
             Canvas cv = CANVAS.obtain(bitmap2);
@@ -338,13 +359,14 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 background.setBounds(0, 0, width, height);
                 background.draw(cv);
             }
-            Paint p = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+            Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
             cv.drawBitmap(bitmap, null, rectDest, p);
             PAINT.recycle(p);
             CANVAS.recycle(cv);
         }
 
-        if (bitmap != bitmap2) {
+        // Don't recycle it if memory cache is enabled because it could be from the cache.
+        if (bitmap != bitmap2 && !isMemCacheEnabled()) {
             bitmap.recycle();
         }
         return bitmap2;
@@ -352,29 +374,29 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public BitmapDecoder useBuiltInDecoder(boolean force) {
-        this.useBuiltInDecoder = force;
+        this.mUseBuiltInDecoder = force;
         return this;
     }
 
     @Override
     public BitmapDecoder config(Config config) {
-        opts.inPreferredConfig = config;
+        mOptions.inPreferredConfig = config;
         return this;
     }
 
     public Config config() {
-        return opts.inPreferredConfig;
+        return mOptions.inPreferredConfig;
     }
 
     private void adjustDensityRatio(boolean checkRatio) {
         if (adjustedDensityRatio == 0) {
-            if (checkRatio && (ratioWidth != 1 || ratioHeight != 1)) {
+            if (checkRatio && (mRatioWidth != 1 || mRatioHeight != 1)) {
                 adjustedDensityRatio = 1;
             } else {
                 adjustedDensityRatio = getDensityRatio();
 
                 while (adjustedDensityRatio <= 0.5) {
-                    opts.inSampleSize *= 2;
+                    mOptions.inSampleSize *= 2;
                     adjustedDensityRatio *= 2;
                 }
             }
@@ -383,12 +405,17 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public int hashCode() {
-        final int hashRegion = (region == null ? HASHCODE_NULL_REGION : region.hashCode());
-        final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
-        final int hashConfig = (opts.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS :
-                opts.inPreferredConfig.hashCode());
+        if (mHashCode != 0) {
+            return mHashCode;
+        }
 
-        return hashRegion ^ hashOptions ^ hashConfig ^ queriesHash();
+        final int hashId = (mId != null ? mId.hashCode() : 0);
+        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (mScaleFilter ? 0xAAAAAAAA : 0);
+        final int hashConfig = (mOptions.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS :
+                mOptions.inPreferredConfig.hashCode());
+
+        mHashCode = hashId ^ hashOptions ^ hashConfig ^ requestsHash();
+        return mHashCode;
     }
 
     @Override
@@ -397,66 +424,54 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         final BitmapLoader d = (BitmapLoader) o;
 
-        final Config config1 = opts.inPreferredConfig;
-        final Config config2 = d.opts.inPreferredConfig;
+        final Config config1 = mOptions.inPreferredConfig;
+        final Config config2 = d.mOptions.inPreferredConfig;
 
-        return (region == null ? d.region == null : region.equals(d.region)) &&
-                (config1 == null ? config2 == null : config1.equals(config2)) &&
-                mutable == d.mutable &&
-                scaleFilter == d.scaleFilter &&
-                queriesEquals(d);
+        return (config1 == null ? config2 == null : config1.equals(config2)) &&
+                (mId == null ? d.mId == null : mId.equals(d.mId)) &&
+                mIsMutable == d.mIsMutable &&
+                mScaleFilter == d.mScaleFilter &&
+                requestsEquals(d);
+    }
+
+    BitmapDecoder id(Object id) {
+        mId = id;
+        mHashCode = 0;
+        return this;
+    }
+
+    public Object id() {
+        return mId;
     }
 
     @Override
     public BitmapDecoder filterBitmap(boolean filter) {
-        scaleFilter = filter;
+        mScaleFilter = filter;
+        mHashCode = 0;
+        return this;
+    }
+
+    BitmapLoader memCacheEnabled(boolean useCache) {
+        this.memCacheEnabled = useCache;
         return this;
     }
 
     @Override
-    public boolean isCancelled() {
-        return opts.mCancel;
+    public CacheSource cacheSource() {
+        return mCacheSource;
     }
 
     @Override
-    public void decode(@NonNull DecodeResult out) {
-        // TODO: Implement this
-        out.bitmap = decode();
-        out.cacheSource = CacheSource.NOT_CACHED;
+    public boolean isCancelled() {
+        return mOptions.mCancel;
     }
 
-    protected void setupLoadTask(BitmapLoadTask task, View v, ViewBinder<?> binder) {
-        FramingAlgorithm framing = binder.framing();
-        if (framing != null) {
-            ViewGroup.LayoutParams lp = v.getLayoutParams();
-
-            if (lp.width == ViewGroup.LayoutParams.WRAP_CONTENT) {
-                if (lp.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
-                    task.setFraming(framing, BitmapLoadTask.AUTOSIZE_BOTH,
-                            ViewCompat.getMinimumWidth(v), ViewCompat.getMinimumHeight(v),
-                            getMaxWidth(v), getMaxHeight(v));
-                } else {
-                    task.setFraming(framing, BitmapLoadTask.AUTOSIZE_WIDTH,
-                            ViewCompat.getMinimumWidth(v), ViewCompat.getMinimumHeight(v),
-                            getMaxWidth(v), 0);
-                }
-            } else if (lp.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
-                task.setFraming(framing, BitmapLoadTask.AUTOSIZE_HEIGHT, v.getWidth(),
-                        ViewCompat.getMinimumHeight(v), 0, getMaxHeight(v));
-            } else {
-                task.setFraming(framing, BitmapLoadTask.AUTOSIZE_NONE, v.getWidth(), v.getHeight(),
-                        0, 0);
-            }
+    @Override
+    protected ViewFrameBuilder setupFrameBuilder(View v, FramingMethod framing) {
+        if (mId != null) {
+            return new ViewFrameBuilder(this, mId, v, framing);
+        } else {
+            return null;
         }
-    }
-
-    private static int getMaxWidth(View v) {
-        return v instanceof ImageView ? ImageViewCompat.getMaxWidth((ImageView) v) : Integer
-                .MAX_VALUE;
-    }
-
-    private static int getMaxHeight(View v) {
-        return v instanceof ImageView ? ImageViewCompat.getMaxHeight((ImageView) v) : Integer
-                .MAX_VALUE;
     }
 }

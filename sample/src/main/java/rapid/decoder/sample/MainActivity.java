@@ -16,6 +16,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import rapid.decoder.BitmapDecoder;
+
 public class MainActivity extends ActionBarActivity {
     public static final boolean TEST_BUILT_IN_DECODER = true;
 
@@ -28,6 +30,9 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        BitmapDecoder.initDiskCache(this);
+        BitmapDecoder.initMemoryCache(32 * 1024 * 1024);
 
         mDrawer = (DrawerLayout) findViewById(R.id.drawer);
         ListView listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);

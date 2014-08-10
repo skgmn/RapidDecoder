@@ -28,8 +28,8 @@ class FitGravityFramedDecoder extends FramedDecoder {
     protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
                              @Nullable Rect outDest) {
 
-        int width = decoder.width();
-        int height = decoder.height();
+        int width = mDecoder.width();
+        int height = mDecoder.height();
         if (outSrc != null) {
             outSrc.set(0, 0, width, height);
         }

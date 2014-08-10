@@ -1,8 +1,5 @@
 package rapid.decoder;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import android.annotation.TargetApi;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -11,6 +8,9 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.os.Build;
 import android.support.annotation.NonNull;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 class ResourceLoader extends BitmapLoader {
 	Resources res;
@@ -55,8 +55,8 @@ class ResourceLoader extends BitmapLoader {
 		if (densityRatio == 0) {
 			decodeBounds();
 
-			if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-				densityRatio = (float) opts.inTargetDensity / opts.inDensity;
+			if (mOptions.inDensity != 0 && mOptions.inTargetDensity != 0) {
+				densityRatio = (float) mOptions.inTargetDensity / mOptions.inDensity;
 			} else {
 				densityRatio = 1;
 			}
@@ -85,7 +85,7 @@ class ResourceLoader extends BitmapLoader {
 	}
 
 	@Override
-	protected boolean isMemCacheSupported() {
+	public boolean isMemoryCacheSupported() {
 		return true;
 	}
 }

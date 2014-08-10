@@ -5,8 +5,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 
-import rapid.decoder.cache.CacheSource;
-
 public abstract class Effect {
     public interface EffectTarget {
         int getDrawableCount();
@@ -23,12 +21,12 @@ public abstract class Effect {
     private static final int DURATION_ID = android.R.integer.config_mediumAnimTime;
 
     public abstract void apply(Context context, EffectTarget target, Drawable newDrawable,
-                               CacheSource cacheSource);
+                               boolean isAsync);
 
     public static Effect NO_EFFECT = new Effect() {
         @Override
         public void apply(Context context, EffectTarget target, Drawable newDrawable,
-                          CacheSource cacheSource) {
+                          boolean isAsync) {
             int count = target.getDrawableCount();
             for (int i = 0; i < count; ++i) {
                 if (!target.isDrawableEnabled(i)) continue;
@@ -40,7 +38,7 @@ public abstract class Effect {
     public static Effect FADE_IN = new Effect() {
         @Override
         public void apply(Context context, final EffectTarget target, final Drawable newDrawable,
-                          CacheSource cacheSource) {
+                          boolean isAsync) {
             int count = target.getDrawableCount();
             for (int i = 0; i < count; ++i) {
                 if (!target.isDrawableEnabled(i)) continue;
@@ -65,14 +63,14 @@ public abstract class Effect {
         }
     };
 
-    public static Effect FADE_IN_IF_NOT_CACHED = new Effect() {
+    public static Effect FADE_IN_IF_SYNC = new Effect() {
         @Override
         public void apply(Context context, EffectTarget target, Drawable newDrawable,
-                          CacheSource cacheSource) {
-            if (CacheSource.MEMORY.equals(cacheSource)) {
-                NO_EFFECT.apply(context, target, newDrawable, cacheSource);
+                          boolean isAsync) {
+            if (!isAsync) {
+                NO_EFFECT.apply(context, target, newDrawable, false);
             } else {
-                FADE_IN.apply(context, target, newDrawable, cacheSource);
+                FADE_IN.apply(context, target, newDrawable, true);
             }
         }
     };

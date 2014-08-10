@@ -11,7 +11,7 @@ import java.util.Map;
 import rapid.decoder.BitmapUtils;
 
 public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
-    private HashMap<K, WeakReference<Bitmap>> mRemovedBitmaps =
+    private HashMap<K, WeakReference<Bitmap>> mEvictedBitmap =
             new HashMap<K, WeakReference<Bitmap>>();
 
     public BitmapLruCache(int maxSize) {
@@ -25,20 +25,31 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
     }
 
     @Override
-    protected void entryRemoved(boolean evicted, K key, Bitmap oldValue,
-                                Bitmap newValue) {
-
-        mRemovedBitmaps.put(key, new WeakReference<Bitmap>(oldValue));
+    protected void entryRemoved(boolean evicted, K key, Bitmap oldValue, Bitmap newValue) {
+        if (!oldValue.isRecycled()) {
+            mEvictedBitmap.put(key, new WeakReference<Bitmap>(oldValue));
+        }
     }
 
     @Override
     public Bitmap get(K key) {
         Bitmap bitmap = super.get(key);
-        if (bitmap != null) return bitmap;
+        if (bitmap != null) {
+            if (bitmap.isRecycled()) {
+                remove(key);
+            } else {
+                return bitmap;
+            }
+        }
 
-        bitmap = mRemovedBitmaps.get(key).get();
-        if (bitmap == null) {
-            mRemovedBitmaps.remove(key);
+        WeakReference<Bitmap> ref = mEvictedBitmap.get(key);
+        if (ref == null) {
+            return null;
+        }
+
+        bitmap = ref.get();
+        if (bitmap == null || bitmap.isRecycled()) {
+            mEvictedBitmap.remove(key);
             return null;
         } else {
             return bitmap;
@@ -48,7 +59,7 @@ public class BitmapLruCache<K> extends LruCache<K, Bitmap> {
     @SuppressWarnings("UnusedDeclaration")
     public void compact() {
         Iterator<Map.Entry<K, WeakReference<Bitmap>>> it =
-                mRemovedBitmaps.entrySet().iterator();
+                mEvictedBitmap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<K, WeakReference<Bitmap>> entry = it.next();
             if (entry.getValue().get() == null) {

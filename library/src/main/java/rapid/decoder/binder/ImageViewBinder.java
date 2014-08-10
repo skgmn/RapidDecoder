@@ -4,22 +4,20 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
-import rapid.decoder.cache.CacheSource;
-
 public class ImageViewBinder extends ViewBinder<ImageView> {
     public ImageViewBinder(ImageView v) {
         super(v);
     }
 
     @Override
-    public void bind(Bitmap bitmap, CacheSource cacheSource) {
+    public void bind(Bitmap bitmap, boolean isAsync) {
         final ImageView v = getView();
         if (v == null) return;
 
         Drawable d = createDrawable(v.getContext(), bitmap);
         if (d == null) return;
 
-        effect().apply(v.getContext(), this, d, cacheSource);
+        effect().apply(v.getContext(), this, d, isAsync);
     }
 
     @Override

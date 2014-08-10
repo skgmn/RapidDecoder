@@ -6,9 +6,9 @@ import android.os.Build;
 class BackgroundTaskRecord {
     public boolean isStale;
 
-    private BitmapLoadTask mTask;
+    private LoadIntoViewTask mTask;
 
-    public void execute(BitmapLoadTask task) {
+    public void execute(LoadIntoViewTask task) {
         mTask = task;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, task);
@@ -17,7 +17,7 @@ class BackgroundTaskRecord {
         }
     }
 
-    public BitmapLoadTask getTask() {
+    public LoadIntoViewTask getTask() {
         return mTask;
     }
 }

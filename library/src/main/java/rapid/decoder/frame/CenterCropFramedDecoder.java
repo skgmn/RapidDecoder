@@ -19,8 +19,8 @@ class CenterCropFramedDecoder extends FramedDecoder {
     protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
                              @Nullable Rect outDest) {
 
-        int width = decoder.width();
-        int height = decoder.height();
+        int width = mDecoder.width();
+        int height = mDecoder.height();
 
         int targetWidth;
         int targetHeight = AspectRatioCalculator.getHeight(width, height, frameWidth);

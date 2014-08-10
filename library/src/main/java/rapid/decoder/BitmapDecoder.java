@@ -32,10 +32,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import rapid.decoder.cache.BitmapLruCache;
+import rapid.decoder.cache.BitmapMetaLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
+import rapid.decoder.frame.FramingMethod;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -49,7 +51,6 @@ public abstract class BitmapDecoder extends Decodable {
     private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context" +
             ". Use BitmapDecoder.from(Context, Uri) instead.";
 
-    protected static final int HASHCODE_NULL_REGION = 0x09DF79A9;
     protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
 
     //
@@ -60,6 +61,7 @@ public abstract class BitmapDecoder extends Decodable {
 
     protected static final Object sMemCacheLock = new Object();
     protected static BitmapLruCache<Object> sMemCache;
+    protected static BitmapMetaLruCache sMetaCache;
 
     static final Object sDiskCacheLock = new Object();
     static DiskLruCache sDiskCache;
@@ -73,7 +75,7 @@ public abstract class BitmapDecoder extends Decodable {
         DisplayCompat.getSize(display, size);
 
         final Config defaultConfig = Build.VERSION.SDK_INT < 9 ? Config.RGB_565 : Config.ARGB_8888;
-        initMemoryCache(BitmapUtils.getByteCount(size.x, size.y, defaultConfig));
+        initMemoryCache(2 * BitmapUtils.getByteCount(size.x, size.y, defaultConfig));
 
         POINT.recycle(size);
     }
@@ -84,6 +86,7 @@ public abstract class BitmapDecoder extends Decodable {
                 sMemCache.evictAll();
             }
             sMemCache = new BitmapLruCache<Object>(size);
+            sMetaCache = new BitmapMetaLruCache(32);
         }
     }
 
@@ -102,6 +105,9 @@ public abstract class BitmapDecoder extends Decodable {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
                 sMemCache.evictAll();
+            }
+            if (sMetaCache != null) {
+                sMetaCache.evictAll();
             }
         }
     }
@@ -150,6 +156,19 @@ public abstract class BitmapDecoder extends Decodable {
             this.width = width;
             this.height = height;
         }
+
+        @Override
+        public int hashCode() {
+            return 0x44c82f6f ^ Float.floatToIntBits(width) ^ Float.floatToIntBits(height);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (!(o instanceof ScaleTo)) return false;
+            ScaleTo scaleTo = (ScaleTo) o;
+            return width == scaleTo.width && height == scaleTo.height;
+        }
     }
 
     protected static class ScaleBy {
@@ -159,6 +178,19 @@ public abstract class BitmapDecoder extends Decodable {
         public ScaleBy(float width, float height) {
             this.width = width;
             this.height = height;
+        }
+
+        @Override
+        public int hashCode() {
+            return 0x526eb4b3 ^ Float.floatToIntBits(width) ^ Float.floatToIntBits(height);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (!(o instanceof ScaleBy)) return false;
+            ScaleBy scaleBy = (ScaleBy) o;
+            return width == scaleBy.width && height == scaleBy.height;
         }
     }
 
@@ -174,9 +206,23 @@ public abstract class BitmapDecoder extends Decodable {
             this.right = right;
             this.bottom = bottom;
         }
+
+        @Override
+        public int hashCode() {
+            return 0xfed3839d ^ left ^ top ^ right ^ bottom;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (!(o instanceof Region)) return false;
+            Region region = (Region) o;
+            return left == region.left && top == region.top && right == region.right && bottom ==
+                    region.bottom;
+        }
     }
 
-    protected ArrayList<Object> requests;
+    protected ArrayList<Object> mRequests;
     private boolean requestsResolved = false;
 
     //
@@ -189,25 +235,27 @@ public abstract class BitmapDecoder extends Decodable {
     //
     //
 
-    protected float ratioWidth = 1;
-    protected float ratioHeight = 1;
-    protected Rect region;
+    protected float mRatioWidth = 1;
+    protected float mRatioHeight = 1;
+    protected Rect mRegion;
+    protected int mHashCode;
 
     protected BitmapDecoder() {
     }
 
     protected BitmapDecoder(BitmapDecoder other) {
-        if (other.requests != null) {
-            requests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
-            requests.addAll(other.requests);
+        if (other.mRequests != null) {
+            //noinspection unchecked
+            mRequests = (ArrayList<Object>) other.mRequests.clone();
         }
     }
 
     protected void addRequest(Object request) {
-        if (requests == null) {
-            requests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
+        if (mRequests == null) {
+            mRequests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
         }
-        requests.add(request);
+        mRequests.add(request);
+        mHashCode = 0;
     }
 
     /**
@@ -224,18 +272,16 @@ public abstract class BitmapDecoder extends Decodable {
      * @return The estimated width of decoded image.
      */
     public int width() {
-        resolveQueries();
-        return (int) Math.ceil(
-                (region == null ? sourceWidth() : region.width()) * ratioWidth);
+        resolveRequests();
+        return (int) Math.ceil(regionWidth() * mRatioWidth);
     }
 
     /**
      * @return The estimated height of decoded image.
      */
     public int height() {
-        resolveQueries();
-        return (int) Math.ceil(
-                (region == null ? sourceHeight() : region.height()) * ratioHeight);
+        resolveRequests();
+        return (int) Math.ceil(regionHeight() * mRatioHeight);
     }
 
     /**
@@ -262,7 +308,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         requestsResolved = false;
 
-        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
+        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -271,7 +317,7 @@ public abstract class BitmapDecoder extends Decodable {
 
                 return this;
             } else if (lastRequest instanceof ScaleBy) {
-                requests.remove(requests.size() - 1);
+                mRequests.remove(mRequests.size() - 1);
             }
         }
 
@@ -296,7 +342,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         requestsResolved = false;
 
-        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
+        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) lastRequest;
@@ -330,7 +376,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         requestsResolved = false;
 
-        Object lastRequest = (requests == null ? null : requests.get(requests.size() - 1));
+        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
         if (lastRequest != null) {
             if (lastRequest instanceof Region) {
                 Region region = (Region) lastRequest;
@@ -389,36 +435,36 @@ public abstract class BitmapDecoder extends Decodable {
     public abstract BitmapDecoder mutate();
 
     protected int regionWidth() {
-        if (region != null) {
-            return region.width();
+        if (mRegion != null) {
+            return mRegion.width();
         } else {
             return sourceWidth();
         }
     }
 
     protected int regionHeight() {
-        if (region != null) {
-            return region.height();
+        if (mRegion != null) {
+            return mRegion.height();
         } else {
             return sourceHeight();
         }
     }
 
-    protected void resolveQueries() {
+    protected void resolveRequests() {
         if (requestsResolved) return;
 
         final float densityRatio = getDensityRatio();
-        ratioWidth = ratioHeight = densityRatio;
+        mRatioWidth = mRatioHeight = densityRatio;
 
-        if (region != null) {
-            RECT.recycle(region);
+        if (mRegion != null) {
+            RECT.recycle(mRegion);
         }
-        region = null;
+        mRegion = null;
 
         requestsResolved = true;
-        if (requests == null) return;
+        if (mRequests == null) return;
 
-        for (Object r : requests) {
+        for (Object r : mRequests) {
             if (r instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) r;
 
@@ -437,57 +483,58 @@ public abstract class BitmapDecoder extends Decodable {
                     targetHeight = scaleTo.height;
                 }
 
-                ratioWidth = targetWidth / w;
-                ratioHeight = targetHeight / h;
+                mRatioWidth = targetWidth / w;
+                mRatioHeight = targetHeight / h;
             } else if (r instanceof ScaleBy) {
                 ScaleBy scaleBy = (ScaleBy) r;
 
-                ratioWidth *= scaleBy.width;
-                ratioHeight *= scaleBy.height;
+                mRatioWidth *= scaleBy.width;
+                mRatioHeight *= scaleBy.height;
             } else if (r instanceof Region) {
                 Region rr = (Region) r;
 
-                if (region == null) {
-                    final int left = Math.round(rr.left / ratioWidth);
-                    final int top = Math.round(rr.top / ratioHeight);
-                    final int right = Math.round(rr.right / ratioWidth);
-                    final int bottom = Math.round(rr.bottom / ratioHeight);
+                if (mRegion == null) {
+                    final int left = Math.round(rr.left / mRatioWidth);
+                    final int top = Math.round(rr.top / mRatioHeight);
+                    final int right = Math.round(rr.right / mRatioWidth);
+                    final int bottom = Math.round(rr.bottom / mRatioHeight);
 
-                    region = RECT.obtainNotReset();
+                    mRegion = RECT.obtainNotReset();
 
                     // Check boundaries
-                    region.left = Math.max(0, Math.min(left, sourceWidth()));
-                    region.top = Math.max(0, Math.min(top, sourceHeight()));
-                    region.right = Math.max(region.left, Math.min(right, sourceWidth()));
-                    region.bottom = Math.max(region.top, Math.min(bottom, sourceHeight()));
+                    mRegion.left = Math.max(0, Math.min(left, sourceWidth()));
+                    mRegion.top = Math.max(0, Math.min(top, sourceHeight()));
+                    mRegion.right = Math.max(mRegion.left, Math.min(right, sourceWidth()));
+                    mRegion.bottom = Math.max(mRegion.top, Math.min(bottom, sourceHeight()));
                 } else {
-                    final int left = region.left + Math.round(rr.left / ratioWidth);
-                    final int top = region.top + Math.round(rr.top / ratioHeight);
-                    final int right = region.left + Math.round((rr.right - rr.left) / ratioWidth);
-                    final int bottom = region.top + Math.round((rr.bottom - rr.top) / ratioHeight);
+                    final int left = mRegion.left + Math.round(rr.left / mRatioWidth);
+                    final int top = mRegion.top + Math.round(rr.top / mRatioHeight);
+                    final int right = mRegion.left + Math.round((rr.right - rr.left) / mRatioWidth);
+                    final int bottom = mRegion.top + Math.round((rr.bottom - rr.top) /
+                            mRatioHeight);
 
                     // Check boundaries
-                    region.left = Math.max(0, Math.min(left, region.right));
-                    region.top = Math.max(0, Math.min(top, region.bottom));
-                    region.right = Math.max(region.left, Math.min(right, region.right));
-                    region.bottom = Math.max(region.top, Math.min(bottom, region.bottom));
+                    mRegion.left = Math.max(0, Math.min(left, mRegion.right));
+                    mRegion.top = Math.max(0, Math.min(top, mRegion.bottom));
+                    mRegion.right = Math.max(mRegion.left, Math.min(right, mRegion.right));
+                    mRegion.bottom = Math.max(mRegion.top, Math.min(bottom, mRegion.bottom));
                 }
 
-                ratioWidth = (float) (rr.right - rr.left) / region.width();
-                ratioHeight = (float) (rr.bottom - rr.top) / region.height();
+                mRatioWidth = (float) (rr.right - rr.left) / mRegion.width();
+                mRatioHeight = (float) (rr.bottom - rr.top) / mRegion.height();
             }
         }
     }
 
-    protected boolean queriesEquals(BitmapDecoder other) {
-        if (requests == null) {
-            return other.requests == null || other.requests.isEmpty();
+    protected boolean requestsEquals(BitmapDecoder other) {
+        if (mRequests == null) {
+            return other.mRequests == null || other.mRequests.isEmpty();
         } else {
-            int otherSize = (other.requests == null ? 0 : other.requests.size());
-            if (requests.size() != otherSize) return false;
+            int otherSize = (other.mRequests == null ? 0 : other.mRequests.size());
+            if (mRequests.size() != otherSize) return false;
 
-            Iterator<Object> it1 = requests.iterator();
-            Iterator<Object> it2 = other.requests.iterator();
+            Iterator<Object> it1 = mRequests.iterator();
+            Iterator<Object> it2 = other.mRequests.iterator();
 
             while (it1.hasNext()) {
                 if (!it2.hasNext() || !it1.next().equals(it2.next())) return false;
@@ -497,8 +544,8 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected int queriesHash() {
-        return (requests == null ? 0 : requests.hashCode());
+    protected int requestsHash() {
+        return (mRequests == null ? 0 : mRequests.hashCode());
     }
 
     /**
@@ -571,18 +618,22 @@ public abstract class BitmapDecoder extends Decodable {
     @Override
     protected void finalize() throws Throwable {
         try {
-            RECT.recycle(region);
+            RECT.recycle(mRegion);
         } finally {
             super.finalize();
         }
     }
-    
+
     //
     // Frame
     //
 
     public FramedDecoder frame(int frameWidth, int frameHeight, ImageView.ScaleType scaleType) {
         return FramedDecoder.newInstance(this, frameWidth, frameHeight, scaleType);
+    }
+
+    public FramedDecoder frame(int frameWidth, int frameHeight, FramingMethod framing) {
+        return framing.createFramedDecoder(this, frameWidth, frameHeight);
     }
 
     //
@@ -604,8 +655,12 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(String pathName) {
-        return new FileLoader(pathName);
+    public static BitmapDecoder from(String urlOrPath) {
+        if (urlOrPath.contains("://")) {
+            return from(Uri.parse(urlOrPath));
+        } else {
+            return new FileBitmapLoader(urlOrPath);
+        }
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -620,10 +675,18 @@ public abstract class BitmapDecoder extends Decodable {
 
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapDecoder from(Uri uri) {
-        return from(null, uri);
+        return from(null, uri, true);
+    }
+
+    public static BitmapDecoder from(Uri uri, boolean useCache) {
+        return from(null, uri, useCache);
     }
 
     public static BitmapDecoder from(Context context, final Uri uri) {
+        return from(context, uri, true);
+    }
+
+    public static BitmapDecoder from(Context context, final Uri uri, boolean useCache) {
         String scheme = uri.getScheme();
 
         if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -658,7 +721,7 @@ public abstract class BitmapDecoder extends Decodable {
                         resName));
             }
 
-            return new ResourceLoader(res, id);
+            return new ResourceLoader(res, id).memCacheEnabled(useCache);
         } else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
             if (context == null) {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
@@ -667,26 +730,23 @@ public abstract class BitmapDecoder extends Decodable {
             try {
                 StreamLoader d = new StreamLoader(context.getContentResolver().openInputStream
                         (uri));
-                synchronized (sMemCacheLock) {
-                    if (sMemCache != null) {
-                        d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
-                    }
-                }
-                return d;
+                d.id(uri);
+                return d.memCacheEnabled(useCache);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
         } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
-            return new FileLoader(uri.getPath());
+            return new FileBitmapLoader(uri.getPath()).memCacheEnabled(useCache);
         } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
             String uriString = uri.toString();
             BitmapLoader d = null;
 
             synchronized (sDiskCacheLock) {
-                if (sDiskCache != null) {
+                if (useCache && sDiskCache != null) {
                     InputStream in = sDiskCache.get(uriString);
                     if (in != null) {
                         d = new StreamLoader(in);
+                        d.isFromDiskCache = true;
                     }
                 }
 
@@ -703,20 +763,15 @@ public abstract class BitmapDecoder extends Decodable {
                             }
                         }
                     }));
-                    if (sDiskCache != null) {
+                    if (useCache && sDiskCache != null) {
                         sd.setCacheOutputStream(sDiskCache.getOutputStream(uriString));
                     }
-
                     d = sd;
                 }
             }
 
-            synchronized (sMemCacheLock) {
-                if (sMemCache != null) {
-                    d.setMemCacheEnabler(new MemCacheEnabler<Uri>(uri));
-                }
-            }
-            return d;
+            d.id(uri);
+            return d.memCacheEnabled(useCache);
         } else {
             throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
         }

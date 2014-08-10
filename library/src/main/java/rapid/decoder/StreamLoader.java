@@ -90,7 +90,7 @@ class StreamLoader extends BitmapLoader {
 	}
 	
 	@Override
-	protected boolean isMemCacheSupported() {
+	public boolean isMemoryCacheSupported() {
 		return false;
 	}
 }

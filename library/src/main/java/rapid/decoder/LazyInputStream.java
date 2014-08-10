@@ -1,5 +1,7 @@
 package rapid.decoder;
 
+import android.support.annotation.NonNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -43,12 +45,12 @@ class LazyInputStream extends InputStream {
 	}
 	
 	@Override
-	public int read(byte[] buffer) throws IOException {
+	public int read(@NonNull byte[] buffer) throws IOException {
 		return getStream().read(buffer);
 	}
 	
 	@Override
-	public int read(byte[] buffer, int byteOffset, int byteCount)
+	public int read(@NonNull byte[] buffer, int byteOffset, int byteCount)
 			throws IOException {
 		
 		return getStream().read(buffer, byteOffset, byteCount);

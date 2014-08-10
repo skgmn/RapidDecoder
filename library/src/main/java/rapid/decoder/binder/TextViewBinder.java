@@ -5,8 +5,7 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.TextView;
 
-import rapid.decoder.cache.CacheSource;
-
+@SuppressWarnings("UnusedDeclaration")
 public class TextViewBinder extends ViewBinder<TextView> {
     private static final int[] sGravityMask = new int[] {
             Gravity.LEFT,
@@ -17,20 +16,21 @@ public class TextViewBinder extends ViewBinder<TextView> {
 
     private int mGravity;
 
+    @SuppressWarnings("UnusedDeclaration")
     public TextViewBinder(TextView v, int gravity) {
         super(v);
         mGravity = gravity;
     }
 
     @Override
-    public void bind(Bitmap bitmap, CacheSource cacheSource) {
+    public void bind(Bitmap bitmap, boolean isAsync) {
         final TextView v = getView();
         if (v == null) return;
 
         Drawable d = createDrawable(v.getContext(), bitmap);
         if (d == null) return;
 
-        effect().apply(v.getContext(), this, d, cacheSource);
+        effect().apply(v.getContext(), this, d, isAsync);
     }
 
     @Override

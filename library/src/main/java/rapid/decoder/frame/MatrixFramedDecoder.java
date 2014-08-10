@@ -19,8 +19,8 @@ class MatrixFramedDecoder extends FramedDecoder {
     protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
                              @Nullable Rect outDest) {
 
-        int width = Math.min(decoder.width(), frameWidth);
-        int height = Math.min(decoder.height(), frameHeight);
+        int width = Math.min(mDecoder.width(), frameWidth);
+        int height = Math.min(mDecoder.height(), frameHeight);
         if (outSrc != null) {
             outSrc.set(0, 0, width, height);
         }

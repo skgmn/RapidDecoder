@@ -13,17 +13,16 @@ import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 
 import rapid.decoder.NextLayoutInspector;
-import rapid.decoder.cache.CacheSource;
-import rapid.decoder.frame.FramingAlgorithm;
+import rapid.decoder.frame.FramingMethod;
 import rapid.decoder.frame.ScaleTypeFraming;
 
 public abstract class ViewBinder<T extends View> implements Effect.EffectTarget {
     public interface OnReadyListener {
-        void onReady(View v);
+        void onReady(View v, boolean async);
     }
 
     private Effect mEffect;
-    private FramingAlgorithm mFraming;
+    private FramingMethod mFraming;
     private WeakReference<T> mView;
 
     public ViewBinder(T v) {
@@ -54,16 +53,17 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         View v = getView();
         if (v == null) return;
 
-        if (v.isLayoutRequested() && !shouldWrapContent(v)) {
+        if ((v.getWidth() == 0 || v.getHeight() == 0) && v.isLayoutRequested() &&
+                !shouldWrapContent(v)) {
             NextLayoutInspector.inspectNextLayout(v, new NextLayoutInspector.OnNextLayoutListener
                     () {
                 @Override
                 public void onNextLayout(View v) {
-                    listener.onReady(v);
+                    listener.onReady(v, true);
                 }
             });
         } else {
-            listener.onReady(v);
+            listener.onReady(v, false);
         }
     }
 
@@ -73,11 +73,11 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
                 lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
     }
 
-    public abstract void bind(Bitmap bitmap, CacheSource cacheSource);
+    public abstract void bind(Bitmap bitmap, boolean isAsync);
 
     @NonNull
     public Effect effect() {
-        return mEffect == null ? Effect.FADE_IN_IF_NOT_CACHED : mEffect;
+        return mEffect == null ? Effect.FADE_IN_IF_SYNC : mEffect;
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -86,12 +86,12 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return this;
     }
 
-    public ViewBinder<T> framing(FramingAlgorithm creator) {
+    public ViewBinder<T> framing(FramingMethod creator) {
         mFraming = creator;
         return this;
     }
 
-    public FramingAlgorithm framing() {
+    public FramingMethod framing() {
         return mFraming;
     }
 }

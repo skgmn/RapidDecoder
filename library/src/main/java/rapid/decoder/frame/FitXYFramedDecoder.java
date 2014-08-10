@@ -20,7 +20,7 @@ class FitXYFramedDecoder extends FramedDecoder {
                              @Nullable Rect outDest) {
 
         if (outSrc != null) {
-            outSrc.set(0, 0, decoder.width(), decoder.height());
+            outSrc.set(0, 0, mDecoder.width(), mDecoder.height());
         }
         if (outDest != null) {
             outDest.set(0, 0, frameWidth, frameHeight);
