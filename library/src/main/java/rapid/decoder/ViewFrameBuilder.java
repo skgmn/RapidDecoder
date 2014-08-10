@@ -5,7 +5,6 @@ import android.support.annotation.Nullable;
 import android.view.ViewGroup;
 
 import rapid.decoder.binder.ViewBinder;
-import rapid.decoder.cache.BitmapMetaInfo;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;
@@ -17,7 +16,6 @@ class ViewFrameBuilder {
     private static final int AUTOSIZE_BOTH = 3;
 
     private BitmapDecoder mDecoder;
-    private Object mId;
     private ViewBinder<?> mViewBinder;
     private FramingMethod mFraming;
     private int mAutoSizeMode = AUTOSIZE_NONE;
@@ -27,11 +25,9 @@ class ViewFrameBuilder {
     private int mMaxHeight;
     private FramedDecoder mFramedDecoder;
 
-    public ViewFrameBuilder(@NonNull BitmapDecoder decoder, @NonNull Object id,
-                            @NonNull ViewBinder<?> binder, @NonNull FramingMethod framing) {
-
+    public ViewFrameBuilder(@NonNull BitmapDecoder decoder, @NonNull ViewBinder<?> binder,
+                            @NonNull FramingMethod framing) {
         mDecoder = decoder;
-        mId = id;
         mViewBinder = binder;
         mFraming = framing;
     }
@@ -75,10 +71,7 @@ class ViewFrameBuilder {
         } else {
             int width, height;
 
-            BitmapMetaInfo meta;
-            synchronized (BitmapDecoder.sMemCacheLock) {
-                meta = BitmapDecoder.sMetaCache.get(mId);
-            }
+            BitmapMeta meta = mDecoder.getCachedMeta();
             if (meta == null) {
                 if (fromCache) {
                     return null;
@@ -87,8 +80,8 @@ class ViewFrameBuilder {
                     height = mDecoder.height();
                 }
             } else {
-                width = meta.width;
-                height = meta.height;
+                width = meta.width();
+                height = meta.height();
             }
 
             switch (mAutoSizeMode) {

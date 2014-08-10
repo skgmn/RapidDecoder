@@ -1,6 +1,5 @@
 package rapid.decoder.sample;
 
-import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -24,8 +23,6 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import java.io.InputStream;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.BitmapPostProcessor;
@@ -99,21 +96,21 @@ public class ContactsFragment extends ListFragment implements LoaderManager
             textView.setText(cursor.getString(1));
 
             long id = cursor.getLong(0);
-            Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
-            InputStream in = ContactsContract.Contacts.openContactPhotoInputStream(context
-                    .getContentResolver(), uri);
-            if (in != null) {
-                BitmapDecoder.from(in)
-                        .id(uri)
-                        .postProcessor(new BitmapPostProcessor(context) {
-                            @Override
-                            public Bitmap process(Bitmap bitmap) {
-                                return createRoundedImage(getContext(), bitmap);
-                            }
-                        })
-                        .into(TextViewBinder.obtain(textView, Gravity.LEFT, imageSize,
-                                imageSize).scaleType(ImageView.ScaleType.CENTER_CROP));
-            }
+            Uri uri = ContactsContract.Contacts.CONTENT_URI.buildUpon()
+                    .appendPath(Long.toString(id))
+                    .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
+                    .build();
+            BitmapDecoder.from(context.getContentResolver(), uri,
+                    ContactsContract.CommonDataKinds.Photo.PHOTO, null, null, null)
+                    .id(uri)
+                    .postProcessor(new BitmapPostProcessor(context) {
+                        @Override
+                        public Bitmap process(Bitmap bitmap) {
+                            return createRoundedImage(getContext(), bitmap);
+                        }
+                    })
+                    .into(TextViewBinder.obtain(textView, Gravity.LEFT, imageSize,
+                            imageSize).scaleType(ImageView.ScaleType.CENTER_CROP));
         }
 
         private static Bitmap createRoundedImage(Context context, Bitmap bitmap) {

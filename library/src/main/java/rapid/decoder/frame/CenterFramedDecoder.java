@@ -4,6 +4,7 @@ import android.graphics.Rect;
 import android.support.annotation.Nullable;
 
 import rapid.decoder.BitmapDecoder;
+import rapid.decoder.BitmapMeta;
 
 @SuppressWarnings("UnusedDeclaration")
 class CenterFramedDecoder extends FramedDecoder {
@@ -16,11 +17,10 @@ class CenterFramedDecoder extends FramedDecoder {
     }
 
     @Override
-    protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
-                             @Nullable Rect outDest) {
-
-        int width = mDecoder.width();
-        int height = mDecoder.height();
+    protected void getBounds(BitmapMeta meta, int frameWidth, int frameHeight,
+                             @Nullable Rect outSrc, @Nullable Rect outDest) {
+        int width = meta.width();
+        int height = meta.height();
         if (width > frameWidth) {
             if (outSrc != null) {
                 outSrc.left = (width - frameWidth) / 2;

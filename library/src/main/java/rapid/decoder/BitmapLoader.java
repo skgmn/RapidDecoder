@@ -19,7 +19,6 @@ import java.io.InputStream;
 
 import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.builtin.BuiltInDecoder;
-import rapid.decoder.cache.BitmapMetaInfo;
 import rapid.decoder.cache.CacheSource;
 import rapid.decoder.frame.FramingMethod;
 
@@ -75,24 +74,33 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
     }
 
-    protected void decodeBounds() {
-        if (isMemoryCacheEnabled()) {
-            Bitmap cachedBitmap = getCachedBitmap();
-            if (cachedBitmap != null) {
-                mSourceWidth = cachedBitmap.getWidth();
-                mSourceHeight = cachedBitmap.getHeight();
-                mOptions.inDensity = 0;
-                mOptions.inTargetDensity = 0;
-                return;
+    @Override
+    public BitmapMeta getCachedMeta() {
+        if (isMemoryCacheEnabled() && mId != null) {
+            synchronized (sMemCacheLock) {
+                return sMetaCache.get(mId);
             }
+        } else {
+            return null;
+        }
+    }
+
+    protected void decodeBounds() {
+        BitmapMeta meta = getCachedMeta();
+        if (meta != null) {
+            mSourceWidth = meta.width();
+            mSourceHeight = meta.height();
+            mOptions.inDensity = 0;
+            mOptions.inTargetDensity = 0;
+            return;
         }
 
         mOptions.inJustDecodeBounds = true;
         decode(mOptions);
         mOptions.inJustDecodeBounds = false;
 
-        mSourceWidth = mOptions.outWidth;
-        mSourceHeight = mOptions.outHeight;
+        mSourceWidth = Math.max(0, mOptions.outWidth);
+        mSourceHeight = Math.max(0, mOptions.outHeight);
     }
 
     @Override
@@ -111,6 +119,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return mSourceHeight;
     }
 
+    @Override
     public Bitmap getCachedBitmap() {
         synchronized (sMemCacheLock) {
             if (sMemCache == null) return null;
@@ -174,7 +183,9 @@ public abstract class BitmapLoader extends BitmapDecoder {
             bitmap = bitmap2;
         }
 
+        if (mOptions.mCancel) return null;
         bitmap = postProcess(bitmap);
+        if (bitmap == null) return null;
 
         if (memCacheEnabled) {
             synchronized (sMemCacheLock) {
@@ -182,7 +193,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                     sMemCache.put(this, bitmap);
                 }
                 if (sMetaCache != null && mId != null) {
-                    BitmapMetaInfo meta = new BitmapMetaInfo();
+                    SimpleBitmapMeta meta = new SimpleBitmapMeta();
                     meta.width = sourceWidth();
                     meta.height = sourceHeight();
                     sMetaCache.put(mId, meta);
@@ -270,8 +281,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return this;
     }
 
+    @Nullable
     protected abstract Bitmap decode(Options opts);
 
+    @Nullable
     protected abstract InputStream getInputStream();
 
     protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
@@ -282,6 +295,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected void onDecodingFinished() {
     }
 
+    @Nullable
     @TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
     protected Bitmap decodeRegional(Options opts, Rect region) {
         adjustDensityRatio(false);
@@ -466,7 +480,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @Override
     protected ViewFrameBuilder setupFrameBuilder(ViewBinder<?> binder, FramingMethod framing) {
         if (mId != null) {
-            return new ViewFrameBuilder(this, mId, binder, framing);
+            return new ViewFrameBuilder(this, binder, framing);
         } else {
             return null;
         }

@@ -69,7 +69,6 @@ public abstract class BitmapDecoder extends Decodable {
     static final Object sDiskCacheLock = new Object();
     static DiskLruCache sDiskCache;
 
-    @SuppressWarnings("UnusedDeclaration")
     public static void initMemoryCache(Context context) {
         final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         final Display display = wm.getDefaultDisplay();
@@ -115,7 +114,6 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    @SuppressWarnings("UnusedDeclaration")
     public static void initDiskCache(Context context) {
         initDiskCache(context, DEFAULT_CACHE_SIZE);
     }
@@ -553,13 +551,6 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     /**
-     * Request the decoder to cancel the decoding job currently working.
-     * This should be called by another thread.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public abstract void cancel();
-
-    /**
      * <p>Tell the decoder whether decoded image should be mutable or not.</p>
      * <p>It sets {@link BitmapFactory.Options#inMutable} to true on API level 11 or higher,
      * otherwise it uses built-in decoder which always returns mutable bitmap.</p>
@@ -805,52 +796,61 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     public static BitmapLoader from(final ContentResolver resolver, final Uri uri,
-                                     final String columnName, final String selection,
-                                     final String[] selectionArgs,
-                                     final String sortOrder) {
+                                    final String columnName, final String selection,
+                                    final String[] selectionArgs,
+                                    final String sortOrder) {
         StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
-            public InputStream openInputStream() throws IOException {
+            public InputStream openInputStream() {
                 Cursor cursor = resolver.query(uri, new String[]{columnName}, selection,
                         selectionArgs, sortOrder);
-                if (cursor == null || !cursor.moveToNext()) {
-                    throw new IOException();
+                if (cursor == null) {
+                    return null;
                 }
                 try {
+                    if (!cursor.moveToNext()) {
+                        return null;
+                    }
                     byte[] bytes = cursor.getBlob(0);
+                    if (bytes == null) {
+                        return null;
+                    }
                     return new ByteArrayInputStream(bytes);
                 } finally {
                     cursor.close();
                 }
             }
         }));
-        loader.id(new QueriedContentId(uri, columnName, selection, selectionArgs, sortOrder));
         return loader;
     }
 
     public static BitmapLoader from(final SQLiteDatabase db, final String tableName,
-                                     final String columnName, final String selection,
-                                     final String[] selectionArgs,
-                                     final String groupBy, final String having,
-                                     final String orderBy) {
+                                    final String columnName, final String selection,
+                                    final String[] selectionArgs,
+                                    final String groupBy, final String having,
+                                    final String orderBy) {
         StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
-            public InputStream openInputStream() throws IOException {
+            public InputStream openInputStream() {
                 Cursor cursor = db.query(tableName, new String[]{columnName}, selection,
                         selectionArgs, groupBy, having, orderBy);
-                if (cursor == null || !cursor.moveToNext()) {
-                    throw new IOException();
+                if (cursor == null) {
+                    return null;
                 }
                 try {
+                    if (!cursor.moveToNext()) {
+                        return null;
+                    }
                     byte[] bytes = cursor.getBlob(0);
+                    if (bytes == null) {
+                        return null;
+                    }
                     return new ByteArrayInputStream(bytes);
                 } finally {
                     cursor.close();
                 }
             }
         }));
-        loader.id(new QueriedDatabaseId(tableName, columnName, selection, selectionArgs, groupBy,
-                having, orderBy));
         return loader;
     }
 }

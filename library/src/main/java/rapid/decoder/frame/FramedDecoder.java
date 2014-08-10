@@ -8,13 +8,14 @@ import android.support.annotation.Nullable;
 import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
+import rapid.decoder.BitmapMeta;
 import rapid.decoder.Decodable;
 import rapid.decoder.cache.CacheSource;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
 public abstract class FramedDecoder extends Decodable {
-    protected BitmapDecoder mDecoder;
+    private BitmapDecoder mDecoder;
     protected Drawable background;
     protected int frameWidth;
     protected int frameHeight;
@@ -39,16 +40,15 @@ public abstract class FramedDecoder extends Decodable {
 
     public abstract FramedDecoder mutate();
 
-    protected abstract void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
-                                      @Nullable Rect outDest);
+    protected abstract void getBounds(BitmapMeta meta, int frameWidth, int frameHeight,
+                                      @Nullable Rect outSrc, @Nullable Rect outDest);
 
-    private BitmapDecoder setRegion(BitmapDecoder decoder, int frameWidth, int frameHeight,
-                                    Rect destRegion) {
-
+    private BitmapDecoder setRegion(BitmapDecoder decoder, BitmapMeta meta, int frameWidth,
+                                    int frameHeight, Rect destRegion) {
         Rect region = RECT.obtainNotReset();
-        getBounds(frameWidth, frameHeight, region, destRegion);
-        if (!(region.left == 0 && region.top == 0 && region.right == decoder.width() && region
-                .bottom == decoder.height())) {
+        getBounds(meta, frameWidth, frameHeight, region, destRegion);
+        if (!(region.left == 0 && region.top == 0 && region.right == meta.width() && region
+                .bottom == meta.height())) {
 
             decoder = decoder.mutate().region(region);
         }
@@ -58,7 +58,7 @@ public abstract class FramedDecoder extends Decodable {
 
     @Override
     public void draw(Canvas cv, Rect bounds) {
-        setRegion(mDecoder, bounds.width(), bounds.height(), null).draw(cv, bounds);
+        setRegion(mDecoder, mDecoder, bounds.width(), bounds.height(), null).draw(cv, bounds);
     }
 
     @Override
@@ -68,19 +68,22 @@ public abstract class FramedDecoder extends Decodable {
 
     private Bitmap decode(boolean fromCache) {
         Rect rectDest = RECT.obtainNotReset();
-        BitmapDecoder decoder = setRegion(mDecoder, frameWidth, frameHeight, rectDest);
-        Bitmap bitmap;
+        BitmapDecoder decoder = null;
+        Bitmap bitmap = null;
         if (fromCache) {
-            if (decoder.isMemoryCacheEnabled()) {
+            BitmapMeta meta = mDecoder.getCachedMeta();
+            if (meta != null) {
+                decoder = setRegion(mDecoder, meta, frameWidth, frameHeight, rectDest);
                 bitmap = decoder.getCachedBitmap();
-            } else {
-                bitmap = null;
             }
         } else {
+            decoder = setRegion(mDecoder, mDecoder, frameWidth, frameHeight, rectDest);
             bitmap = decoder.createAndDraw(frameWidth, frameHeight, rectDest, background);
         }
         RECT.recycle(rectDest);
-        mCacheSource = decoder.cacheSource();
+        if (decoder != null) {
+            mCacheSource = decoder.cacheSource();
+        }
         return bitmap;
     }
 

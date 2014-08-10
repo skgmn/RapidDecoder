@@ -8,34 +8,34 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 class BackgroundTaskManager {
-    private static WeakHashMap<Object, BackgroundTaskRecord> sWeakJobs;
-    private static HashMap<Object, BackgroundTaskRecord> sStrongJobs;
+    private static WeakHashMap<Object, BackgroundBitmapLoadTask> sWeakJobs;
+    private static HashMap<Object, BackgroundBitmapLoadTask> sStrongJobs;
 
     @NonNull
-    public BackgroundTaskRecord register(@NonNull Object key, boolean isStrong) {
-        BackgroundTaskRecord record = new BackgroundTaskRecord();
+    public BackgroundBitmapLoadTask register(@NonNull Object key, boolean isStrong) {
+        BackgroundBitmapLoadTask task = new BackgroundBitmapLoadTask();
         if (isStrong) {
             if (sStrongJobs == null) {
-                sStrongJobs = new HashMap<Object, BackgroundTaskRecord>();
+                sStrongJobs = new HashMap<Object, BackgroundBitmapLoadTask>();
             } else {
                 cancelRecord(sStrongJobs, key);
             }
-            sStrongJobs.put(key, record);
+            sStrongJobs.put(key, task);
         } else {
             if (sWeakJobs == null) {
-                sWeakJobs = new WeakHashMap<Object, BackgroundTaskRecord>();
+                sWeakJobs = new WeakHashMap<Object, BackgroundBitmapLoadTask>();
             } else {
                 cancelRecord(sWeakJobs, key);
             }
-            sWeakJobs.put(key, record);
+            sWeakJobs.put(key, task);
         }
-        return record;
+        return task;
     }
 
     @Nullable
-    public BackgroundTaskRecord remove(@NonNull Object key) {
+    public BackgroundBitmapLoadTask remove(@NonNull Object key) {
         if (sWeakJobs != null) {
-            BackgroundTaskRecord record = sWeakJobs.remove(key);
+            BackgroundBitmapLoadTask record = sWeakJobs.remove(key);
             if (record != null) {
                 return record;
             }
@@ -46,22 +46,18 @@ class BackgroundTaskManager {
         return null;
     }
 
-    private static void cancelRecord(Map<Object, BackgroundTaskRecord> map, Object key) {
-        BackgroundTaskRecord record = map.remove(key);
-        if (record != null) {
-            record.isStale = true;
-            LoadIntoViewTask task = record.getTask();
-            if (task != null) {
-                task.cancel();
-            }
+    private static void cancelRecord(Map<Object, BackgroundBitmapLoadTask> map, Object key) {
+        BackgroundBitmapLoadTask task = map.remove(key);
+        if (task != null) {
+            task.cancel();
         }
     }
 
-    public void execute(LoadIntoViewTask task) {
+    public void execute(BackgroundBitmapLoadTask task) {
         Object key = task.key();
         if (key == null) return;
 
-        BackgroundTaskRecord record = register(key, task.isKeyStrong());
-        record.execute(task);
+        register(key, task.isKeyStrong());
+        task.start();
     }
 }

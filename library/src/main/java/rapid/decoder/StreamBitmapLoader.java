@@ -53,13 +53,22 @@ class StreamBitmapLoader extends BitmapLoader {
 	protected Bitmap decode(Options opts) {
 		try {
 			return BitmapFactory.decodeStream(mIn, null, opts);
-		} catch (RuntimeException e) {
+		} catch (Throwable ignored) {
 			mIn.setTransactionSucceeded(false);
-			throw e;
+            return null;
 		}
 	}
 
-	@Override
+    @Override
+    public void cancel() {
+        super.cancel();
+        try {
+            mIn.close();
+        } catch (IOException ignored) {
+        }
+    }
+
+    @Override
 	protected InputStream getInputStream() {
 		return mIn;
 	}

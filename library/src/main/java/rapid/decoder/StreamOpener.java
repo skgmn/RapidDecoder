@@ -1,8 +1,10 @@
 package rapid.decoder;
 
-import java.io.IOException;
+import android.support.annotation.Nullable;
+
 import java.io.InputStream;
 
 interface StreamOpener {
-	InputStream openInputStream() throws IOException;
+    @Nullable
+	InputStream openInputStream();
 }

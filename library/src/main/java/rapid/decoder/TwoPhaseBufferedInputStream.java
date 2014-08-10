@@ -115,6 +115,9 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 			
 			if (byteCount > 0) {
 				int bytesRead = readFromStream(buffer, byteOffset, byteCount);
+                if (bytesRead == -1) {
+                    return totalBytesRead != 0 ? totalBytesRead : -1;
+                }
 
 				if (mBufferExpandable) {
 					ensureCapacity(bytesRead);

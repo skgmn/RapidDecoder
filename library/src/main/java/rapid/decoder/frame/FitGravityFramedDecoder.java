@@ -4,6 +4,7 @@ import android.graphics.Rect;
 import android.support.annotation.Nullable;
 
 import rapid.decoder.BitmapDecoder;
+import rapid.decoder.BitmapMeta;
 
 @SuppressWarnings("UnusedDeclaration")
 class FitGravityFramedDecoder extends FramedDecoder {
@@ -25,11 +26,11 @@ class FitGravityFramedDecoder extends FramedDecoder {
     }
 
     @Override
-    protected void getBounds(int frameWidth, int frameHeight, @Nullable Rect outSrc,
-                             @Nullable Rect outDest) {
+    protected void getBounds(BitmapMeta meta, int frameWidth, int frameHeight,
+                             @Nullable Rect outSrc, @Nullable Rect outDest) {
 
-        int width = mDecoder.width();
-        int height = mDecoder.height();
+        int width = meta.width();
+        int height = meta.height();
         if (outSrc != null) {
             outSrc.set(0, 0, width, height);
         }

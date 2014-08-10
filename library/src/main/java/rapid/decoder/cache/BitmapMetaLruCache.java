@@ -1,12 +1,14 @@
 package rapid.decoder.cache;
 
-public class BitmapMetaLruCache extends LruCache<Object, BitmapMetaInfo> {
+import rapid.decoder.BitmapMeta;
+
+public class BitmapMetaLruCache extends LruCache<Object, BitmapMeta> {
     public BitmapMetaLruCache(int maxCount) {
         super(maxCount);
     }
 
     @Override
-    protected int sizeOf(Object key, BitmapMetaInfo value) {
+    protected int sizeOf(Object key, BitmapMeta value) {
         return 1;
     }
 }

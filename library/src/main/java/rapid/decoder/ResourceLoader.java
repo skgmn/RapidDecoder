@@ -43,7 +43,11 @@ class ResourceLoader extends BitmapLoader {
 	@Override
 	protected BitmapRegionDecoder createBitmapRegionDecoder() {
 		try {
-			return BitmapRegionDecoder.newInstance(getInputStream(), false);
+            InputStream in = getInputStream();
+            if (in == null) {
+                return null;
+            }
+            return BitmapRegionDecoder.newInstance(in, false);
 		} catch (IOException e) {
 			return null;
 		}
