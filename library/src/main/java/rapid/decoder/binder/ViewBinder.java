@@ -13,6 +13,8 @@ import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 
 import rapid.decoder.NextLayoutInspector;
+import rapid.decoder.compat.ImageViewCompat;
+import rapid.decoder.compat.ViewCompat;
 import rapid.decoder.frame.FramingMethod;
 import rapid.decoder.frame.ScaleTypeFraming;
 
@@ -86,12 +88,62 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return this;
     }
 
-    public ViewBinder<T> framing(FramingMethod creator) {
-        mFraming = creator;
+    public ViewBinder<T> framing(FramingMethod framing) {
+        mFraming = framing;
         return this;
     }
 
     public FramingMethod framing() {
         return mFraming;
+    }
+
+    public int getLayoutWidth() {
+        View v = getView();
+        if (v == null) return 0;
+        return v.getLayoutParams().width;
+    }
+
+    public int getLayoutHeight() {
+        View v = getView();
+        if (v == null) return 0;
+        return v.getLayoutParams().height;
+    }
+
+    public int getWidth() {
+        View v = getView();
+        if (v == null) return 0;
+        return v.getWidth();
+    }
+
+    public int getHeight() {
+        View v = getView();
+        if (v == null) return 0;
+        return v.getHeight();
+    }
+
+    public int getMinWidth() {
+        View v = getView();
+        if (v == null) return 0;
+        return ViewCompat.getMinimumWidth(v);
+    }
+
+    public int getMinHeight() {
+        View v = getView();
+        if (v == null) return 0;
+        return ViewCompat.getMinimumHeight(v);
+    }
+
+    public int getMaxWidth() {
+        View v = getView();
+        if (v == null) return 0;
+        return v instanceof ImageView ? ImageViewCompat.getMaxWidth((ImageView) v) : Integer
+                .MAX_VALUE;
+    }
+
+    public int getMaxHeight() {
+        View v = getView();
+        if (v == null) return 0;
+        return v instanceof ImageView ? ImageViewCompat.getMaxHeight((ImageView) v) : Integer
+                .MAX_VALUE;
     }
 }

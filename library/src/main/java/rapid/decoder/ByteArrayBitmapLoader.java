@@ -12,13 +12,14 @@ import android.support.annotation.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
-class ByteArrayLoader extends BitmapLoader {
+class ByteArrayBitmapLoader extends BitmapLoader {
 	private byte[] data;
 	private int offset;
 	private int length;
 	
-	public ByteArrayLoader(byte[] data, int offset, int length) {
+	public ByteArrayBitmapLoader(byte[] data, int offset, int length) {
 		if (data == null) {
 			throw new NullPointerException();
 		}
@@ -28,7 +29,7 @@ class ByteArrayLoader extends BitmapLoader {
 		this.length = length;
 	}
 	
-	protected ByteArrayLoader(ByteArrayLoader other) {
+	protected ByteArrayBitmapLoader(ByteArrayBitmapLoader other) {
 		super(other);
 		data = other.data;
 		offset = other.offset;
@@ -59,27 +60,22 @@ class ByteArrayLoader extends BitmapLoader {
 	@NonNull
     @Override
 	public BitmapLoader mutate() {
-		return new ByteArrayLoader(this);
+		return new ByteArrayBitmapLoader(this);
 	}
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ data.hashCode() ^ offset ^ length;
+		return super.hashCode() ^ Arrays.hashCode(data) ^ offset ^ length;
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) return true;
-		if (!super.equals(o) || !(o instanceof ByteArrayLoader)) return false;
+		if (!super.equals(o) || !(o instanceof ByteArrayBitmapLoader)) return false;
 		
-		final ByteArrayLoader d = (ByteArrayLoader) o;
-		return data.equals(d.data) &&
+		final ByteArrayBitmapLoader d = (ByteArrayBitmapLoader) o;
+		return Arrays.equals(data, d.data) &&
 				offset == d.offset &&
 				length == d.length;
-	}
-
-	@Override
-	public boolean isMemoryCacheSupported() {
-		return false;
 	}
 }

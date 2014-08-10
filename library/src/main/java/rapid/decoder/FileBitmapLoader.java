@@ -59,9 +59,4 @@ class FileBitmapLoader extends BitmapLoader {
 	public boolean equals(Object o) {
         return o == this || o instanceof FileBitmapLoader && super.equals(o);
     }
-
-	@Override
-	public boolean isMemoryCacheSupported() {
-		return true;
-	}
 }

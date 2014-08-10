@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
@@ -21,6 +23,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -232,13 +235,14 @@ public abstract class BitmapDecoder extends Decodable {
     static BackgroundTaskManager sTaskManager = new BackgroundTaskManager();
 
     //
-    //
+    // Fields
     //
 
     protected float mRatioWidth = 1;
     protected float mRatioHeight = 1;
     protected Rect mRegion;
     protected int mHashCode;
+    private BitmapPostProcessor mPostProcessor;
 
     protected BitmapDecoder() {
     }
@@ -453,7 +457,7 @@ public abstract class BitmapDecoder extends Decodable {
     protected void resolveRequests() {
         if (requestsResolved) return;
 
-        final float densityRatio = getDensityRatio();
+        final float densityRatio = densityRatio();
         mRatioWidth = mRatioHeight = densityRatio;
 
         if (mRegion != null) {
@@ -611,8 +615,25 @@ public abstract class BitmapDecoder extends Decodable {
         return region(0, 0, width, height);
     }
 
-    protected float getDensityRatio() {
+    protected float densityRatio() {
         return 1f;
+    }
+
+    public BitmapDecoder postProcessor(BitmapPostProcessor processor) {
+        mPostProcessor = processor;
+        return this;
+    }
+
+    protected Bitmap postProcess(Bitmap bitmap) {
+        if (mPostProcessor != null) {
+            Bitmap bitmap2 = mPostProcessor.process(bitmap);
+            if (bitmap2 != bitmap) {
+                bitmap.recycle();
+            }
+            return bitmap2;
+        } else {
+            return bitmap;
+        }
     }
 
     @Override
@@ -640,22 +661,22 @@ public abstract class BitmapDecoder extends Decodable {
     // from()
     //
 
-    public static BitmapDecoder from(byte[] data) {
-        return new ByteArrayLoader(data, 0, data.length);
+    public static BitmapLoader from(byte[] data) {
+        return new ByteArrayBitmapLoader(data, 0, data.length);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(byte[] data, int offset, int length) {
-        return new ByteArrayLoader(data, offset, length);
+    public static BitmapLoader from(byte[] data, int offset, int length) {
+        return new ByteArrayBitmapLoader(data, offset, length);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(Resources res, int id) {
+    public static BitmapLoader from(Resources res, int id) {
         return new ResourceLoader(res, id);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(String urlOrPath) {
+    public static BitmapLoader from(String urlOrPath) {
         if (urlOrPath.contains("://")) {
             return from(Uri.parse(urlOrPath));
         } else {
@@ -664,29 +685,29 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(FileDescriptor fd) {
-        return new FileDescriptorLoader(fd);
+    public static BitmapLoader from(FileDescriptor fd) {
+        return new FileDescriptorBitmapLoader(fd);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(InputStream in) {
-        return new StreamLoader(in);
+    public static BitmapLoader from(InputStream in) {
+        return new StreamBitmapLoader(in);
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapDecoder from(Uri uri) {
+    public static BitmapLoader from(Uri uri) {
         return from(null, uri, true);
     }
 
-    public static BitmapDecoder from(Uri uri, boolean useCache) {
+    public static BitmapLoader from(Uri uri, boolean useCache) {
         return from(null, uri, useCache);
     }
 
-    public static BitmapDecoder from(Context context, final Uri uri) {
+    public static BitmapLoader from(Context context, final Uri uri) {
         return from(context, uri, true);
     }
 
-    public static BitmapDecoder from(Context context, final Uri uri, boolean useCache) {
+    public static BitmapLoader from(Context context, final Uri uri, boolean useCache) {
         String scheme = uri.getScheme();
 
         if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -721,22 +742,23 @@ public abstract class BitmapDecoder extends Decodable {
                         resName));
             }
 
-            return new ResourceLoader(res, id).memCacheEnabled(useCache);
+            return (BitmapLoader) new ResourceLoader(res, id).useMemoryCache(useCache);
         } else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
             if (context == null) {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
             }
 
             try {
-                StreamLoader d = new StreamLoader(context.getContentResolver().openInputStream
-                        (uri));
+                StreamBitmapLoader d = new StreamBitmapLoader(context.getContentResolver()
+                        .openInputStream
+                                (uri));
                 d.id(uri);
-                return d.memCacheEnabled(useCache);
+                return (BitmapLoader) d.useMemoryCache(useCache);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
         } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
-            return new FileBitmapLoader(uri.getPath()).memCacheEnabled(useCache);
+            return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
         } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
             String uriString = uri.toString();
             BitmapLoader d = null;
@@ -745,13 +767,13 @@ public abstract class BitmapDecoder extends Decodable {
                 if (useCache && sDiskCache != null) {
                     InputStream in = sDiskCache.get(uriString);
                     if (in != null) {
-                        d = new StreamLoader(in);
-                        d.isFromDiskCache = true;
+                        d = new StreamBitmapLoader(in);
+                        d.mIsFromDiskCache = true;
                     }
                 }
 
                 if (d == null) {
-                    StreamLoader sd = new StreamLoader(new LazyInputStream(new StreamOpener() {
+                    StreamBitmapLoader sd = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
                         @Override
                         public InputStream openInputStream() {
                             try {
@@ -771,7 +793,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
 
             d.id(uri);
-            return d.memCacheEnabled(useCache);
+            return (BitmapLoader) d.useMemoryCache(useCache);
         } else {
             throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
         }
@@ -780,5 +802,55 @@ public abstract class BitmapDecoder extends Decodable {
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapDecoder from(@NonNull Bitmap bitmap) {
         return new BitmapTransformer(bitmap);
+    }
+
+    public static BitmapLoader from(final ContentResolver resolver, final Uri uri,
+                                     final String columnName, final String selection,
+                                     final String[] selectionArgs,
+                                     final String sortOrder) {
+        StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+            @Override
+            public InputStream openInputStream() throws IOException {
+                Cursor cursor = resolver.query(uri, new String[]{columnName}, selection,
+                        selectionArgs, sortOrder);
+                if (cursor == null || !cursor.moveToNext()) {
+                    throw new IOException();
+                }
+                try {
+                    byte[] bytes = cursor.getBlob(0);
+                    return new ByteArrayInputStream(bytes);
+                } finally {
+                    cursor.close();
+                }
+            }
+        }));
+        loader.id(new QueriedContentId(uri, columnName, selection, selectionArgs, sortOrder));
+        return loader;
+    }
+
+    public static BitmapLoader from(final SQLiteDatabase db, final String tableName,
+                                     final String columnName, final String selection,
+                                     final String[] selectionArgs,
+                                     final String groupBy, final String having,
+                                     final String orderBy) {
+        StreamBitmapLoader loader = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+            @Override
+            public InputStream openInputStream() throws IOException {
+                Cursor cursor = db.query(tableName, new String[]{columnName}, selection,
+                        selectionArgs, groupBy, having, orderBy);
+                if (cursor == null || !cursor.moveToNext()) {
+                    throw new IOException();
+                }
+                try {
+                    byte[] bytes = cursor.getBlob(0);
+                    return new ByteArrayInputStream(bytes);
+                } finally {
+                    cursor.close();
+                }
+            }
+        }));
+        loader.id(new QueriedDatabaseId(tableName, columnName, selection, selectionArgs, groupBy,
+                having, orderBy));
+        return loader;
     }
 }

@@ -13,10 +13,10 @@ import java.io.InputStream;
 
 import rapid.decoder.cache.TransactionOutputStream;
 
-class StreamLoader extends BitmapLoader {
+class StreamBitmapLoader extends BitmapLoader {
 	private TwoPhaseBufferedInputStream mIn;
 	
-	public StreamLoader(InputStream is) {
+	public StreamBitmapLoader(InputStream is) {
 		if (is instanceof TwoPhaseBufferedInputStream &&
 				!((TwoPhaseBufferedInputStream) is).isSecondPhase()) {
 					
@@ -26,7 +26,7 @@ class StreamLoader extends BitmapLoader {
 		}
 	}
 	
-	protected StreamLoader(StreamLoader other) {
+	protected StreamBitmapLoader(StreamBitmapLoader other) {
 		super(other);
 		
 		InputStream is = mIn.getStream();
@@ -83,14 +83,8 @@ class StreamLoader extends BitmapLoader {
 	}
 
 	@NonNull
-    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override
 	public BitmapLoader mutate() {
-		return new StreamLoader(this);
-	}
-	
-	@Override
-	public boolean isMemoryCacheSupported() {
-		return false;
+		return new StreamBitmapLoader(this);
 	}
 }

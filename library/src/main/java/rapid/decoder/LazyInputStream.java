@@ -8,7 +8,7 @@ import java.io.InputStream;
 class LazyInputStream extends InputStream {
 	private StreamOpener mOpener;
 	protected InputStream mIn;
-	
+
 	public LazyInputStream(StreamOpener opener) {
 		mOpener = opener;
 	}
@@ -36,12 +36,19 @@ class LazyInputStream extends InputStream {
 	
 	@Override
 	public void mark(int readlimit) {
-		getStream().mark(readlimit);
+		try {
+            getStream().mark(readlimit);
+        } catch (IOException ignored) {
+        }
 	}
 	
 	@Override
 	public boolean markSupported() {
-		return getStream().markSupported();
+		try {
+            return getStream().markSupported();
+        } catch (IOException ignored) {
+            return false;
+        }
 	}
 	
 	@Override
@@ -66,8 +73,11 @@ class LazyInputStream extends InputStream {
 		return getStream().skip(byteCount);
 	}
 
-	protected InputStream getStream() {
+	protected InputStream getStream() throws IOException {
 		if (mIn == null) {
+            if (mOpener == null) {
+                throw new IOException();
+            }
 			mIn = mOpener.openInputStream();
 			mOpener = null;
 		}

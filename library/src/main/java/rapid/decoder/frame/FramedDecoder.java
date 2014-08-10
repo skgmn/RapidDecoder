@@ -71,7 +71,7 @@ public abstract class FramedDecoder extends Decodable {
         BitmapDecoder decoder = setRegion(mDecoder, frameWidth, frameHeight, rectDest);
         Bitmap bitmap;
         if (fromCache) {
-            if (decoder.isMemoryCacheSupported()) {
+            if (decoder.isMemoryCacheEnabled()) {
                 bitmap = decoder.getCachedBitmap();
             } else {
                 bitmap = null;
@@ -90,8 +90,8 @@ public abstract class FramedDecoder extends Decodable {
     }
 
     @Override
-    public boolean isMemoryCacheSupported() {
-        return mDecoder.isMemoryCacheSupported();
+    public boolean isMemoryCacheEnabled() {
+        return mDecoder.isMemoryCacheEnabled();
     }
 
     @Override

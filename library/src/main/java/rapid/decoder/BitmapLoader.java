@@ -14,10 +14,10 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.view.View;
 
 import java.io.InputStream;
 
+import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.builtin.BuiltInDecoder;
 import rapid.decoder.cache.BitmapMetaInfo;
 import rapid.decoder.cache.CacheSource;
@@ -33,18 +33,17 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected boolean mIsMutable;
     private boolean mScaleFilter = true;
     private boolean mUseBuiltInDecoder = false;
-    private boolean memCacheEnabled = true;
     private Object mId;
-    boolean isFromDiskCache;
+    boolean mIsFromDiskCache;
     protected CacheSource mCacheSource;
 
-    private int width;
-    private int height;
+    private int mSourceWidth;
+    private int mSourceHeight;
 
     // Temporary variables
-    private float adjustedDensityRatio;
-    private float adjustedWidthRatio;
-    private float adjustedHeightRatio;
+    private float mAdjustedDensityRatio;
+    private float mAdjustedWidthRatio;
+    private float mAdjustedHeightRatio;
 
     protected BitmapLoader() {
         super();
@@ -63,8 +62,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
         mScaleFilter = other.mScaleFilter;
         mUseBuiltInDecoder = other.mUseBuiltInDecoder;
 
-        width = other.width;
-        height = other.height;
+        mSourceWidth = other.mSourceWidth;
+        mSourceHeight = other.mSourceHeight;
     }
 
     @Override
@@ -77,11 +76,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     protected void decodeBounds() {
-        if (isMemCacheEnabled()) {
+        if (isMemoryCacheEnabled()) {
             Bitmap cachedBitmap = getCachedBitmap();
             if (cachedBitmap != null) {
-                width = cachedBitmap.getWidth();
-                height = cachedBitmap.getHeight();
+                mSourceWidth = cachedBitmap.getWidth();
+                mSourceHeight = cachedBitmap.getHeight();
                 mOptions.inDensity = 0;
                 mOptions.inTargetDensity = 0;
                 return;
@@ -92,24 +91,24 @@ public abstract class BitmapLoader extends BitmapDecoder {
         decode(mOptions);
         mOptions.inJustDecodeBounds = false;
 
-        width = mOptions.outWidth;
-        height = mOptions.outHeight;
+        mSourceWidth = mOptions.outWidth;
+        mSourceHeight = mOptions.outHeight;
     }
 
     @Override
     public int sourceWidth() {
-        if (width == 0) {
+        if (mSourceWidth == 0) {
             decodeBounds();
         }
-        return width;
+        return mSourceWidth;
     }
 
     @Override
     public int sourceHeight() {
-        if (height == 0) {
+        if (mSourceHeight == 0) {
             decodeBounds();
         }
-        return height;
+        return mSourceHeight;
     }
 
     public Bitmap getCachedBitmap() {
@@ -121,7 +120,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public Bitmap decode() {
-        final boolean memCacheEnabled = isMemCacheEnabled();
+        final boolean memCacheEnabled = isMemoryCacheEnabled();
         if (memCacheEnabled) {
             final Bitmap cachedBitmap = getCachedBitmap();
             if (cachedBitmap != null) {
@@ -133,7 +132,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         // reset
 
         mOptions.mCancel = false;
-        adjustedDensityRatio = 0;
+        mAdjustedDensityRatio = 0;
 
         //
 
@@ -162,7 +161,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
             Bitmap bitmap2;
 
             Matrix m = MATRIX.obtain();
-            m.setScale(adjustedWidthRatio, adjustedHeightRatio);
+            m.setScale(mAdjustedWidthRatio, mAdjustedHeightRatio);
             bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
                     mScaleFilter);
             MATRIX.recycle(m);
@@ -174,6 +173,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
             bitmap2.setDensity(mOptions.inTargetDensity);
             bitmap = bitmap2;
         }
+
+        bitmap = postProcess(bitmap);
 
         if (memCacheEnabled) {
             synchronized (sMemCacheLock) {
@@ -189,30 +190,31 @@ public abstract class BitmapLoader extends BitmapDecoder {
             }
         }
 
-        mCacheSource = isFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
+        mCacheSource = mIsFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
         return bitmap;
     }
 
-    private boolean isMemCacheEnabled() {
-        return this.memCacheEnabled && isMemoryCacheSupported();
+    @Override
+    public boolean isMemoryCacheEnabled() {
+        return mId != null && super.isMemoryCacheEnabled();
     }
 
     private int calculateInSampleSizeByRatio() {
-        adjustedWidthRatio = mRatioWidth;
-        adjustedHeightRatio = mRatioHeight;
+        mAdjustedWidthRatio = mRatioWidth;
+        mAdjustedHeightRatio = mRatioHeight;
 
         int sampleSize = 1;
-        while (adjustedWidthRatio <= 0.5f && adjustedHeightRatio <= 0.5f) {
+        while (mAdjustedWidthRatio <= 0.5f && mAdjustedHeightRatio <= 0.5f) {
             sampleSize *= 2;
-            adjustedWidthRatio *= 2f;
-            adjustedHeightRatio *= 2f;
+            mAdjustedWidthRatio *= 2f;
+            mAdjustedHeightRatio *= 2f;
         }
 
         return sampleSize;
     }
 
     private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
-        boolean memCacheEnabled = isMemCacheEnabled();
+        boolean memCacheEnabled = isMemoryCacheEnabled();
         synchronized (sMemCacheLock) {
             memCacheEnabled &= (sMemCache != null);
         }
@@ -225,7 +227,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 targetWidth, targetHeight);
 
         Bitmap bitmap = executeDecoding();
-        mCacheSource = isFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
+        mCacheSource = mIsFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
         return bitmap;
     }
 
@@ -366,7 +368,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
 
         // Don't recycle it if memory cache is enabled because it could be from the cache.
-        if (bitmap != bitmap2 && !isMemCacheEnabled()) {
+        if (bitmap != bitmap2 && !isMemoryCacheEnabled()) {
             bitmap.recycle();
         }
         return bitmap2;
@@ -389,15 +391,15 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     private void adjustDensityRatio(boolean checkRatio) {
-        if (adjustedDensityRatio == 0) {
+        if (mAdjustedDensityRatio == 0) {
             if (checkRatio && (mRatioWidth != 1 || mRatioHeight != 1)) {
-                adjustedDensityRatio = 1;
+                mAdjustedDensityRatio = 1;
             } else {
-                adjustedDensityRatio = getDensityRatio();
+                mAdjustedDensityRatio = densityRatio();
 
-                while (adjustedDensityRatio <= 0.5) {
+                while (mAdjustedDensityRatio <= 0.5) {
                     mOptions.inSampleSize *= 2;
-                    adjustedDensityRatio *= 2;
+                    mAdjustedDensityRatio *= 2;
                 }
             }
         }
@@ -434,7 +436,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 requestsEquals(d);
     }
 
-    BitmapDecoder id(Object id) {
+    public BitmapDecoder id(Object id) {
         mId = id;
         mHashCode = 0;
         return this;
@@ -451,11 +453,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return this;
     }
 
-    BitmapLoader memCacheEnabled(boolean useCache) {
-        this.memCacheEnabled = useCache;
-        return this;
-    }
-
     @Override
     public CacheSource cacheSource() {
         return mCacheSource;
@@ -467,9 +464,9 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     @Override
-    protected ViewFrameBuilder setupFrameBuilder(View v, FramingMethod framing) {
+    protected ViewFrameBuilder setupFrameBuilder(ViewBinder<?> binder, FramingMethod framing) {
         if (mId != null) {
-            return new ViewFrameBuilder(this, mId, v, framing);
+            return new ViewFrameBuilder(this, mId, binder, framing);
         } else {
             return null;
         }

@@ -13,14 +13,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-class FileDescriptorLoader extends BitmapLoader {
+class FileDescriptorBitmapLoader extends BitmapLoader {
 	private FileDescriptor fd;
 	
-	public FileDescriptorLoader(FileDescriptor fd) {
+	public FileDescriptorBitmapLoader(FileDescriptor fd) {
 		this.fd = fd;
 	}
 	
-	protected FileDescriptorLoader(FileDescriptorLoader other) {
+	protected FileDescriptorBitmapLoader(FileDescriptorBitmapLoader other) {
 		super(other);
 		fd = other.fd;
 	}
@@ -48,7 +48,7 @@ class FileDescriptorLoader extends BitmapLoader {
 	@NonNull
     @Override
 	public BitmapLoader mutate() {
-		return new FileDescriptorLoader(this);
+		return new FileDescriptorBitmapLoader(this);
 	}
 	
 	@Override
@@ -59,14 +59,9 @@ class FileDescriptorLoader extends BitmapLoader {
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) return true;
-		if (!(o instanceof FileDescriptorLoader) || !super.equals(o)) return false;
+		if (!(o instanceof FileDescriptorBitmapLoader) || !super.equals(o)) return false;
 		
-		final FileDescriptorLoader fdd = (FileDescriptorLoader) o;
+		final FileDescriptorBitmapLoader fdd = (FileDescriptorBitmapLoader) o;
 		return fd.equals(fdd.fd);
-	}
-
-	@Override
-	public boolean isMemoryCacheSupported() {
-		return false;
 	}
 }

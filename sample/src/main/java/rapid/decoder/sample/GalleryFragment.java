@@ -68,7 +68,7 @@ public class GalleryFragment extends Fragment implements LoaderManager.LoaderCal
 
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            return LayoutInflater.from(context).inflate(R.layout.item_image, parent, false);
+            return LayoutInflater.from(context).inflate(R.layout.item_gallery, parent, false);
         }
 
         @Override

@@ -2,13 +2,10 @@ package rapid.decoder;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
+import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.cache.BitmapMetaInfo;
-import rapid.decoder.compat.ImageViewCompat;
-import rapid.decoder.compat.ViewCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;
@@ -21,7 +18,7 @@ class ViewFrameBuilder {
 
     private BitmapDecoder mDecoder;
     private Object mId;
-    private View mView;
+    private ViewBinder<?> mViewBinder;
     private FramingMethod mFraming;
     private int mAutoSizeMode = AUTOSIZE_NONE;
     private int mMinWidth;
@@ -30,77 +27,43 @@ class ViewFrameBuilder {
     private int mMaxHeight;
     private FramedDecoder mFramedDecoder;
 
-    public ViewFrameBuilder(@NonNull BitmapDecoder decoder, @NonNull Object id, @NonNull View v,
-                            @NonNull FramingMethod framing) {
+    public ViewFrameBuilder(@NonNull BitmapDecoder decoder, @NonNull Object id,
+                            @NonNull ViewBinder<?> binder, @NonNull FramingMethod framing) {
 
         mDecoder = decoder;
         mId = id;
-        mView = v;
+        mViewBinder = binder;
         mFraming = framing;
     }
 
     public void prepareFraming() {
-        ViewGroup.LayoutParams lp = mView.getLayoutParams();
-
-        if (lp.width == ViewGroup.LayoutParams.WRAP_CONTENT) {
-            if (lp.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
+        if (mViewBinder.getLayoutWidth() == ViewGroup.LayoutParams.WRAP_CONTENT) {
+            if (mViewBinder.getLayoutHeight() == ViewGroup.LayoutParams.WRAP_CONTENT) {
                 mAutoSizeMode = AUTOSIZE_BOTH;
-                mMinWidth = ViewCompat.getMinimumWidth(mView);
-                mMaxWidth = getMaxWidth(mView);
-                mMinHeight = ViewCompat.getMinimumHeight(mView);
-                mMaxHeight = getMaxHeight(mView);
+                mMinWidth = mViewBinder.getMinWidth();
+                mMaxWidth = mViewBinder.getMaxWidth();
+                mMinHeight = mViewBinder.getMinHeight();
+                mMaxHeight = mViewBinder.getMaxHeight();
             } else {
                 mAutoSizeMode = AUTOSIZE_WIDTH;
-                mMinWidth = ViewCompat.getMinimumWidth(mView);
-                mMaxWidth = getMaxWidth(mView);
-                mMinHeight = mView.getHeight();
+                mMinWidth = mViewBinder.getMinWidth();
+                mMaxWidth = mViewBinder.getMaxWidth();
+                mMinHeight = mViewBinder.getHeight();
             }
-        } else if (lp.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
+        } else if (mViewBinder.getLayoutHeight() == ViewGroup.LayoutParams.WRAP_CONTENT) {
             mAutoSizeMode = AUTOSIZE_HEIGHT;
-            mMinWidth = mView.getWidth();
-            mMinHeight = ViewCompat.getMinimumHeight(mView);
-            mMaxHeight = getMaxHeight(mView);
+            mMinWidth = mViewBinder.getWidth();
+            mMinHeight = mViewBinder.getMinHeight();
+            mMaxHeight = mViewBinder.getMaxHeight();
         } else {
             mAutoSizeMode = AUTOSIZE_NONE;
-            mMinWidth = mView.getWidth();
-            mMinHeight = mView.getHeight();
+            mMinWidth = mViewBinder.getWidth();
+            mMinHeight = mViewBinder.getHeight();
         }
-    }
-
-    private static int getMaxWidth(View v) {
-        return v instanceof ImageView ? ImageViewCompat.getMaxWidth((ImageView) v) : Integer
-                .MAX_VALUE;
-    }
-
-    private static int getMaxHeight(View v) {
-        return v instanceof ImageView ? ImageViewCompat.getMaxHeight((ImageView) v) : Integer
-                .MAX_VALUE;
-    }
-
-    private int getWidth(boolean cacheOnly) {
-        BitmapMetaInfo meta;
-        synchronized (BitmapDecoder.sMemCacheLock) {
-            meta = BitmapDecoder.sMetaCache.get(mId);
-        }
-        if (cacheOnly && meta == null) {
-            return 0;
-        }
-        return meta != null ? meta.width : mDecoder.width();
-    }
-
-    private int getHeight(boolean cacheOnly) {
-        BitmapMetaInfo meta;
-        synchronized (BitmapDecoder.sMemCacheLock) {
-            meta = BitmapDecoder.sMetaCache.get(mId);
-        }
-        if (cacheOnly && meta == null) {
-            return 0;
-        }
-        return meta != null ? meta.height : mDecoder.height();
     }
 
     @Nullable
-    public FramedDecoder getFramedDecoder(boolean cacheOnly) {
+    public FramedDecoder getFramedDecoder(boolean fromCache) {
         if (mFramedDecoder != null) {
             return mFramedDecoder;
         }
@@ -110,9 +73,23 @@ class ViewFrameBuilder {
             frameWidth = mMinWidth;
             frameHeight = mMinHeight;
         } else {
-            int width = getWidth(cacheOnly);
-            int height = getHeight(cacheOnly);
-            if (width == 0 || height == 0) return null;
+            int width, height;
+
+            BitmapMetaInfo meta;
+            synchronized (BitmapDecoder.sMemCacheLock) {
+                meta = BitmapDecoder.sMetaCache.get(mId);
+            }
+            if (meta == null) {
+                if (fromCache) {
+                    return null;
+                } else {
+                    width = mDecoder.width();
+                    height = mDecoder.height();
+                }
+            } else {
+                width = meta.width;
+                height = meta.height;
+            }
 
             switch (mAutoSizeMode) {
                 case AUTOSIZE_WIDTH:

@@ -14,30 +14,29 @@ import java.io.InputStream;
 
 class ResourceLoader extends BitmapLoader {
 	Resources res;
-	int id;
-	
+
 	private float densityRatio;
 
 	public ResourceLoader(Resources res, int id) {
 		this.res = res;
-		this.id = id;
+        id(id);
 	}
 	
 	protected ResourceLoader(ResourceLoader other) {
 		super(other);
 		res = other.res;
-		id = other.id;
+        id(other.id());
 		densityRatio = other.densityRatio;
 	}
 
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeResource(res, id, opts);
+		return BitmapFactory.decodeResource(res, (Integer) id(), opts);
 	}
 	
 	@Override
 	protected InputStream getInputStream() {
-		return res.openRawResource(id);
+		return res.openRawResource((Integer) id());
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
@@ -51,7 +50,7 @@ class ResourceLoader extends BitmapLoader {
 	}
 
 	@Override
-	protected float getDensityRatio() {
+	protected float densityRatio() {
 		if (densityRatio == 0) {
 			decodeBounds();
 
@@ -72,7 +71,7 @@ class ResourceLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ res.hashCode() ^ id;
+		return super.hashCode() ^ res.hashCode() ^ id().hashCode();
 	}
 	
 	@Override
@@ -81,11 +80,6 @@ class ResourceLoader extends BitmapLoader {
 		if (!(o instanceof ResourceLoader) || !super.equals(o)) return false;
 		
 		final ResourceLoader d = (ResourceLoader) o;
-		return res.equals(d.res) && id == d.id;
-	}
-
-	@Override
-	public boolean isMemoryCacheSupported() {
-		return true;
+		return res.equals(d.res) && id().equals(d.id());
 	}
 }

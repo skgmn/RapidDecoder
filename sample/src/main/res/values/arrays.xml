@@ -7,6 +7,7 @@
         <item>Mutable decoding sample</item>
         <item>FramedDecoder sample</item>
         <item>Gallery sample</item>
+        <item>Contacts sample</item>
     </string-array>
     
 </resources>

@@ -3,11 +3,11 @@ package rapid.decoder.binder;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.TextView;
 
-@SuppressWarnings("UnusedDeclaration")
 public class TextViewBinder extends ViewBinder<TextView> {
-    private static final int[] sGravityMask = new int[] {
+    private static final int[] sGravityMask = new int[]{
             Gravity.LEFT,
             Gravity.TOP,
             Gravity.RIGHT,
@@ -15,11 +15,20 @@ public class TextViewBinder extends ViewBinder<TextView> {
     };
 
     private int mGravity;
+    private int mWidth;
+    private int mHeight;
 
-    @SuppressWarnings("UnusedDeclaration")
-    public TextViewBinder(TextView v, int gravity) {
+    public TextViewBinder(TextView v, int gravity, int width, int height) {
         super(v);
         mGravity = gravity;
+        mWidth = width;
+        mHeight = height;
+    }
+
+    public void runAfterReady(final OnReadyListener listener) {
+        View v = getView();
+        if (v == null) return;
+        listener.onReady(v, false);
     }
 
     @Override
@@ -67,26 +76,23 @@ public class TextViewBinder extends ViewBinder<TextView> {
     private void setCompoundDrawable(int gravity, Drawable d) {
         TextView v = getView();
         if (v != null) {
+            d.setBounds(0, 0, mWidth, mHeight);
             Drawable[] drawables = v.getCompoundDrawables();
             switch (gravity) {
                 case Gravity.LEFT:
-                    v.setCompoundDrawablesWithIntrinsicBounds(d, drawables[1], drawables[2],
-                            drawables[3]);
+                    v.setCompoundDrawables(d, drawables[1], drawables[2], drawables[3]);
                     break;
 
                 case Gravity.TOP:
-                    v.setCompoundDrawablesWithIntrinsicBounds(drawables[0], d, drawables[2],
-                            drawables[3]);
+                    v.setCompoundDrawables(drawables[0], d, drawables[2], drawables[3]);
                     break;
 
                 case Gravity.RIGHT:
-                    v.setCompoundDrawablesWithIntrinsicBounds(drawables[0], drawables[1], d,
-                            drawables[3]);
+                    v.setCompoundDrawables(drawables[0], drawables[1], d, drawables[3]);
                     break;
 
                 case Gravity.BOTTOM:
-                    v.setCompoundDrawablesWithIntrinsicBounds(drawables[0], drawables[1],
-                            drawables[2], d);
+                    v.setCompoundDrawables(drawables[0], drawables[1], drawables[2], d);
                     break;
 
                 default:
@@ -111,5 +117,25 @@ public class TextViewBinder extends ViewBinder<TextView> {
         if (v != null) {
             v.postDelayed(r, delay);
         }
+    }
+
+    @Override
+    public int getLayoutWidth() {
+        return mWidth;
+    }
+
+    @Override
+    public int getLayoutHeight() {
+        return mHeight;
+    }
+
+    @Override
+    public int getWidth() {
+        return mWidth;
+    }
+
+    @Override
+    public int getHeight() {
+        return mHeight;
     }
 }

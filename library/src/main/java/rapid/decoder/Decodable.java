@@ -20,6 +20,8 @@ public abstract class Decodable {
         void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource);
     }
 
+    private boolean mIsMemoryCacheEnabled = true;
+
     public void into(final ViewBinder binder) {
         View v = binder.getView();
         if (v == null) return;
@@ -40,7 +42,7 @@ public abstract class Decodable {
         ViewFrameBuilder frameBuilder = null;
         FramingMethod framing = binder.framing();
         if (framing != null) {
-            frameBuilder = setupFrameBuilder(v, framing);
+            frameBuilder = setupFrameBuilder(binder, framing);
             if (frameBuilder != null) {
                 frameBuilder.prepareFraming();
                 if (!async) {
@@ -67,7 +69,7 @@ public abstract class Decodable {
         record.execute(task);
     }
 
-    protected ViewFrameBuilder setupFrameBuilder(View v, FramingMethod framing) {
+    protected ViewFrameBuilder setupFrameBuilder(ViewBinder<?> binder, FramingMethod framing) {
         return null;
     }
 
@@ -85,8 +87,13 @@ public abstract class Decodable {
         BitmapDecoder.sTaskManager.execute(task);
     }
 
-    public boolean isMemoryCacheSupported() {
-        return false;
+    public boolean isMemoryCacheEnabled() {
+        return mIsMemoryCacheEnabled;
+    }
+
+    public Decodable useMemoryCache(boolean useCache) {
+        this.mIsMemoryCacheEnabled = useCache;
+        return this;
     }
 
     public Bitmap getCachedBitmap() {
