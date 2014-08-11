@@ -35,6 +35,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     private Effect mEffect;
     private FramingMethod mFraming;
     private WeakReference<T> mView;
+    private DrawableInflater mPlaceholderInflater;
 
     protected ViewBinder() {
     }
@@ -73,6 +74,31 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return framing(new ScaleTypeFraming(scaleType));
     }
 
+    public ViewBinder<T> placeholder(final Drawable d) {
+        mPlaceholderInflater = new DrawableInflater() {
+            @Override
+            public Drawable inflate(Context context) {
+                return d;
+            }
+        };
+        return this;
+    }
+
+    public ViewBinder<T> placeholder(final int resId) {
+        mPlaceholderInflater = new DrawableInflater() {
+            @Override
+            public Drawable inflate(Context context) {
+                return context.getResources().getDrawable(resId);
+            }
+        };
+        return this;
+    }
+
+    public ViewBinder<T> placeholder(DrawableInflater inflater) {
+        mPlaceholderInflater = inflater;
+        return this;
+    }
+
     public void runAfterReady(final OnReadyListener listener) {
         View v = getView();
         if (v == null) return;
@@ -103,6 +129,23 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     @Override
     public void dispose() {
         recycle();
+    }
+
+    public void displayPlaceholder() {
+        if (mPlaceholderInflater != null) {
+            View v = getView();
+            if (v != null) {
+                Drawable placeholder = mPlaceholderInflater.inflate(v.getContext());
+                onPlaceholderInflated(placeholder);
+                for (int i = 0, c = getDrawableCount(); i < c; ++i) {
+                    if (!isDrawableEnabled(i)) continue;
+                    setDrawable(i, placeholder);
+                }
+            }
+        }
+    }
+
+    protected void onPlaceholderInflated(Drawable placeholder) {
     }
 
     public void bind(Bitmap bitmap, boolean isAsync) {

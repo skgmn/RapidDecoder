@@ -27,6 +27,7 @@ import android.widget.TextView;
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.BitmapPostProcessor;
 import rapid.decoder.binder.TextViewBinder;
+import rapid.decoder.binder.ViewBinder;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -89,10 +90,6 @@ public class ContactsFragment extends ListFragment implements LoaderManager
             TextView textView = (TextView) view;
             int imageSize = context.getResources().getDimensionPixelSize(R.dimen
                     .contacts_profile_image_size);
-            Drawable placeholder = context.getResources().getDrawable(R.drawable
-                    .contacts_profile_image_placeholder);
-            placeholder.setBounds(0, 0, imageSize, imageSize);
-            textView.setCompoundDrawables(placeholder, null, null, null);
             textView.setText(cursor.getString(1));
 
             long id = cursor.getLong(0);
@@ -100,6 +97,10 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                     .appendPath(Long.toString(id))
                     .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
                     .build();
+            ViewBinder<TextView> binder =
+                    TextViewBinder.obtain(textView, Gravity.LEFT, imageSize, imageSize)
+                            .scaleType(ImageView.ScaleType.CENTER_CROP)
+                            .placeholder(R.drawable.contacts_profile_image_placeholder);
             BitmapDecoder.from(context.getContentResolver(), uri,
                     ContactsContract.CommonDataKinds.Photo.PHOTO, null, null, null)
                     .id(uri)
@@ -109,8 +110,7 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                             return createRoundedImage(getContext(), bitmap);
                         }
                     })
-                    .into(TextViewBinder.obtain(textView, Gravity.LEFT, imageSize,
-                            imageSize).scaleType(ImageView.ScaleType.CENTER_CROP));
+                    .into(binder);
         }
 
         private static Bitmap createRoundedImage(Context context, Bitmap bitmap) {

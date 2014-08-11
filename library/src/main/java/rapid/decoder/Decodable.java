@@ -35,6 +35,9 @@ public abstract class Decodable implements BitmapMeta {
                 loadBitmapWhenReady(task, binder, v, async);
             }
         });
+        if (!task.isCancelled()) {
+            binder.displayPlaceholder();
+        }
     }
 
     void loadBitmapWhenReady(BackgroundBitmapLoadTask task, final ViewBinder binder,

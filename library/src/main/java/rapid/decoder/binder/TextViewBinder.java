@@ -146,4 +146,9 @@ public class TextViewBinder extends ViewBinder<TextView> {
     public int getHeight() {
         return mHeight;
     }
+
+    @Override
+    protected void onPlaceholderInflated(Drawable placeholder) {
+        placeholder.setBounds(0, 0, mWidth, mHeight);
+    }
 }

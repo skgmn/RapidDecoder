@@ -19,6 +19,7 @@ import android.widget.ImageView;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.binder.ImageViewBinder;
+import rapid.decoder.binder.ViewBinder;
 
 public class GalleryFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private GalleryAdapter mAdapter;
@@ -74,11 +75,13 @@ public class GalleryFragment extends Fragment implements LoaderManager.LoaderCal
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
             ImageView imageView = (ImageView) view;
-            imageView.setImageDrawable(new ColorDrawable(0xffcccccc));
+            ViewBinder<ImageView> binder = ImageViewBinder.obtain(imageView)
+                    .scaleType(ImageView.ScaleType.CENTER_CROP)
+                    .placeholder(new ColorDrawable(0xffcccccc));
+
             String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Thumbnails
                     .DATA));
-            BitmapDecoder.from(path).into(ImageViewBinder.obtain(imageView).scaleType(ImageView
-                    .ScaleType.CENTER_CROP));
+            BitmapDecoder.from(path).into(binder);
         }
     }
 }
