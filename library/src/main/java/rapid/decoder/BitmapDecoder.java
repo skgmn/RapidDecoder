@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import rapid.decoder.cache.BitmapLruCache;
-import rapid.decoder.cache.BitmapMetaLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
@@ -50,11 +49,8 @@ public abstract class BitmapDecoder extends Decodable {
     private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
     private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
     private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
-    private static final String MESSAGE_UNSUPPORTED_SCHEME = "Unsupported scheme: %s";
     private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context" +
             ". Use BitmapDecoder.from(Context, Uri) instead.";
-
-    protected static final int HASHCODE_NULL_BITMAP_OPTIONS = 0x00F590B9;
 
     //
     // Cache
@@ -63,8 +59,7 @@ public abstract class BitmapDecoder extends Decodable {
     private static final long DEFAULT_CACHE_SIZE = 4 * 1024 * 1024; // 4MB
 
     protected static final Object sMemCacheLock = new Object();
-    protected static BitmapLruCache<Object> sMemCache;
-    protected static BitmapMetaLruCache sMetaCache;
+    protected static BitmapLruCache sMemCache;
 
     static final Object sDiskCacheLock = new Object();
     static DiskLruCache sDiskCache;
@@ -87,8 +82,7 @@ public abstract class BitmapDecoder extends Decodable {
             if (sMemCache != null) {
                 sMemCache.evictAll();
             }
-            sMemCache = new BitmapLruCache<Object>(size);
-            sMetaCache = new BitmapMetaLruCache(500);
+            sMemCache = new BitmapLruCache(size);
         }
     }
 
@@ -107,9 +101,6 @@ public abstract class BitmapDecoder extends Decodable {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
                 sMemCache.evictAll();
-            }
-            if (sMetaCache != null) {
-                sMetaCache.evictAll();
             }
         }
     }
@@ -663,7 +654,7 @@ public abstract class BitmapDecoder extends Decodable {
 
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapLoader from(Resources res, int id) {
-        return new ResourceLoader(res, id);
+        return new ResourceBitmapLoader(res, id);
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -698,7 +689,7 @@ public abstract class BitmapDecoder extends Decodable {
         return from(context, uri, true);
     }
 
-    public static BitmapLoader from(Context context, final Uri uri, boolean useCache) {
+    public static BitmapLoader from(final Context context, final Uri uri, boolean useCache) {
         String scheme = uri.getScheme();
 
         if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -733,21 +724,7 @@ public abstract class BitmapDecoder extends Decodable {
                         resName));
             }
 
-            return (BitmapLoader) new ResourceLoader(res, id).useMemoryCache(useCache);
-        } else if (scheme.equals(ContentResolver.SCHEME_CONTENT)) {
-            if (context == null) {
-                throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
-            }
-
-            try {
-                StreamBitmapLoader d = new StreamBitmapLoader(context.getContentResolver()
-                        .openInputStream
-                                (uri));
-                d.id(uri);
-                return (BitmapLoader) d.useMemoryCache(useCache);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+            return (BitmapLoader) new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
         } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
             return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
         } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
@@ -786,7 +763,24 @@ public abstract class BitmapDecoder extends Decodable {
             d.id(uri);
             return (BitmapLoader) d.useMemoryCache(useCache);
         } else {
-            throw new IllegalArgumentException(String.format(MESSAGE_UNSUPPORTED_SCHEME, scheme));
+            if (context == null) {
+                throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+            }
+
+            final ContentResolver cr = context.getContentResolver();
+            StreamBitmapLoader d = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+                @Nullable
+                @Override
+                public InputStream openInputStream() {
+                    try {
+                        return cr.openInputStream(uri);
+                    } catch (FileNotFoundException e) {
+                        return null;
+                    }
+                }
+            }));
+            d.id(uri);
+            return (BitmapLoader) d.useMemoryCache(useCache);
         }
     }
 

@@ -12,17 +12,17 @@ import android.support.annotation.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 
-class ResourceLoader extends BitmapLoader {
+class ResourceBitmapLoader extends BitmapLoader {
 	Resources res;
 
 	private float densityRatio;
 
-	public ResourceLoader(Resources res, int id) {
+	public ResourceBitmapLoader(Resources res, int id) {
 		this.res = res;
         id(id);
 	}
 	
-	protected ResourceLoader(ResourceLoader other) {
+	protected ResourceBitmapLoader(ResourceBitmapLoader other) {
 		super(other);
 		res = other.res;
         id(other.id());
@@ -70,7 +70,7 @@ class ResourceLoader extends BitmapLoader {
 	@NonNull
     @Override
 	public BitmapLoader mutate() {
-		return new ResourceLoader(this);
+		return new ResourceBitmapLoader(this);
 	}
 	
 	@Override
@@ -81,9 +81,9 @@ class ResourceLoader extends BitmapLoader {
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) return true;
-		if (!(o instanceof ResourceLoader) || !super.equals(o)) return false;
+		if (!(o instanceof ResourceBitmapLoader) || !super.equals(o)) return false;
 		
-		final ResourceLoader d = (ResourceLoader) o;
+		final ResourceBitmapLoader d = (ResourceBitmapLoader) o;
 		return res.equals(d.res) && id().equals(d.id());
 	}
 }

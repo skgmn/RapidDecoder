@@ -79,7 +79,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     public BitmapMeta getCachedMeta() {
         if (isMemoryCacheEnabled() && mId != null) {
             synchronized (sMemCacheLock) {
-                return sMetaCache.get(mId);
+                return sMemCache.getMeta(mId);
             }
         } else {
             return null;
@@ -195,12 +195,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
             synchronized (sMemCacheLock) {
                 if (sMemCache != null) {
                     sMemCache.put(this, bitmap);
-                }
-                if (sMetaCache != null && mId != null) {
-                    SimpleBitmapMeta meta = new SimpleBitmapMeta();
-                    meta.width = sourceWidth();
-                    meta.height = sourceHeight();
-                    sMetaCache.put(mId, meta);
                 }
             }
         }
@@ -427,8 +421,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         final int hashId = (mId != null ? mId.hashCode() : 0);
         final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (mScaleFilter ? 0xAAAAAAAA : 0);
-        final int hashConfig = (mOptions.inPreferredConfig == null ? HASHCODE_NULL_BITMAP_OPTIONS :
-                mOptions.inPreferredConfig.hashCode());
+        final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions
+                .inPreferredConfig.hashCode());
 
         mHashCode = hashId ^ hashOptions ^ hashConfig ^ requestsHash();
         return mHashCode;
@@ -451,6 +445,12 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     public BitmapDecoder id(Object id) {
+        if (id == null) {
+            throw new NullPointerException("id");
+        }
+        if (mId != null) {
+            throw new IllegalStateException("id can be set only once.");
+        }
         mId = id;
         mHashCode = 0;
         return this;
