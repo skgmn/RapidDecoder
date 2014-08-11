@@ -10,23 +10,21 @@ android {
         targetSdkVersion 20
         versionCode 1
         versionName "1.0"
+
+        ndk {
+            abiFilters "armeabi", "x86" //"armeabi-v7a"
+            moduleName "decoder"
+            ldLibs "z", "log", "jnigraphics"
+            cFlags "-ffunction-sections -fdata-sections -fvisibility=hidden -Wl,--gc-sections"
+        }
     }
     buildTypes {
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            ndk {
-                abiFilters "armeabi", "armeabi-v7a"
-                moduleName "decoder"
-                ldLibs "z", "log", "jnigraphics"
-            }
         }
         debug {
-            ndk {
-                abiFilters "armeabi", "armeabi-v7a"
-                moduleName "decoder"
-                ldLibs "z", "log", "jnigraphics"
-            }
+            runProguard false
         }
     }
 }
