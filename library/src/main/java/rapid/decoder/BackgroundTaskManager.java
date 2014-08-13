@@ -1,41 +1,49 @@
 package rapid.decoder;
 
+import android.app.Activity;
+import android.app.Fragment;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 class BackgroundTaskManager {
-    private static WeakHashMap<Object, BackgroundBitmapLoadTask> sWeakJobs;
-    private static HashMap<Object, BackgroundBitmapLoadTask> sStrongJobs;
+    private static Boolean sHasSupportLibraryV4;
+
+    private static WeakHashMap<Object, BackgroundTask> sWeakJobs;
+    private static HashMap<Object, BackgroundTask> sStrongJobs;
 
     @NonNull
-    public BackgroundBitmapLoadTask register(@NonNull Object key, boolean isStrong) {
-        BackgroundBitmapLoadTask task = new BackgroundBitmapLoadTask();
-        if (isStrong) {
-            if (sStrongJobs == null) {
-                sStrongJobs = new HashMap<Object, BackgroundBitmapLoadTask>();
-            } else {
-                cancelRecord(sStrongJobs, key);
-            }
-            sStrongJobs.put(key, task);
-        } else {
+    public static BackgroundTask register(@NonNull Object key) {
+        BackgroundTask task;
+        if (shouldBeWeak(key)) {
+            task = new BackgroundTask(new WeakReference<Object>(key));
             if (sWeakJobs == null) {
-                sWeakJobs = new WeakHashMap<Object, BackgroundBitmapLoadTask>();
+                sWeakJobs = new WeakHashMap<Object, BackgroundTask>();
             } else {
                 cancelRecord(sWeakJobs, key);
             }
             sWeakJobs.put(key, task);
+        } else {
+            task = new BackgroundTask(key);
+            if (sStrongJobs == null) {
+                sStrongJobs = new HashMap<Object, BackgroundTask>();
+            } else {
+                cancelRecord(sStrongJobs, key);
+            }
+            sStrongJobs.put(key, task);
         }
         return task;
     }
 
     @Nullable
-    public BackgroundBitmapLoadTask remove(@NonNull Object key) {
+    public static BackgroundTask remove(@NonNull Object key) {
         if (sWeakJobs != null) {
-            BackgroundBitmapLoadTask record = sWeakJobs.remove(key);
+            BackgroundTask record = sWeakJobs.remove(key);
             if (record != null) {
                 return record;
             }
@@ -46,18 +54,28 @@ class BackgroundTaskManager {
         return null;
     }
 
-    private static void cancelRecord(Map<Object, BackgroundBitmapLoadTask> map, Object key) {
-        BackgroundBitmapLoadTask task = map.remove(key);
+    private static void cancelRecord(Map<Object, BackgroundTask> map, Object key) {
+        BackgroundTask task = map.remove(key);
         if (task != null) {
             task.cancel();
         }
     }
 
-    public void execute(BackgroundBitmapLoadTask task) {
-        Object key = task.key();
-        if (key == null) return;
+    private static boolean hasSupportLibraryV4() {
+        if (sHasSupportLibraryV4 == null) {
+            try {
+                Class.forName("android.support.v4.app.Fragment");
+                sHasSupportLibraryV4 = true;
+            } catch (ClassNotFoundException e) {
+                sHasSupportLibraryV4 = false;
+            }
+        }
+        return sHasSupportLibraryV4;
+    }
 
-        register(key, task.isKeyStrong());
-        task.start();
+    static boolean shouldBeWeak(Object o) {
+        return o instanceof Activity ||
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
+                hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
     }
 }

@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
@@ -216,12 +215,6 @@ public abstract class BitmapDecoder extends Decodable {
 
     protected ArrayList<Object> mRequests;
     private boolean requestsResolved = false;
-
-    //
-    // Async jobs
-    //
-
-    static BackgroundTaskManager sTaskManager = new BackgroundTaskManager();
 
     //
     // Fields
@@ -789,44 +782,11 @@ public abstract class BitmapDecoder extends Decodable {
         return new BitmapTransformer(bitmap);
     }
 
-    public static BitmapLoader from(final ContentResolver resolver, final Uri uri,
-                                    final String columnName, final String selection,
-                                    final String[] selectionArgs,
-                                    final String sortOrder) {
+    public static BitmapLoader from(final Queriable q) {
         return new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
             public InputStream openInputStream() {
-                Cursor cursor = resolver.query(uri, new String[]{columnName}, selection,
-                        selectionArgs, sortOrder);
-                if (cursor == null) {
-                    return null;
-                }
-                try {
-                    if (!cursor.moveToNext()) {
-                        return null;
-                    }
-                    byte[] bytes = cursor.getBlob(0);
-                    if (bytes == null) {
-                        return null;
-                    }
-                    return new ByteArrayInputStream(bytes);
-                } finally {
-                    cursor.close();
-                }
-            }
-        }));
-    }
-
-    public static BitmapLoader from(final SQLiteDatabase db, final String tableName,
-                                    final String columnName, final String selection,
-                                    final String[] selectionArgs,
-                                    final String groupBy, final String having,
-                                    final String orderBy) {
-        return new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
-            @Override
-            public InputStream openInputStream() {
-                Cursor cursor = db.query(tableName, new String[]{columnName}, selection,
-                        selectionArgs, groupBy, having, orderBy);
+                Cursor cursor = q.query();
                 if (cursor == null) {
                     return null;
                 }

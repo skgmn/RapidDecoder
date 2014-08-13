@@ -27,12 +27,12 @@ public abstract class Decodable implements BitmapMeta {
         View v = binder.getView();
         if (v == null) return;
 
-        final BackgroundBitmapLoadTask task = BitmapDecoder.sTaskManager.register(v, false);
+        final BackgroundTask task = BackgroundTaskManager.register(v);
         binder.runAfterReady(new ViewBinder.OnReadyListener() {
             @Override
             public void onReady(View v, boolean async) {
                 if (task.isCancelled()) return;
-                loadBitmapWhenReady(task, binder, v, async);
+                loadBitmapWhenReady(task, binder, async);
             }
         });
         if (!task.isCancelled()) {
@@ -40,9 +40,7 @@ public abstract class Decodable implements BitmapMeta {
         }
     }
 
-    void loadBitmapWhenReady(BackgroundBitmapLoadTask task, final ViewBinder binder,
-                             View v, boolean async) {
-
+    void loadBitmapWhenReady(BackgroundTask task, final ViewBinder binder, boolean async) {
         ViewFrameBuilder frameBuilder = null;
         FramingMethod framing = binder.framing();
         if (framing != null) {
@@ -75,7 +73,6 @@ public abstract class Decodable implements BitmapMeta {
                 binder.recycle();
             }
         });
-        task.setKey(v, false);
         task.setFrameBuilder(frameBuilder);
         task.start();
     }
@@ -93,11 +90,10 @@ public abstract class Decodable implements BitmapMeta {
     }
 
     public void decode(@NonNull OnBitmapDecodedListener listener) {
-        BackgroundBitmapLoadTask task = new BackgroundBitmapLoadTask();
+        BackgroundTask task = BackgroundTaskManager.register(this);
         task.setDecodable(this);
         task.setOnBitmapDecodedListener(listener);
-        task.setKey(this, false);
-        BitmapDecoder.sTaskManager.execute(task);
+        task.start();
     }
 
     public boolean isMemoryCacheEnabled() {

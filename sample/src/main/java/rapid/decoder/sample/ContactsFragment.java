@@ -1,5 +1,6 @@
 package rapid.decoder.sample;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -26,6 +27,7 @@ import android.widget.TextView;
 
 import rapid.decoder.BitmapDecoder;
 import rapid.decoder.BitmapPostProcessor;
+import rapid.decoder.Queriable;
 import rapid.decoder.binder.TextViewBinder;
 import rapid.decoder.binder.ViewBinder;
 
@@ -93,7 +95,7 @@ public class ContactsFragment extends ListFragment implements LoaderManager
             textView.setText(cursor.getString(1));
 
             long id = cursor.getLong(0);
-            Uri uri = ContactsContract.Contacts.CONTENT_URI.buildUpon()
+            final Uri uri = ContactsContract.Contacts.CONTENT_URI.buildUpon()
                     .appendPath(Long.toString(id))
                     .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
                     .build();
@@ -101,8 +103,15 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                     TextViewBinder.obtain(textView, Gravity.LEFT, imageSize, imageSize)
                             .scaleType(ImageView.ScaleType.CENTER_CROP)
                             .placeholder(R.drawable.contacts_profile_image_placeholder);
-            BitmapDecoder.from(context.getContentResolver(), uri,
-                    ContactsContract.CommonDataKinds.Photo.PHOTO, null, null, null)
+            final ContentResolver cr = context.getContentResolver();
+            BitmapDecoder
+                    .from(new Queriable() {
+                        @Override
+                        public Cursor query() {
+                            return cr.query(uri, new String[]{ContactsContract.CommonDataKinds.Photo
+                                    .PHOTO}, null, null, null);
+                        }
+                    })
                     .id(uri)
                     .postProcessor(new BitmapPostProcessor(context) {
                         @Override

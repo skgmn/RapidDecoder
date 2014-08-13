@@ -8,12 +8,15 @@ import java.lang.ref.WeakReference;
 
 import rapid.decoder.cache.CacheSource;
 
-class BackgroundBitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
+class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
     private Decodable mDecodable;
     private Decodable.OnBitmapDecodedListener mListener;
-    private WeakReference<Object> mWeakKey;
-    private Object mStrongKey;
     private ViewFrameBuilder mFrameBuilder;
+    private Object mKey;
+
+    public BackgroundTask(Object key) {
+        mKey = key;
+    }
 
     public void setDecodable(Decodable decodable) {
         mDecodable = decodable;
@@ -21,16 +24,6 @@ class BackgroundBitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
 
     public void setOnBitmapDecodedListener(Decodable.OnBitmapDecodedListener listener) {
         mListener = listener;
-    }
-
-    public void setKey(Object key, boolean isStrong) {
-        if (isStrong) {
-            mStrongKey = key;
-            mWeakKey = null;
-        } else {
-            mStrongKey = null;
-            mWeakKey = new WeakReference<Object>(key);
-        }
     }
 
     @Override
@@ -53,7 +46,7 @@ class BackgroundBitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
     @Override
     protected void onPostExecute(Object[] result) {
         Object key = key();
-        if (key != null && BitmapDecoder.sTaskManager.remove(key) != null && result != null) {
+        if (key != null && BackgroundTaskManager.remove(key) != null && result != null) {
             mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
         } else {
             mListener.onCancel();
@@ -68,14 +61,11 @@ class BackgroundBitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
     }
 
     Object key() {
-        if (mStrongKey != null) {
-            return mStrongKey;
+        if (mKey instanceof WeakReference) {
+            return ((WeakReference) mKey).get();
+        } else {
+            return mKey;
         }
-        return mWeakKey != null ? mWeakKey.get() : null;
-    }
-
-    boolean isKeyStrong() {
-        return mStrongKey != null;
     }
 
     public void cancel() {
@@ -85,7 +75,7 @@ class BackgroundBitmapLoadTask extends AsyncTask<Object, Object, Object[]> {
         }
         Object key = key();
         if (key != null) {
-            BitmapDecoder.sTaskManager.remove(key);
+            BackgroundTaskManager.remove(key);
         }
     }
 
