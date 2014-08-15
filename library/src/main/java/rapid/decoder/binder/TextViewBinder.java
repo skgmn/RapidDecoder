@@ -1,6 +1,8 @@
 package rapid.decoder.binder;
 
+import android.annotation.SuppressLint;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
@@ -19,7 +21,9 @@ public class TextViewBinder extends ViewBinder<TextView> {
             Gravity.LEFT,
             Gravity.TOP,
             Gravity.RIGHT,
-            Gravity.BOTTOM
+            Gravity.BOTTOM,
+            Gravity.START,
+            Gravity.END
     };
 
     private int mGravity;
@@ -47,7 +51,7 @@ public class TextViewBinder extends ViewBinder<TextView> {
 
     @Override
     public int getDrawableCount() {
-        return 4;
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH ? 6 : 4;
     }
 
     @Override
@@ -73,6 +77,10 @@ public class TextViewBinder extends ViewBinder<TextView> {
                     return v.getCompoundDrawables()[2];
                 case Gravity.BOTTOM:
                     return v.getCompoundDrawables()[3];
+                case Gravity.START:
+                    return v.getCompoundDrawablesRelative()[0];
+                case Gravity.END:
+                    return v.getCompoundDrawablesRelative()[2];
                 default:
                     return null;
             }
@@ -81,26 +89,41 @@ public class TextViewBinder extends ViewBinder<TextView> {
         }
     }
 
+    @SuppressLint("NewApi")
     private void setCompoundDrawable(int gravity, Drawable d) {
         TextView v = getView();
         if (v != null) {
             d.setBounds(0, 0, mWidth, mHeight);
-            Drawable[] drawables = v.getCompoundDrawables();
+            Drawable[] drawables;
             switch (gravity) {
                 case Gravity.LEFT:
+                    drawables = v.getCompoundDrawables();
                     v.setCompoundDrawables(d, drawables[1], drawables[2], drawables[3]);
                     break;
 
                 case Gravity.TOP:
+                    drawables = v.getCompoundDrawables();
                     v.setCompoundDrawables(drawables[0], d, drawables[2], drawables[3]);
                     break;
 
                 case Gravity.RIGHT:
+                    drawables = v.getCompoundDrawables();
                     v.setCompoundDrawables(drawables[0], drawables[1], d, drawables[3]);
                     break;
 
                 case Gravity.BOTTOM:
+                    drawables = v.getCompoundDrawables();
                     v.setCompoundDrawables(drawables[0], drawables[1], drawables[2], d);
+                    break;
+
+                case Gravity.START:
+                    drawables = v.getCompoundDrawablesRelative();
+                    v.setCompoundDrawablesRelative(d, drawables[1], drawables[2], drawables[3]);
+                    break;
+
+                case Gravity.END:
+                    drawables = v.getCompoundDrawablesRelative();
+                    v.setCompoundDrawablesRelative(drawables[0], drawables[1], d, drawables[3]);
                     break;
 
                 default:

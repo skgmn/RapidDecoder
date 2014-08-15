@@ -25,7 +25,6 @@ class ResourceBitmapLoader extends BitmapLoader {
 	protected ResourceBitmapLoader(ResourceBitmapLoader other) {
 		super(other);
 		res = other.res;
-        id(other.id());
 		densityRatio = other.densityRatio;
 	}
 

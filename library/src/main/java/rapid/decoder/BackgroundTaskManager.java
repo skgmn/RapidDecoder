@@ -3,8 +3,9 @@ package rapid.decoder;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -16,6 +17,8 @@ class BackgroundTaskManager {
 
     private static WeakHashMap<Object, BackgroundTask> sWeakJobs;
     private static HashMap<Object, BackgroundTask> sStrongJobs;
+
+    private static Handler sHandler;
 
     @NonNull
     public static BackgroundTask register(@NonNull Object key) {
@@ -40,14 +43,16 @@ class BackgroundTaskManager {
         return task;
     }
 
-    @Nullable
-    public static BackgroundTask remove(@NonNull Object key) {
+    public static BackgroundTask removeWeak(Object key) {
+        if (key == null) return null;
         if (sWeakJobs != null) {
-            BackgroundTask record = sWeakJobs.remove(key);
-            if (record != null) {
-                return record;
-            }
+            return sWeakJobs.remove(key);
         }
+        return null;
+    }
+
+    public static BackgroundTask removeStrong(Object key) {
+        if (key == null) return null;
         if (sStrongJobs != null) {
             return sStrongJobs.remove(key);
         }
@@ -77,5 +82,22 @@ class BackgroundTaskManager {
         return o instanceof Activity ||
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
                 hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static void cleanUpTasks() {
+        if (sWeakJobs == null) return;
+        if (sHandler == null) {
+            sHandler = new Handler(Looper.getMainLooper());
+        }
+        sHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (sWeakJobs == null) return;
+                for (BackgroundTask task : sWeakJobs.values()) {
+                    task.cancel();
+                }
+            }
+        });
     }
 }

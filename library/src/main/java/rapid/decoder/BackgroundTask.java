@@ -43,10 +43,18 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         return new Object[] { bitmap, cacheSource };
     }
 
+    private boolean removeKey() {
+        if (mKey == null) return false;
+        if (mKey instanceof WeakReference) {
+            return BackgroundTaskManager.removeWeak(((WeakReference) mKey).get()) != null;
+        } else {
+            return BackgroundTaskManager.removeStrong(mKey) != null;
+        }
+    }
+
     @Override
     protected void onPostExecute(Object[] result) {
-        Object key = key();
-        if (key != null && BackgroundTaskManager.remove(key) != null && result != null) {
+        if (removeKey() && result != null) {
             mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
         } else {
             mListener.onCancel();
@@ -60,23 +68,12 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         }
     }
 
-    Object key() {
-        if (mKey instanceof WeakReference) {
-            return ((WeakReference) mKey).get();
-        } else {
-            return mKey;
-        }
-    }
-
     public void cancel() {
         cancel(false);
         if (mDecodable != null) {
             mDecodable.cancel();
         }
-        Object key = key();
-        if (key != null) {
-            BackgroundTaskManager.remove(key);
-        }
+        removeKey();
     }
 
     public void setFrameBuilder(ViewFrameBuilder builder) {
