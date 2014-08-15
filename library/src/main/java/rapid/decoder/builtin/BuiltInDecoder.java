@@ -11,21 +11,13 @@ import java.io.InputStream;
 
 import rapid.decoder.TwoPhaseBufferedInputStream;
 
-@SuppressWarnings("UnusedDeclaration")
 public class BuiltInDecoder {
-	static {
-		System.loadLibrary("decoder");
-		init();
-	}
-	
 	private static final String MESSAGE_INVALID_REGION = "rectangle is outside the image";
 	
 	private TwoPhaseBufferedInputStream in;
 	private Rect region;
 	private boolean useFilter = true;
 
-	private static native void init();
-	
 	public BuiltInDecoder(InputStream in) {
 		if (in instanceof TwoPhaseBufferedInputStream &&
 				!((TwoPhaseBufferedInputStream) in).isSecondPhase()) {
@@ -36,7 +28,8 @@ public class BuiltInDecoder {
 		}
 	}
 
-	public InputStream getInputStream() {
+	@SuppressWarnings("UnusedDeclaration")
+    public InputStream getInputStream() {
 		return in;
 	}
 	

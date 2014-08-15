@@ -1,12 +1,18 @@
 package rapid.decoder.builtin;
-import java.io.InputStream;
-
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Rect;
 
+import java.io.InputStream;
+
 public class PngDecoder {
+    static {
+        System.loadLibrary("png-decoder");
+        init();
+    }
+
+    private static native void init();
 	private static native long createNativeDecoder(InputStream in);
 	private static native void destroyNativeDecoder(long decoder);
 	private static native boolean nativeBegin(long decoder);

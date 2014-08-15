@@ -10,7 +10,6 @@
 // http://vision.ai.uiuc.edu/~dugad/research/dct/index.html
 
 #include "jpgd.h"
-#include "log.h"
 #include <string.h>
 
 //#include <android/log.h>

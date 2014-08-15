@@ -8,7 +8,7 @@
 
 namespace agu
 {
-    class png_decoder
+    JNIEXPORT class png_decoder
     {
     public:
         png_decoder(JNIEnv* env, jobject in);

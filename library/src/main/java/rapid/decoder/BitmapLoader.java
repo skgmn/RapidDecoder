@@ -77,7 +77,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public BitmapMeta getCachedMeta() {
-        if (isMemoryCacheEnabled() && mId != null) {
+        if (isMemoryCacheEnabled() && mId != null && sMemCache != null) {
             synchronized (sMemCacheLock) {
                 return sMemCache.getMeta(mId);
             }

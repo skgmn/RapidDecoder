@@ -22,4 +22,6 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':library')
+    compile project(':png-decoder')
+    compile project(':jpeg-decoder')
 }

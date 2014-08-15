@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 20
+    buildToolsVersion "20.0.0"
+
+    sourceSets.main {
+        jni.srcDirs += ['../builtin-decoder-common']
+    }
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi", "armeabi-v7a", "x86"
+            moduleName "png-decoder"
+            ldLibs "z", "jnigraphics"
+            cFlags "-ffunction-sections -fdata-sections -fvisibility=hidden -Wl,--gc-sections " +
+                    "-Ibuiltin-decoder-common"
+        }
+    }
+}
+
+dependencies {
+}
