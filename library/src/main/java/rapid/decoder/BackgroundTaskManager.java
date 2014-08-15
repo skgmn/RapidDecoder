@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.view.View;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -75,7 +76,8 @@ class BackgroundTaskManager {
     }
 
     static boolean shouldBeWeak(Object o) {
-        return o instanceof Activity ||
+        return o instanceof View ||
+                o instanceof Activity ||
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
                 hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
     }
