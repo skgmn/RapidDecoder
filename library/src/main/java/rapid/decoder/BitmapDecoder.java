@@ -620,6 +620,10 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
+    public static boolean isLoadingInBackground() {
+        return BackgroundTaskManager.hasAnyTasks();
+    }
+
     //
     // Frame
     //

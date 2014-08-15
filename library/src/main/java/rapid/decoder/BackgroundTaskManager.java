@@ -79,4 +79,9 @@ class BackgroundTaskManager {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
                 hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
     }
+
+    public static boolean hasAnyTasks() {
+        return sWeakJobs != null && !sWeakJobs.isEmpty() ||
+                sStrongJobs != null && !sStrongJobs.isEmpty();
+    }
 }

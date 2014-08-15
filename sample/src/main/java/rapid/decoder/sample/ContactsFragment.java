@@ -11,7 +11,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.v4.app.ListFragment;
@@ -55,15 +54,10 @@ public class ContactsFragment extends ListFragment implements LoaderManager
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         String[] projection;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            projection = new String[]{ContactsContract.Contacts._ID, ContactsContract.Contacts
-                    .DISPLAY_NAME, ContactsContract.Contacts.PHOTO_THUMBNAIL_URI};
-        } else {
-            projection = new String[]{ContactsContract.Contacts._ID, ContactsContract.Contacts
-                    .DISPLAY_NAME};
-        }
+        projection = new String[]{ContactsContract.Contacts._ID, ContactsContract.Contacts
+                .DISPLAY_NAME};
         return new CursorLoader(getActivity(), ContactsContract.Contacts.CONTENT_URI,
-                projection, null, null, null);
+                projection, ContactsContract.Contacts.IN_VISIBLE_GROUP + "=1", null, null);
     }
 
     @Override
@@ -79,8 +73,11 @@ public class ContactsFragment extends ListFragment implements LoaderManager
     }
 
     private static class ContactsAdapter extends CursorAdapter {
+        Context mContext;
+
         public ContactsAdapter(Context context) {
             super(context, null, false);
+            mContext = context;
         }
 
         @Override
@@ -89,57 +86,59 @@ public class ContactsFragment extends ListFragment implements LoaderManager
         }
 
         @Override
-        public void bindView(View view, Context context, Cursor cursor) {
+        public void bindView(View view, final Context context, Cursor cursor) {
             TextView textView = (TextView) view;
-            int imageSize = context.getResources().getDimensionPixelSize(R.dimen
-                    .contacts_profile_image_size);
             textView.setText(cursor.getString(1));
 
             long id = cursor.getLong(0);
-            final Uri uri = ContactsContract.Contacts.CONTENT_URI.buildUpon()
-                    .appendPath(Long.toString(id))
-                    .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
-                    .build();
+            int imageSize = context.getResources().getDimensionPixelSize(R.dimen
+                    .contacts_profile_image_size);
+
             @SuppressLint("RtlHardcoded")
             ViewBinder<TextView> binder =
                     TextViewBinder.obtain(textView, Gravity.LEFT, imageSize, imageSize)
                             .scaleType(ImageView.ScaleType.CENTER_CROP)
                             .placeholder(R.drawable.contacts_profile_image_placeholder)
                             .errorImage(R.drawable.ic_launcher);
+
+            final Uri uri = ContactsContract.Contacts.CONTENT_URI.buildUpon()
+                    .appendPath(Long.toString(id))
+                    .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
+                    .build();
             final ContentResolver cr = context.getContentResolver();
             BitmapDecoder
                     .from(new Queriable() {
                         @Override
                         public Cursor query() {
-                            return cr.query(uri, new String[]{ContactsContract.CommonDataKinds.Photo
-                                    .PHOTO}, null, null, null);
+                            return cr.query(uri, sPhotoColumns, null, null, null);
                         }
                     })
                     .id(uri)
-                    .postProcessor(new BitmapPostProcessor(context) {
-                        @Override
-                        public Bitmap process(Bitmap bitmap) {
-                            return createRoundedImage(getContext(), bitmap);
-                        }
-                    })
+                    .postProcessor(mRoundedImageCreator)
                     .into(binder);
         }
 
-        private static Bitmap createRoundedImage(Context context, Bitmap bitmap) {
-            Drawable placeholder = context.getResources().getDrawable(R.drawable
-                    .contacts_profile_image_placeholder);
-            Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap
-                    .Config.ARGB_8888);
-            Canvas canvas = CANVAS.obtain(bitmap2);
-            placeholder.setBounds(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
-            placeholder.draw(canvas);
-            Paint paint = PAINT.obtain();
-            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-            canvas.drawBitmap(bitmap, 0, 0, paint);
-            PAINT.recycle(paint);
-            CANVAS.recycle(canvas);
+        private static String[] sPhotoColumns = new String[]{ContactsContract.CommonDataKinds
+                .Photo.PHOTO};
 
-            return bitmap2;
-        }
+        private final BitmapPostProcessor mRoundedImageCreator = new BitmapPostProcessor() {
+            @Override
+            public Bitmap process(Bitmap bitmap) {
+                Drawable placeholder = mContext.getResources().getDrawable(R.drawable
+                        .contacts_profile_image_placeholder);
+                Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap
+                        .Config.ARGB_8888);
+                Canvas canvas = CANVAS.obtain(bitmap2);
+                placeholder.setBounds(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
+                placeholder.draw(canvas);
+                Paint paint = PAINT.obtain();
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                canvas.drawBitmap(bitmap, 0, 0, paint);
+                PAINT.recycle(paint);
+                CANVAS.recycle(canvas);
+
+                return bitmap2;
+            }
+        };
     }
 }
