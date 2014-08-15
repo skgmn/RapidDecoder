@@ -37,7 +37,7 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         }
 
         Bitmap bitmap = d.decode();
-        if (bitmap == null || isCancelled()) return null;
+        if (isCancelled()) return null;
 
         CacheSource cacheSource = d.cacheSource();
         return new Object[] { bitmap, cacheSource };

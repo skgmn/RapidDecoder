@@ -1,5 +1,6 @@
 package rapid.decoder.sample;
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
@@ -99,10 +100,12 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                     .appendPath(Long.toString(id))
                     .appendPath(ContactsContract.Contacts.Photo.CONTENT_DIRECTORY)
                     .build();
+            @SuppressLint("RtlHardcoded")
             ViewBinder<TextView> binder =
                     TextViewBinder.obtain(textView, Gravity.LEFT, imageSize, imageSize)
                             .scaleType(ImageView.ScaleType.CENTER_CROP)
-                            .placeholder(R.drawable.contacts_profile_image_placeholder);
+                            .placeholder(R.drawable.contacts_profile_image_placeholder)
+                            .errorImage(R.drawable.ic_launcher);
             final ContentResolver cr = context.getContentResolver();
             BitmapDecoder
                     .from(new Queriable() {

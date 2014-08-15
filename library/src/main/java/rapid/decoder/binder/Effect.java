@@ -3,7 +3,9 @@ package rapid.decoder.binder;
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.TransitionDrawable;
+import android.util.Log;
+
+import rapid.decoder.TransitionDrawable;
 
 public abstract class Effect {
     public interface EffectTarget {
@@ -49,12 +51,12 @@ public abstract class Effect {
                 if (oldDrawable == null) {
                     oldDrawable = new ColorDrawable(0);
                 }
-                final TransitionDrawable d = new TransitionDrawable(new Drawable[]{oldDrawable, newDrawable});
+                final TransitionDrawable d = new TransitionDrawable(oldDrawable, newDrawable);
                 int duration = context.getResources().getInteger(DURATION_ID);
                 d.startTransition(duration);
                 target.setDrawable(i, d);
                 final int finalI = i;
-                target.postDelayed(new Runnable() {
+                d.setEndAction(new Runnable() {
                     @Override
                     public void run() {
                         if (target.getDrawable(finalI) == d) {
@@ -62,7 +64,7 @@ public abstract class Effect {
                         }
                         target.dispose();
                     }
-                }, duration);
+                });
             }
         }
     };

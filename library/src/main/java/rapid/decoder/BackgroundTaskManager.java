@@ -3,8 +3,6 @@ package rapid.decoder;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
@@ -17,8 +15,6 @@ class BackgroundTaskManager {
 
     private static WeakHashMap<Object, BackgroundTask> sWeakJobs;
     private static HashMap<Object, BackgroundTask> sStrongJobs;
-
-    private static Handler sHandler;
 
     @NonNull
     public static BackgroundTask register(@NonNull Object key) {
@@ -82,22 +78,5 @@ class BackgroundTaskManager {
         return o instanceof Activity ||
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
                 hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static void cleanUpTasks() {
-        if (sWeakJobs == null) return;
-        if (sHandler == null) {
-            sHandler = new Handler(Looper.getMainLooper());
-        }
-        sHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (sWeakJobs == null) return;
-                for (BackgroundTask task : sWeakJobs.values()) {
-                    task.cancel();
-                }
-            }
-        });
     }
 }

@@ -36,6 +36,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     private FramingMethod mFraming;
     private WeakReference<T> mView;
     private DrawableInflater mPlaceholderInflater;
+    private DrawableInflater mErrorImageInflater;
 
     protected ViewBinder() {
     }
@@ -94,8 +95,24 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return this;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public ViewBinder<T> placeholder(DrawableInflater inflater) {
         mPlaceholderInflater = inflater;
+        return this;
+    }
+
+    public ViewBinder<T> errorImage(final int resId) {
+        mErrorImageInflater = new DrawableInflater() {
+            @Override
+            public Drawable inflate(Context context) {
+                return context.getResources().getDrawable(resId);
+            }
+        };
+        return this;
+    }
+
+    public ViewBinder<T> errorImage(DrawableInflater inflater) {
+        mErrorImageInflater = inflater;
         return this;
     }
 
@@ -131,7 +148,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         recycle();
     }
 
-    public void displayPlaceholder() {
+    public void showPlaceholder() {
         if (mPlaceholderInflater != null) {
             View v = getView();
             if (v != null) {
@@ -145,7 +162,25 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         }
     }
 
+    public void showErrorImage() {
+        if (mErrorImageInflater != null) {
+            View v = getView();
+            if (v != null) {
+                Drawable d = mErrorImageInflater.inflate(v.getContext());
+                onPlaceholderInflated(d);
+                Context context = v.getContext();
+                for (int i = 0, c = getDrawableCount(); i < c; ++i) {
+                    if (!isDrawableEnabled(i)) continue;
+                    effect().apply(context, this, d, true);
+                }
+            }
+        }
+    }
+
     protected void onPlaceholderInflated(Drawable placeholder) {
+    }
+
+    protected void onErrorImageInflated(Drawable errorImage) {
     }
 
     public void bind(Bitmap bitmap, boolean isAsync) {

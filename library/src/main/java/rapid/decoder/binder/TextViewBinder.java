@@ -17,6 +17,7 @@ public class TextViewBinder extends ViewBinder<TextView> {
         }
     };
 
+    @SuppressLint({"InlinedApi", "RtlHardcoded"})
     private static final int[] sGravityMask = new int[]{
             Gravity.LEFT,
             Gravity.TOP,
@@ -65,6 +66,7 @@ public class TextViewBinder extends ViewBinder<TextView> {
         return (mGravity & mask) == mask;
     }
 
+    @SuppressLint({"NewApi", "RtlHardcoded"})
     private Drawable getCompoundDrawable(int gravity) {
         TextView v = getView();
         if (v != null) {
@@ -89,7 +91,7 @@ public class TextViewBinder extends ViewBinder<TextView> {
         }
     }
 
-    @SuppressLint("NewApi")
+    @SuppressLint({"NewApi", "RtlHardcoded"})
     private void setCompoundDrawable(int gravity, Drawable d) {
         TextView v = getView();
         if (v != null) {
@@ -173,5 +175,10 @@ public class TextViewBinder extends ViewBinder<TextView> {
     @Override
     protected void onPlaceholderInflated(Drawable placeholder) {
         placeholder.setBounds(0, 0, mWidth, mHeight);
+    }
+
+    @Override
+    protected void onErrorImageInflated(Drawable errorImage) {
+        errorImage.setBounds(0, 0, mWidth, mHeight);
     }
 }

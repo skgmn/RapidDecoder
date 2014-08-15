@@ -36,7 +36,7 @@ public abstract class Decodable implements BitmapMeta {
             }
         });
         if (!task.isCancelled()) {
-            binder.displayPlaceholder();
+            binder.showPlaceholder();
         }
     }
 
@@ -65,7 +65,11 @@ public abstract class Decodable implements BitmapMeta {
         task.setOnBitmapDecodedListener(new OnBitmapDecodedListener() {
             @Override
             public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
-                binder.bind(bitmap, true);
+                if (bitmap == null) {
+                    binder.showErrorImage();
+                } else {
+                    binder.bind(bitmap, true);
+                }
             }
 
             @Override
