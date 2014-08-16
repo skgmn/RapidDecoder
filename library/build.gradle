@@ -11,6 +11,9 @@ android {
         versionCode 1
         versionName "0.1.0"
     }
+    lintOptions {
+        abortOnError false
+    }
     buildTypes {
         release {
             runProguard false
@@ -29,25 +32,58 @@ dependencies {
     provided 'com.android.support:support-v4:+'
 }
 
-assembleRelease.doLast {
-    def aarOutDir = new File('../repository/rapid/decoder')
-    aarOutDir.mkdirs();
-    copy {
-        from 'build/outputs/aar'
-        into  aarOutDir.toString()
-        include 'library.aar'
-        rename 'library\\.aar', 'library-' + android.defaultConfig.versionName + '.aar'
-    }
-    copy {
-        from '../png-decoder/build/outputs/aar'
-        into  aarOutDir.toString()
-        include 'png-decoder.aar'
-        rename 'png-decoder\\.aar', 'png-decoder-' + android.defaultConfig.versionName + '.aar'
-    }
-    copy {
-        from '../jpeg-decoder/build/outputs/aar'
-        into  aarOutDir.toString()
-        include 'jpeg-decoder.aar'
-        rename 'jpeg-decoder\\.aar', 'jpeg-decoder-' + android.defaultConfig.versionName + '.aar'
-    }
-}
+apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
+
+//// Create local repository
+//
+//def repoRoot = new File('../repository')
+//
+//def generateArtifact(name) {
+//    def packageName = android.defaultConfig.applicationId
+//    def path = repoRoot
+//    packageName.split('.')
+//}
+//
+//assembleRelease.doLast {
+//    def ver = android.defaultConfig.versionName
+//    def packageName = android.defaultConfig.applicationId
+//
+//    def artifactName = 'library'
+//    def outDir = new File(new File(repoRoot, artifactName), ver)
+//    def outFilename = artifactName + '-' + ver + '.aar'
+//    outDir.mkdirs();
+//    copy {
+//        from 'build/outputs/aar'
+//        into  outDir.toString()
+//        include 'library.aar'
+//        rename 'library\\.aar', outFilename
+//    }
+//    ant.checksum file: new File(outDir, outFilename).toString()
+//    pom {
+//        project {
+//            groupId packageName
+//            artifactId 'library'
+//            version ver
+//
+//            licenses {
+//                license {
+//                    name 'The Apache Software License, Version 2.0'
+//                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+//                    distribution 'repo'
+//                }
+//            }
+//        }
+//    }.writeTo(new File(outDir, 'library-' + ver + '.pom').toString())
+////    copy {
+////        from '../png-decoder/build/outputs/aar'
+////        into  aarOutDir.toString()
+////        include 'png-decoder.aar'
+////        rename 'png-decoder\\.aar', 'png-decoder-' + android.defaultConfig.versionName + '.aar'
+////    }
+////    copy {
+////        from '../jpeg-decoder/build/outputs/aar'
+////        into  aarOutDir.toString()
+////        include 'jpeg-decoder.aar'
+////        rename 'jpeg-decoder\\.aar', 'jpeg-decoder-' + android.defaultConfig.versionName + '.aar'
+////    }
+//}
