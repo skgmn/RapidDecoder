@@ -9,7 +9,7 @@ android {
         minSdkVersion 8
         targetSdkVersion 20
         versionCode 1
-        versionName "0.1"
+        versionName "0.1.0"
     }
     buildTypes {
         release {
@@ -27,4 +27,27 @@ dependencies {
     compile 'com.android.support:support-annotations:+'
     //noinspection GradleDynamicVersion
     provided 'com.android.support:support-v4:+'
+}
+
+assembleRelease.doLast {
+    def aarOutDir = new File('../repository/rapid/decoder')
+    aarOutDir.mkdirs();
+    copy {
+        from 'build/outputs/aar'
+        into  aarOutDir.toString()
+        include 'library.aar'
+        rename 'library\\.aar', 'library-' + android.defaultConfig.versionName + '.aar'
+    }
+    copy {
+        from '../png-decoder/build/outputs/aar'
+        into  aarOutDir.toString()
+        include 'png-decoder.aar'
+        rename 'png-decoder\\.aar', 'png-decoder-' + android.defaultConfig.versionName + '.aar'
+    }
+    copy {
+        from '../jpeg-decoder/build/outputs/aar'
+        into  aarOutDir.toString()
+        include 'jpeg-decoder.aar'
+        rename 'jpeg-decoder\\.aar', 'jpeg-decoder-' + android.defaultConfig.versionName + '.aar'
+    }
 }
