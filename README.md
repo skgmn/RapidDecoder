@@ -25,8 +25,8 @@ dependencies {
 
 **jpeg-decoder** and **png-decoder** are optional. Refer to [asdf](#basic-decoding).
 
-Getting started
-===============
+Basic decoding
+==============
 
 To decode a bitmap from resource:
 
@@ -72,6 +72,9 @@ Bitmap bitmap = BitmapDecoder
         })
         .decode();
 ```
+
+Advanced decoding
+=================
 
 Scaling
 -------
@@ -163,11 +166,18 @@ Bitmap bitmap = BitmapDecoder.from("http://somewhere.com/image.jpeg")
 
 In this case you **MUST NOT** recycle the given bitmap.
 
-
 Framing
 =======
 
-You can apply ScaleType 
+You can apply [ScaleType](http://developer.android.com/reference/android/widget/ImageView.ScaleType.html) to make a decoded bitmap fit into certain size.
+
+```java
+Bitmap bitmap = BitmapDecoder.from("content://authority/path")
+        .frame(frameWidth, frameHeight, ImageView.ScaleType.CENTER_CROP)
+        .decode();
+```
+
+When the image needs to be cropped, it uses region() internally so that only required area is decoded. In this reason, it takes less memory and less time than performing it by hand.
 
 Concept
 -------
