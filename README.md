@@ -54,7 +54,7 @@ Bitmap bitmap = BitmapDecoder.from("content://app/user/0/profile").decode();
 
 // Decodes bitmap from other app's resource
 Bitmap bitmap = BitmapDecoder.from("android.resource://com.app/drawable/ic_launcher")
-        .decode();
+                             .decode();
 
 // Decodes bitmap from stream
 InputStream is;
@@ -73,42 +73,37 @@ Bitmap bitmap = BitmapDecoder
         .decode();
 ```
 
+Scaling
+-------
 
-Decoding bitmap scaled
-----------------------
+All of the scaling operations automatically decode bounds of bitmaps and calculate [inSampleSize](http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inSampleSize), so you don't need to consider about them at all.
 
 ```java
-int width = 400;
-int height = 300;
-
+// Scaling to 400x300
 Bitmap bitmap = BitmapDecoder.from(getResouces(), R.drawable.image)
-                             .scale(width, height)
+                             .scale(400, 300)
                              .decode();
-```
 
-**BitmapDecoder** calculates the size of the image to be decoded and automatically fills in [inSampleSize](http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inSampleSize) parameter internally. You don't need to be concerend about it.
-
-Decoding bitmap scaled by ratio
--------------------------------
-
-```java
-Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.image)
+// Scaling by 50%
+Bitmap bitmap = BitmapDecoder.from("/sdcard/image.png")
                              .scaleBy(0.5)
                              .decode();
+
 ```
 
-Decoding regionally
--------------------
+Regional decoding
+-----------------
+
+Only partial area of bitmap can be decoded.
+
 
 ```java
-int left = 10;
-int top = 20;
-int right = 30;
-int bottom = 40;
-
-Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.image)
-                             .region(left, top, right, bottom)
+// Decodes the area (100, 200)-(300, 400) of the bitmap scaling it by 50%.
+Bitmap bitmap = BitmapDecoder.from("/sdcard/image.jpeg")
+                             .region(100, 200, 300, 400)
+                             .scaleBy(0.5)
                              .decode();
+
 ```
 
 Decoding bitmap as mutable
