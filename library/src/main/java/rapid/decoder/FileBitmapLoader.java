@@ -18,7 +18,7 @@ class FileBitmapLoader extends BitmapLoader {
 		if (pathName == null) {
 			throw new NullPointerException();
 		}
-        id(pathName);
+        mId = pathName;
 	}
 	
 	protected FileBitmapLoader(FileBitmapLoader other) {
@@ -27,13 +27,13 @@ class FileBitmapLoader extends BitmapLoader {
 
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeFile((String) id(), opts);
+		return BitmapFactory.decodeFile((String) mId, opts);
 	}
 
     @Override
 	protected InputStream getInputStream() {
 		try {
-			return new FileInputStream((String) id());
+			return new FileInputStream((String) mId);
 		} catch (FileNotFoundException e) {
 			return null;
 		}
@@ -43,7 +43,7 @@ class FileBitmapLoader extends BitmapLoader {
 	@Override
 	protected BitmapRegionDecoder createBitmapRegionDecoder() {
 		try {
-			return BitmapRegionDecoder.newInstance((String) id(), false);
+			return BitmapRegionDecoder.newInstance((String) mId, false);
 		} catch (IOException e) {
 			return null;
 		}

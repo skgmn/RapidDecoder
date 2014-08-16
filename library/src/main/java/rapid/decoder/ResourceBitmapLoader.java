@@ -19,7 +19,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 
 	public ResourceBitmapLoader(Resources res, int id) {
 		this.res = res;
-        id(id);
+        mId = id;
 	}
 	
 	protected ResourceBitmapLoader(ResourceBitmapLoader other) {
@@ -30,12 +30,12 @@ class ResourceBitmapLoader extends BitmapLoader {
 
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeResource(res, (Integer) id(), opts);
+		return BitmapFactory.decodeResource(res, (Integer) mId, opts);
 	}
 	
 	@Override
 	protected InputStream getInputStream() {
-		return res.openRawResource((Integer) id());
+		return res.openRawResource((Integer) mId);
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
@@ -74,7 +74,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ res.hashCode() ^ id().hashCode();
+		return super.hashCode() ^ res.hashCode() ^ mId.hashCode();
 	}
 	
 	@Override
@@ -83,6 +83,6 @@ class ResourceBitmapLoader extends BitmapLoader {
 		if (!(o instanceof ResourceBitmapLoader) || !super.equals(o)) return false;
 		
 		final ResourceBitmapLoader d = (ResourceBitmapLoader) o;
-		return res.equals(d.res) && id().equals(d.id());
+		return res.equals(d.res) && mId.equals(d.mId);
 	}
 }

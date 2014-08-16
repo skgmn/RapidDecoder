@@ -11,6 +11,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -32,7 +33,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected boolean mIsMutable;
     private boolean mScaleFilter = true;
     private boolean mUseBuiltInDecoder = false;
-    private Object mId;
+    Object mId;
     boolean mIsFromDiskCache;
     protected CacheSource mCacheSource;
 
@@ -446,10 +447,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 requestsEquals(d);
     }
 
-    public BitmapDecoder id(Object id) {
-        if (id == null) {
-            throw new NullPointerException("id");
-        }
+    BitmapDecoder id(Object id) {
         if (mId != null) {
             throw new IllegalStateException("id can be set only once.");
         }
@@ -458,8 +456,12 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return this;
     }
 
-    public Object id() {
-        return mId;
+    public BitmapDecoder id(@NonNull Uri uri) {
+        return id((Object) uri);
+    }
+
+    public BitmapDecoder id(@NonNull String uri) {
+        return id(Uri.parse(uri));
     }
 
     @Override
