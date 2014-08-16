@@ -335,7 +335,9 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public void cancel() {
-        mOptions.requestCancelDecode();
+        if (!BackgroundTaskManager.cancelStrong(this)) {
+            mOptions.requestCancelDecode();
+        }
     }
 
     @Override

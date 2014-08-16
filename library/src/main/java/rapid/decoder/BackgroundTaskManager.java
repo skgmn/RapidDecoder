@@ -14,46 +14,57 @@ import java.util.WeakHashMap;
 class BackgroundTaskManager {
     private static Boolean sHasSupportLibraryV4;
 
-    private static WeakHashMap<Object, BackgroundTask> sWeakJobs;
-    private static HashMap<Object, BackgroundTask> sStrongJobs;
+    private static WeakHashMap<Object, BackgroundTask> sWeakTasks;
+    private static HashMap<Object, BackgroundTask> sStrongTasks;
 
     @NonNull
     public static BackgroundTask register(@NonNull Object key) {
         BackgroundTask task;
         if (shouldBeWeak(key)) {
             task = new BackgroundTask(new WeakReference<Object>(key));
-            if (sWeakJobs == null) {
-                sWeakJobs = new WeakHashMap<Object, BackgroundTask>();
+            if (sWeakTasks == null) {
+                sWeakTasks = new WeakHashMap<Object, BackgroundTask>();
             } else {
-                cancelRecord(sWeakJobs, key);
+                cancelRecord(sWeakTasks, key);
             }
-            sWeakJobs.put(key, task);
+            sWeakTasks.put(key, task);
         } else {
             task = new BackgroundTask(key);
-            if (sStrongJobs == null) {
-                sStrongJobs = new HashMap<Object, BackgroundTask>();
+            if (sStrongTasks == null) {
+                sStrongTasks = new HashMap<Object, BackgroundTask>();
             } else {
-                cancelRecord(sStrongJobs, key);
+                cancelRecord(sStrongTasks, key);
             }
-            sStrongJobs.put(key, task);
+            sStrongTasks.put(key, task);
         }
         return task;
     }
 
     public static BackgroundTask removeWeak(Object key) {
         if (key == null) return null;
-        if (sWeakJobs != null) {
-            return sWeakJobs.remove(key);
+        if (sWeakTasks != null) {
+            return sWeakTasks.remove(key);
         }
         return null;
     }
 
     public static BackgroundTask removeStrong(Object key) {
         if (key == null) return null;
-        if (sStrongJobs != null) {
-            return sStrongJobs.remove(key);
+        if (sStrongTasks != null) {
+            return sStrongTasks.remove(key);
         }
         return null;
+    }
+
+    public static boolean cancelStrong(Object key) {
+        if (sStrongTasks == null) return false;
+        BackgroundTask task = sStrongTasks.remove(key);
+        if (task != null) {
+            task.cancel();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private static void cancelRecord(Map<Object, BackgroundTask> map, Object key) {
@@ -83,7 +94,7 @@ class BackgroundTaskManager {
     }
 
     public static boolean hasAnyTasks() {
-        return sWeakJobs != null && !sWeakJobs.isEmpty() ||
-                sStrongJobs != null && !sStrongJobs.isEmpty();
+        return sWeakTasks != null && !sWeakTasks.isEmpty() ||
+                sStrongTasks != null && !sStrongTasks.isEmpty();
     }
 }
