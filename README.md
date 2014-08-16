@@ -177,60 +177,10 @@ Bitmap bitmap = BitmapDecoder.from("content://authority/path")
         .decode();
 ```
 
-When the image needs to be cropped, it uses region() internally so that only required area is decoded. In this reason, it takes less memory and less time than performing it by hand.
+When the image needs to be cropped, it uses region() internally so that only required area can be decoded. In this reason, it takes less memory and less time than implementing it only in APIs provided by Android.
 
-Concept
--------
+You can also provide your own custom framing method by extending FramedDecoder and FramingMethod. But note that it's not documened yet.
 
-Source image <br/>
-<img src="https://raw.github.com/nirvanfallacy/AndroidGraphicsUtility/master/Sample/IntegratedSample/res/drawable-nodpi/amanda.jpg" width="150" height="200" />
+Caching
+=======
 
-Framed images <br/>
-![](https://raw.github.com/nirvanfallacy/AndroidGraphicsUtility/master/Image/Framing.png)
-
-Usage
------
-
-```java
-import agu.scaling.BitmapFrameBuilder;
-import agu.scaling.FrameAlignment;
-
-BitmapDecoder source = BitmapDecoder.from(getResources(), R.drawable.amanda);
-int frameWidth = 200;
-int frameHeight = 200;
-
-Drawable background = getResources.getDrawable(R.drawable.background);
-
-Bitmap bitmap = new BitmapFrameBuilder(source, frameWidth, frameHeight)
-                        .align(FrameAlignment.LEFT_OR_TOP)
-                        .background(background)
-                        .fitIn();
-                        
-Bitmap bitmap2 = new BitmapFrameBuilder(source, frameWidth, frameHeight)
-                        .align(FrameAlignment.CENTER)
-                        .cutOut();
-```
-
-Resource pool
-=============
-
-```java
-import static agu.caching.ResourcePool.*;
-
-Rect rect = RECT.obtain();
-try {
-    // Do something with the rect instance.
-} finally {
-    RECT.recycle(rect);
-}
-```
-
-Animating gif
-=============
-
-```xml
-<agu.widget.AnimatingGifView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:src="@+id/gif_file" />
-```
