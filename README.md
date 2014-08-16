@@ -94,7 +94,7 @@ Bitmap bitmap = BitmapDecoder.from("/sdcard/image.png")
 Regional decoding
 -----------------
 
-Only partial area of bitmap can be decoded.
+Only partial area of bitmap can be decoded. (Supports down to Froyo)
 
 
 ```java
@@ -106,17 +106,68 @@ Bitmap bitmap = BitmapDecoder.from("/sdcard/image.jpeg")
 
 ```
 
-Decoding bitmap as mutable
---------------------------
+Mutable decoding
+----------------
+
+You can directly modify decoded bitmap if it was decoded as mutable. This also supports down to Froyo.
 
 ```java
+Bitmap bitmap2 = something;
 Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.image)
                              .mutable()
                              .decode();
+Canvas canvas = new Canvas(bitmap);
+canvas.draw(bitmap2, 0, 0, null):
 ```
+
+Direct drawing
+--------------
+
+It is possible to draw bitmap directly to canvas from BitmapDecoder. It's generally faster than drawing bitmap after full decoding.
+
+```java
+Bitmap bitmap = Bitmap.createBitmap(width, height, Config.RGB_565);
+Canvas canvas = new Canvas(bitmap);
+BitmapDecoder.from("/image.png").scaleBy(0.2, 0.5).draw(canvas, x, y);
+```
+
+Post processing
+---------------
+
+You can hook decoded bitmap and replace it to something you want.
+
+```java
+// Make rounded image
+Bitmap bitmap = BitmapDecoder.from("http://somewhere.com/image.jpeg")
+        .postProcessor(new BitmapPostProcessor() {
+                @Override
+                public Bitmap process(Bitmap bitmap) {
+                    Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(),
+                        Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmap2);
+                    
+                    Paint paint = new Paint();
+                    paint.setColor(0xffffffff);
+                    RectF area = new RectF(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
+                    canvas.drawRoundRect(area, 10, 10, paint);
+                    
+                    paint.reset();
+                    paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                    canvas.drawBitmap(bitmap, 0, 0, paint);
+                    
+                    return bitmap2;
+                }
+        })
+        .decode();
+```
+
+In this case you **MUST NOT** recycle the given bitmap.
+
 
 Framing
 =======
+
+You can apply ScaleType 
 
 Concept
 -------
