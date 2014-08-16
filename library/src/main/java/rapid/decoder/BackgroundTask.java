@@ -37,7 +37,7 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         }
 
         Bitmap bitmap = d.decode();
-        if (isCancelled()) return null;
+        if (bitmap == null || isCancelled()) return null;
 
         CacheSource cacheSource = d.cacheSource();
         return new Object[] { bitmap, cacheSource };
@@ -54,8 +54,12 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
 
     @Override
     protected void onPostExecute(Object[] result) {
-        if (removeKey() && result != null) {
-            mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
+        if (removeKey()) {
+            if (result == null) {
+                mListener.onBitmapDecoded(null, null);
+            } else {
+                mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
+            }
         } else {
             mListener.onCancel();
         }

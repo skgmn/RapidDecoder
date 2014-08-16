@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -19,13 +18,17 @@ import rapid.decoder.frame.ScaleTypeFraming;
 
 public abstract class Decodable implements BitmapMeta {
     public interface OnBitmapDecodedListener {
-        void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource);
+        void onBitmapDecoded(@Nullable Bitmap bitmap, @Nullable CacheSource cacheSource);
         void onCancel();
     }
 
     private boolean mIsMemoryCacheEnabled = true;
 
     public void into(final ViewBinder binder) {
+        into(binder, null);
+    }
+
+    public void into(final ViewBinder binder, final OnBitmapDecodedListener listener) {
         View v = binder.getView();
         if (v == null) return;
 
@@ -34,7 +37,7 @@ public abstract class Decodable implements BitmapMeta {
             @Override
             public void onReady(View v, boolean async) {
                 if (task.isCancelled()) return;
-                loadBitmapWhenReady(task, binder, async);
+                loadBitmapWhenReady(task, binder, async, listener);
             }
         });
         if (!task.isCancelled()) {
@@ -42,7 +45,8 @@ public abstract class Decodable implements BitmapMeta {
         }
     }
 
-    void loadBitmapWhenReady(BackgroundTask task, final ViewBinder binder, boolean async) {
+    void loadBitmapWhenReady(BackgroundTask task, final ViewBinder binder, boolean async,
+                             final OnBitmapDecodedListener listener) {
         ViewFrameBuilder frameBuilder;
         FramingMethod framing = binder.framing();
         if (framing == null) {
@@ -67,17 +71,26 @@ public abstract class Decodable implements BitmapMeta {
         task.setDecodable(this);
         task.setOnBitmapDecodedListener(new OnBitmapDecodedListener() {
             @Override
-            public void onBitmapDecoded(@Nullable Bitmap bitmap, @NonNull CacheSource cacheSource) {
+            public void onBitmapDecoded(@Nullable Bitmap bitmap, @Nullable CacheSource cacheSource) {
                 if (bitmap == null) {
                     binder.showErrorImage();
+                    if (listener != null) {
+                        listener.onBitmapDecoded(null, null);
+                    }
                 } else {
                     binder.bind(bitmap, true);
+                    if (listener != null) {
+                        listener.onBitmapDecoded(bitmap, cacheSource);
+                    }
                 }
             }
 
             @Override
             public void onCancel() {
                 binder.recycle();
+                if (listener != null) {
+                    listener.onCancel();
+                }
             }
         });
         task.setFrameBuilder(frameBuilder);
@@ -89,10 +102,14 @@ public abstract class Decodable implements BitmapMeta {
     }
 
     public void into(View v) {
+        into(v, null);
+    }
+
+    public void into(View v, OnBitmapDecodedListener listener) {
         if (v instanceof ImageView) {
-            into(ImageViewBinder.obtain((ImageView) v));
+            into(ImageViewBinder.obtain((ImageView) v), listener);
         } else {
-            into(ViewBackgroundBinder.obtain(v));
+            into(ViewBackgroundBinder.obtain(v), listener);
         }
     }
 
