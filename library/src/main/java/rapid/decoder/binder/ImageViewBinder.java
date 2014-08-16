@@ -1,9 +1,12 @@
 package rapid.decoder.binder;
 
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.widget.ImageView;
 
 import rapid.decoder.cache.ResourcePool;
+import rapid.decoder.frame.FramingMethod;
+import rapid.decoder.frame.ScaleTypeFraming;
 
 public class ImageViewBinder extends ViewBinder<ImageView> {
     private static final ResourcePool<ImageViewBinder> POOL = new Pool<ImageViewBinder>() {
@@ -49,10 +52,14 @@ public class ImageViewBinder extends ViewBinder<ImageView> {
     }
 
     @Override
-    public void postDelayed(Runnable r, int delay) {
-        ImageView v = getView();
-        if (v != null) {
-            v.postDelayed(r, delay);
+    public FramingMethod framing() {
+        FramingMethod framing = super.framing();
+        if (framing == null) {
+            ImageView v = getView();
+            if (v != null) {
+                return new ScaleTypeFraming(v.getScaleType());
+            }
         }
+        return framing;
     }
 }

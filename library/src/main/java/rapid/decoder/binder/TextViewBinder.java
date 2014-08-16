@@ -145,14 +145,6 @@ public class TextViewBinder extends ViewBinder<TextView> {
     }
 
     @Override
-    public void postDelayed(Runnable r, int delay) {
-        TextView v = getView();
-        if (v != null) {
-            v.postDelayed(r, delay);
-        }
-    }
-
-    @Override
     public int getLayoutWidth() {
         return mWidth;
     }

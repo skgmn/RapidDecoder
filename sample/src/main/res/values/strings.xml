@@ -16,5 +16,7 @@
     <string name="center_inside">CenterInside</string>
     <string name="drawer_open">Open drawer</string>
     <string name="drawer_close">Close drawer</string>
+    <string name="wrap_content_sample_fixed_height">Fixed height and wrapped width</string>
+    <string name="wrap_content_sample_fixed_width">Fixed width and wrapped height</string>
 
 </resources>

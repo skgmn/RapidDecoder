@@ -64,13 +64,6 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         }
     }
 
-    public void postDelayed(Runnable r, int delay) {
-        View v = getView();
-        if (v != null) {
-            v.postDelayed(r, delay);
-        }
-    }
-
     public ViewBinder<T> scaleType(final ImageView.ScaleType scaleType) {
         return framing(new ScaleTypeFraming(scaleType));
     }
@@ -111,6 +104,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return this;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public ViewBinder<T> errorImage(DrawableInflater inflater) {
         mErrorImageInflater = inflater;
         return this;
@@ -149,31 +143,35 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     }
 
     public void showPlaceholder() {
-        if (mPlaceholderInflater != null) {
-            View v = getView();
-            if (v != null) {
-                Drawable placeholder = mPlaceholderInflater.inflate(v.getContext());
-                onPlaceholderInflated(placeholder);
-                for (int i = 0, c = getDrawableCount(); i < c; ++i) {
-                    if (!isDrawableEnabled(i)) continue;
-                    setDrawable(i, placeholder);
-                }
-            }
+        if (mPlaceholderInflater == null) return;
+
+        View v = getView();
+        if (v == null) return;
+
+        Drawable placeholder = mPlaceholderInflater.inflate(v.getContext());
+        if (placeholder == null) return;
+
+        onPlaceholderInflated(placeholder);
+        for (int i = 0, c = getDrawableCount(); i < c; ++i) {
+            if (!isDrawableEnabled(i)) continue;
+            setDrawable(i, placeholder);
         }
     }
 
     public void showErrorImage() {
-        if (mErrorImageInflater != null) {
-            View v = getView();
-            if (v != null) {
-                Drawable d = mErrorImageInflater.inflate(v.getContext());
-                onPlaceholderInflated(d);
-                Context context = v.getContext();
-                for (int i = 0, c = getDrawableCount(); i < c; ++i) {
-                    if (!isDrawableEnabled(i)) continue;
-                    effect().apply(context, this, d, true);
-                }
-            }
+        if (mErrorImageInflater == null) return;
+
+        View v = getView();
+        if (v == null) return;
+
+        Drawable d = mErrorImageInflater.inflate(v.getContext());
+        if (d == null) return;
+
+        onErrorImageInflated(d);
+        Context context = v.getContext();
+        for (int i = 0, c = getDrawableCount(); i < c; ++i) {
+            if (!isDrawableEnabled(i)) continue;
+            effect().apply(context, this, d, true);
         }
     }
 

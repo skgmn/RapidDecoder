@@ -8,6 +8,7 @@
         <item>FramedDecoder sample</item>
         <item>Gallery sample</item>
         <item>Contacts sample</item>
+        <item>Wrap content sample</item>
     </string-array>
     
 </resources>

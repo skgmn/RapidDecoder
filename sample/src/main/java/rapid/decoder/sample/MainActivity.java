@@ -100,6 +100,9 @@ public class MainActivity extends ActionBarActivity {
             case 5:
                 fragment = new ContactsFragment();
                 break;
+            case 6:
+                fragment = new WrapContentFragment();
+                break;
             default:
                 return;
         }

@@ -481,10 +481,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     protected ViewFrameBuilder setupFrameBuilder(ViewBinder<?> binder, FramingMethod framing) {
-        if (mId != null) {
-            return new ViewFrameBuilder(this, binder, framing);
-        } else {
-            return null;
-        }
+        return new ViewFrameBuilder(this, binder, framing);
     }
 }

@@ -88,20 +88,22 @@ class ViewFrameBuilder {
                 case AUTOSIZE_WIDTH:
                     frameHeight = mMinHeight;
                     frameWidth = AspectRatioCalculator.getWidth(width, height, frameHeight);
+                    frameWidth = Math.max(mMinWidth, Math.min(frameWidth, mMaxWidth));
                     break;
 
                 case AUTOSIZE_HEIGHT:
                     frameWidth = mMinWidth;
                     frameHeight = AspectRatioCalculator.getHeight(width, height, frameWidth);
+                    frameHeight = Math.max(mMinHeight, Math.min(frameHeight, mMaxHeight));
                     break;
 
                 case AUTOSIZE_BOTH:
-                    frameWidth = width;
-                    frameHeight = height;
+                    frameWidth = Math.max(mMinWidth, Math.min(width, mMaxWidth));
+                    frameHeight = Math.max(mMinHeight, Math.min(height, mMaxHeight));
 
-                    for (int j = Math.min(width, mMaxWidth); j > 0; --j) {
+                    for (int j = Math.min(width, mMaxWidth); j >= mMinWidth; --j) {
                         int i = AspectRatioCalculator.getHeight(width, height, j);
-                        if (i >= mMinHeight && j <= mMaxHeight) {
+                        if (i >= mMinHeight && i <= mMaxHeight) {
                             frameWidth = j;
                             frameHeight = i;
                             break;

@@ -6,6 +6,8 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 public class TransitionDrawable extends Drawable {
     private static final int TRANSITION_NONE = 0;
@@ -17,12 +19,12 @@ public class TransitionDrawable extends Drawable {
 
     private Drawable mDrawableBack;
     private Drawable mDrawableFront;
-    private long mStartTimeMillis;
+    private long mStartTimeMillis = -1;
     private int mDuration;
     private int mAlpha = 0xff;
     private Runnable mEndAction;
 
-    public TransitionDrawable(Drawable back, Drawable front) {
+    public TransitionDrawable(@Nullable Drawable back, @NonNull Drawable front) {
         mDrawableBack = back;
         mDrawableFront = front;
     }
@@ -39,7 +41,9 @@ public class TransitionDrawable extends Drawable {
         int alpha = 0;
 
         if (mTransitionState == TRANSITION_NONE) {
-            mDrawableBack.draw(canvas);
+            if (mDrawableBack != null) {
+                mDrawableBack.draw(canvas);
+            }
             return;
         } else if (mTransitionState == TRANSITION_FINISHED) {
             mDrawableFront.draw(canvas);
@@ -62,15 +66,17 @@ public class TransitionDrawable extends Drawable {
             mTransitionState = TRANSITION_FINISHED;
             mDrawableFront.draw(canvas);
             if (mEndAction != null) {
-                scheduleSelf(mEndAction, SystemClock.uptimeMillis());
+                scheduleSelf(mEndAction, 0);
             }
             return;
         }
 
         final Drawable d = mDrawableBack;
-        d.setAlpha(0xff - alpha);
-        d.draw(canvas);
-        d.setAlpha(mAlpha);
+        if (d != null) {
+            d.setAlpha(0xff - alpha);
+            d.draw(canvas);
+            d.setAlpha(mAlpha);
+        }
 
         if (alpha != 0) {
             final Drawable front = mDrawableFront;
@@ -86,7 +92,9 @@ public class TransitionDrawable extends Drawable {
     public void setAlpha(int alpha) {
         if (mAlpha != alpha) {
             mAlpha = alpha;
-            mDrawableBack.setAlpha(alpha);
+            if (mDrawableBack != null) {
+                mDrawableBack.setAlpha(alpha);
+            }
             mDrawableFront.setAlpha(alpha);
             invalidateSelf();
         }
@@ -108,7 +116,27 @@ public class TransitionDrawable extends Drawable {
     @Override
     protected void onBoundsChange(Rect bounds) {
         super.onBoundsChange(bounds);
-        mDrawableBack.setBounds(bounds);
+        if (mDrawableBack != null) {
+            mDrawableBack.setBounds(bounds);
+        }
         mDrawableFront.setBounds(bounds);
+    }
+
+    @Override
+    public int getIntrinsicWidth() {
+        if (mDrawableBack == null) {
+            return mDrawableFront.getIntrinsicWidth();
+        } else {
+            return Math.max(mDrawableBack.getIntrinsicWidth(), mDrawableFront.getIntrinsicWidth());
+        }
+    }
+
+    @Override
+    public int getIntrinsicHeight() {
+        if (mDrawableBack == null) {
+            return mDrawableFront.getIntrinsicHeight();
+        } else {
+            return Math.max(mDrawableBack.getIntrinsicHeight(), mDrawableFront.getIntrinsicHeight());
+        }
     }
 }

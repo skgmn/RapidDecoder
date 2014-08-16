@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -14,6 +15,7 @@ import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.cache.CacheSource;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;
+import rapid.decoder.frame.ScaleTypeFraming;
 
 public abstract class Decodable implements BitmapMeta {
     public interface OnBitmapDecodedListener {
@@ -41,21 +43,22 @@ public abstract class Decodable implements BitmapMeta {
     }
 
     void loadBitmapWhenReady(BackgroundTask task, final ViewBinder binder, boolean async) {
-        ViewFrameBuilder frameBuilder = null;
+        ViewFrameBuilder frameBuilder;
         FramingMethod framing = binder.framing();
-        if (framing != null) {
-            frameBuilder = setupFrameBuilder(binder, framing);
-            if (frameBuilder != null) {
-                frameBuilder.prepareFraming();
-                if (!async) {
-                    FramedDecoder framedDecoder = frameBuilder.getFramedDecoder(true);
-                    if (framedDecoder != null) {
-                        Bitmap bitmap = framedDecoder.getCachedBitmap();
-                        if (bitmap != null) {
-                            task.cancel();
-                            binder.bind(bitmap, false);
-                            return;
-                        }
+        if (framing == null) {
+            framing = new ScaleTypeFraming(ImageView.ScaleType.CENTER_CROP);
+        }
+        frameBuilder = setupFrameBuilder(binder, framing);
+        if (frameBuilder != null) {
+            frameBuilder.prepareFraming();
+            if (!async) {
+                FramedDecoder framedDecoder = frameBuilder.getFramedDecoder(true);
+                if (framedDecoder != null) {
+                    Bitmap bitmap = framedDecoder.getCachedBitmap();
+                    if (bitmap != null) {
+                        task.cancel();
+                        binder.bind(bitmap, false);
+                        return;
                     }
                 }
             }

@@ -1,9 +1,7 @@
 package rapid.decoder.binder;
 
 import android.content.Context;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 
 import rapid.decoder.TransitionDrawable;
 
@@ -16,8 +14,6 @@ public abstract class Effect {
         Drawable getDrawable(int index);
 
         void setDrawable(int index, Drawable d);
-
-        void postDelayed(Runnable r, int delay);
 
         void dispose();
     }
@@ -45,14 +41,11 @@ public abstract class Effect {
         public void apply(Context context, final EffectTarget target, final Drawable newDrawable,
                           boolean isAsync) {
             int count = target.getDrawableCount();
+            int duration = context.getResources().getInteger(DURATION_ID);
             for (int i = 0; i < count; ++i) {
                 if (!target.isDrawableEnabled(i)) continue;
                 Drawable oldDrawable = target.getDrawable(i);
-                if (oldDrawable == null) {
-                    oldDrawable = new ColorDrawable(0);
-                }
                 final TransitionDrawable d = new TransitionDrawable(oldDrawable, newDrawable);
-                int duration = context.getResources().getInteger(DURATION_ID);
                 d.startTransition(duration);
                 target.setDrawable(i, d);
                 final int finalI = i;
