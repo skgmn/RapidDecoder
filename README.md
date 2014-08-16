@@ -1,27 +1,78 @@
-Features
-========
-- Facilitated bitmap decoding
-- Simplified bitmap scaling
-- Decoding bitmap regionally with built-in decoder (Supports down to Froyo)
-- Decoding bitmap as mutable with built-in decoder (Supports down to Froyo)
-- Scaling bitmap corresponds to the frame with specific size
-- Resource pool to avoid frequent garbage collection, which provides caching [Paint](http://developer.android.com/reference/android/graphics/Paint.html), [Rect](http://developer.android.com/reference/android/graphics/Rect.html), [RectF](http://developer.android.com/reference/android/graphics/RectF.html), [Point](http://developer.android.com/reference/android/graphics/Point.html), [Matrix](http://developer.android.com/reference/android/graphics/Matrix.html), and [BitmapFactory.Options](http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html)
-- Drawable and view which can render animating gif
-
 Installation
 ============
-1. Download the [zip file](https://github.com/nirvanfallacy/AndroidGraphicsUtility/blob/master/Binary/agu.zip?raw=true).
-2. Extract all the files and folders into your project's **libs/** folder.
 
-Basic decoding
-==============
+Add this repository to _build.gradle_ in your project's root.
+
+```
+allprojects {
+    repositories {
+        maven {
+            url 'https://github.com/nirvanfallacy/RapidDecoder/raw/master/repository'
+        }
+    }
+}
+```
+
+Add dependencies to _build.gradle_ in your module.
+
+```
+dependencies {
+    compile 'rapid.decoder:library:0.1.0'
+    compile 'rapid.decoder:jpeg-decoder:0.1.0'
+    compile 'rapid.decoder:png-decoder:0.1.0'
+}
+```
+
+**jpeg-decoder** and **png-decoder** are optional. Refer to [asdf](#basic-decoding).
+
+Getting started
+===============
+
+To decode a bitmap from resource:
 
 ```java
-import agu.bitmap.BitmapDecoder;
+import rapid.decoder.BitmapDecoder;
 
-Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.image)
-                             .decode();
+Bitmap bitmap = BitmapDecoder.from(getResources(), R.drawable.image).decode();
 ```
+
+Bitmap can also be decoded from other sources like this:
+
+```java
+// Decodes bitmap from byte array
+byte[] bytes;
+Bitmap bitmap = BitmapDecoder.from(bytes).decode();
+
+// Decodes bitmap from file
+Bitmap bitmap = BitmapDecoder.from("/sdcard/image.png").decode();
+
+// Decodes bitmap from network
+Bitmap bitmap = BitmapDecoder.from("http://server.com/image.jpeg").decode();
+
+// Decodes bitmap from content provider
+Bitmap bitmap = BitmapDecoder.from("content://app/user/0/profile").decode();
+
+// Decodes bitmap from other app's resource
+Bitmap bitmap = BitmapDecoder.from("android.resource://com.app/drawable/ic_launcher")
+        .decode();
+
+// Decodes bitmap from stream
+InputStream is;
+Bitmap bitmap = BitmapDecoder.from(is).decode();
+
+// Decodes from database
+final SQLiteDatabase db;
+Bitmap bitmap = BitmapDecoder
+        .from(new Queriable() {
+            @Override
+            public Cursor query() {
+                return db.query("table", new String[]{"column"}, "id=1", null, null,
+                        null, null);
+            }
+        })
+        .decode();
+```
+
 
 Decoding bitmap scaled
 ----------------------
