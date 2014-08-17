@@ -214,3 +214,36 @@ Bitmap bitmap = BitmapDecoder.from("/image.jpeg")
 Bitmap bitmap = BitmapDecoder.from("http://web.com/image.png", false)
         .decode();
 ```
+
+Loading bitmap into view
+========================
+
+Bitmaps can be loaded directly into view using into().
+
+```java
+BitmapDecoder.from("/image.png").into(view);
+```
+
+Decoding is done in background and it will be displayed fading in on the view. Bitmap will be loaded as an image if the view is ImageView, or it will be loaded as a background.
+
+View binders
+------------
+
+If you want to set more parameters to customize behaviours, you should use view binders. Above code is exactly equivalent to below:
+
+```java
+import rapid.decoder.binder.ImageViewBinder;
+
+// If view is an ImageView
+BitmapDecoder.from("/image.png").into(ImageViewBinder.obtain(view));
+
+// else
+BitmapDecoder.from("/image.png").into(ViewBackgroundBinder.obtain(view));
+```
+
+You can also load bitmaps into TextView's compound drawable by using TextViewBinder.
+
+```java
+BitmapDecoder.from("/image.png").into(
+        TextViewBinder.obtain(textView, Gravity.LEFT, width, height));
+```
