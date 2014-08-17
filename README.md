@@ -297,3 +297,11 @@ BitmapDecoder.from("/image.png").into(
             }
         });
 ```
+
+It can also be framed with ScaleType. In this case, frame size is determined by the given view's layout.
+
+```java
+ViewBinder<ImageView> binder = ImageViewBinder.obtain(imageView)
+        .scaleType(ImageView.ScaleType.CENTER_CROP);
+BitmapDecoder.from("/image.png").into(binder);
+```
