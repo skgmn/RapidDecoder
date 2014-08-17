@@ -665,10 +665,14 @@ public abstract class BitmapDecoder extends Decodable {
 
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapLoader from(String urlOrPath) {
+        return from(urlOrPath, true);
+    }
+
+    public static BitmapLoader from(String urlOrPath, boolean useCache) {
         if (urlOrPath.contains("://")) {
-            return from(Uri.parse(urlOrPath));
+            return from(Uri.parse(urlOrPath), useCache);
         } else {
-            return new FileBitmapLoader(urlOrPath);
+            return (BitmapLoader) new FileBitmapLoader(urlOrPath).useMemoryCache(useCache);
         }
     }
 
