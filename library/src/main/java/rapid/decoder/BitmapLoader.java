@@ -464,6 +464,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return id(Uri.parse(uri));
     }
 
+    @ForInternalUse
+    public Object a() {
+        return mId;
+    }
+
     @Override
     public BitmapDecoder filterBitmap(boolean filter) {
         mScaleFilter = filter;
