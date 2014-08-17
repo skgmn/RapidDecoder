@@ -199,3 +199,18 @@ BitmapDecoder.initDiskCache(context);
 // Allocate 32MB for disk cache
 Bitmapdecoder.initDiskCache(context, 32 * 1024 * 1024);
 ```
+
+That's it. There's nothing to set anymore. Subsequent decoding will automatically uses caches.
+
+It's also able to make caches disabled temporarily.
+
+```java
+// Do not use memory cache this time
+Bitmap bitmap = BitmapDecoder.from("/image.jpeg")
+        .useMemoryCache(false)
+        .decode();
+        
+// Do not use disk cache this time
+Bitmap bitmap = BitmapDecoder.from("http://web.com/image.png", false)
+        .decode();
+```
