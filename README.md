@@ -268,9 +268,6 @@ BitmapDecoder.from("/image.png").into(
         TextViewBinder.obtain(textView, Gravity.LEFT, width, height));
 ```
 
-Changing effect
----------------
-
 Bitmap will be fade in on loaded by default. That behaviour can be changed the way like this:
 
 ```java
@@ -280,10 +277,16 @@ BitmapDecoder.from("/image.png").into(
 
 There are currently 3 effects provided: NO_EFFECT, FADE_IN, FADE_IN_IF_SYNC. All of these are defined in Effect class. Also you can create your own effect by inheriting Effect class. It's not yet documented but it's easy to understand source code.
 
-Custom drawable
----------------
+Placeholder and error image can be set as following:
 
-You may want to create a drawable which displays decoded bitmap other than BitmapDrawable. In this case, you can achieve it by overriding createDrawable() from ViewBinder.
+```java
+ViewBinder<ImageView> binder = ImageViewBinder.obtain(imageView)
+        .placeholder(R.drawable.placeholder)
+        .errorImage(R.drawable.error);
+BitmapDecoder.from("/image.png").into(binder);
+```
+
+By the way, you may want to create a drawable which displays decoded bitmap other than BitmapDrawable. In this case, you can achieve it by overriding createDrawable() from ViewBinder.
 
 ```java
 BitmapDecoder.from("/image.png").into(
