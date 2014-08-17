@@ -625,6 +625,14 @@ public abstract class BitmapDecoder extends Decodable {
         return BackgroundTaskManager.hasAnyTasks();
     }
 
+    public static boolean cancel(Object key) {
+        if (BackgroundTaskManager.shouldBeWeak(key)) {
+            return BackgroundTaskManager.cancelWeak(key);
+        } else {
+            return BackgroundTaskManager.cancelStrong(key);
+        }
+    }
+
     //
     // Frame
     //
