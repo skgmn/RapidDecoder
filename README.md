@@ -23,7 +23,7 @@ dependencies {
 }
 ```
 
-**jpeg-decoder** and **png-decoder** are optional. Refer to [asdf](#basic-decoding).
+**jpeg-decoder** and **png-decoder** are optional. Refer to [Builtin decoder](#builtin-decoder).
 
 Basic decoding
 ==============
@@ -169,10 +169,10 @@ In this case you **MUST NOT** recycle the given bitmap.
 Builtin decoder
 ---------------
 
-If requsted operations can not be done just by Android APIs, RapidDecoder uses builtin decoder to accomplish them. Currently there are 2 builtin decoders which support PNG and JPEG respectively.
+If requsted operations can not be done just by Android APIs, RapidDecoder uses builtin decoder to accomplish them. Currently there are 2 builtin decoders.
 
-* PNG decoder - [LibPNG](http://www.libpng.org/pub/png/libpng.html)
-* JPEG decoder - Modified version of [jpgd](http://code.google.com/p/jpgd/)
+* png-decoder - [LibPNG](http://www.libpng.org/pub/png/libpng.html)
+* jpeg-decoder - Modified version of [jpgd](http://code.google.com/p/jpgd/)
 
 You have to add appropriate dependencies to get benefits of backward compatibility. See [Installation](#installation).
 
@@ -279,3 +279,18 @@ BitmapDecoder.from("/image.png").into(
 ```
 
 There are currently 3 effects provided: NO_EFFECT, FADE_IN, FADE_IN_IF_SYNC. All of these are defined in Effect class. Also you can create your own effect by inheriting Effect class. It's not yet documented but it's easy to understand source code.
+
+Custom drawable
+---------------
+
+You may want to create a drawable which displays decoded bitmap other than BitmapDrawable. In this case, you can achieve it by overriding createDrawable() from ViewBinder.
+
+```java
+BitmapDecoder.from("/image.png").into(
+        new ImageViewBinder(imageView) {
+            @Override
+            public Drawable createDrawable(Context context, Bitmap bitmap) {
+                return new YourOwnDrawable(context, bitmap);
+            }
+        });
+```
