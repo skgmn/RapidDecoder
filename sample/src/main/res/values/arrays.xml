@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="drawer_menu_items">
+        <item>Scaled decoding sample</item>
+        <item>Regional decoding sample</item>
+        <item>Mutable decoding sample</item>
+        <item>FramedDecoder sample</item>
+        <item>Gallery sample</item>
+        <item>Contacts sample</item>
+        <item>Wrap content sample</item>
+    </string-array>
+    
+</resources>

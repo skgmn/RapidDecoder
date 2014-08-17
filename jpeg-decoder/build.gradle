@@ -1,0 +1,24 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 20
+    buildToolsVersion "20.0.0"
+
+    sourceSets.main {
+        jni.srcDirs += ['../builtin-decoder-common']
+    }
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi", "armeabi-v7a", "x86"
+            moduleName "jpeg-decoder"
+            ldLibs "jnigraphics"
+            cFlags "-ffunction-sections -fdata-sections -fvisibility=hidden -Wl,--gc-sections " +
+                    "-Ibuiltin-decoder-common"
+        }
+    }
+}
+
+dependencies {
+}
+
+apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'

@@ -1,0 +1,1 @@
+include ':library', ':sample', ':test', ':png-decoder', ':jpeg-decoder'
