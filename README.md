@@ -166,6 +166,23 @@ Bitmap bitmap = BitmapDecoder.from("http://somewhere.com/image.jpeg")
 
 In this case you **MUST NOT** recycle the given bitmap.
 
+Builtin decoder
+---------------
+
+If requsted operations can not be done just by Android APIs, RapidDecoder uses builtin decoder to accomplish them. Currently there are 2 builtin decoders which support PNG and JPEG respectively.
+
+* PNG decoder - [LibPNG](http://www.libpng.org/pub/png/libpng.html)
+* JPEG decoder - Modified version of [jpgd](http://code.google.com/p/jpgd/)
+
+You have to add appropriate dependencies to get benefits of backward compatibility. See [Installation](#installation).
+
+Then when will it be needed? It will require builtin decoder if one of the following operations are requsted.
+
+* Regional decoding on Android < 2.3.3
+* Regional & mutable decoding
+* Mutable decoding on Android < 3.0
+* Scaling more than 50% without scale filter
+
 Framing
 =======
 
@@ -233,12 +250,15 @@ If you want to set more parameters to customize behaviours, you should use view 
 
 ```java
 import rapid.decoder.binder.ImageViewBinder;
+import rapid.decoder.binder.ViewBackgroundBinder;
 
-// If view is an ImageView
-BitmapDecoder.from("/image.png").into(ImageViewBinder.obtain(view));
-
-// else
-BitmapDecoder.from("/image.png").into(ViewBackgroundBinder.obtain(view));
+if (view instanceof ImageView) {
+    BitmapDecoder.from("/image.png").into(
+            ImageViewBinder.obtain((ImageView) view));
+} else {
+    BitmapDecoder.from("/image.png").into(
+            ViewBackgroundBinder.obtain(view));
+}
 ```
 
 You can also load bitmaps into TextView's compound drawable by using TextViewBinder.
@@ -247,3 +267,15 @@ You can also load bitmaps into TextView's compound drawable by using TextViewBin
 BitmapDecoder.from("/image.png").into(
         TextViewBinder.obtain(textView, Gravity.LEFT, width, height));
 ```
+
+Changing effect
+---------------
+
+Bitmap will be fade in on loaded by default. That behaviour can be changed the way like this:
+
+```java
+BitmapDecoder.from("/image.png").into(
+        ImageViewBinder.obtain(imageView).effect(Effect.NO_EFFECT));
+```
+
+There are currently 3 effects provided: NO_EFFECT, FADE_IN, FADE_IN_IF_SYNC. All of these are defined in Effect class. Also you can create your own effect by inheriting Effect class. It's not yet documented but it's easy to understand source code.
