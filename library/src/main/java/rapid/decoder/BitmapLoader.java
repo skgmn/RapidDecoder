@@ -249,7 +249,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         final boolean useBuiltInDecoder =
                 this.mUseBuiltInDecoder ||
                         (regional && Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1) ||
-                        (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
+                            (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
                         (mOptions.inSampleSize > 1 && !mScaleFilter);
 
         if (useBuiltInDecoder || regional) {
