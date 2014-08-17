@@ -55,7 +55,7 @@ public abstract class BitmapDecoder extends Decodable {
     // Cache
     //
 
-    private static final long DEFAULT_CACHE_SIZE = 4 * 1024 * 1024; // 4MB
+    private static final long DEFAULT_CACHE_SIZE = 8 * 1024 * 1024;
 
     protected static final Object sMemCacheLock = new Object();
     protected static BitmapLruCache sMemCache;
@@ -620,6 +620,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean isLoadingInBackground() {
         return BackgroundTaskManager.hasAnyTasks();
     }
