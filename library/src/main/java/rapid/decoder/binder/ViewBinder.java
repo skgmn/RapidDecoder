@@ -56,7 +56,8 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return mView.get();
     }
 
-    public Drawable createDrawable(Context context, @Nullable Bitmap bitmap) {
+    @Nullable
+    public Drawable createDrawable(@NonNull Context context, @Nullable Bitmap bitmap) {
         if (bitmap == null) {
             return null;
         } else {

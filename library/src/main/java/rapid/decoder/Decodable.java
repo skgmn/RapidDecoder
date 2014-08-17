@@ -114,7 +114,11 @@ public abstract class Decodable implements BitmapMeta {
     }
 
     public void decode(@NonNull OnBitmapDecodedListener listener) {
-        BackgroundTask task = BackgroundTaskManager.register(this);
+        decode(this, listener);
+    }
+
+    public void decode(@NonNull Object key, @NonNull OnBitmapDecodedListener listener) {
+        BackgroundTask task = BackgroundTaskManager.register(key);
         task.setDecodable(this);
         task.setOnBitmapDecodedListener(listener);
         task.start();

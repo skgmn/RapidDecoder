@@ -53,7 +53,7 @@ public class BitmapLruCache extends LruCache<BitmapLoader, Bitmap> {
     @Override
     public Bitmap put(BitmapLoader key, Bitmap value) {
         Bitmap bitmap = super.put(key, value);
-        Object id = key.id();
+        Object id = key.a();
         if (id != null) {
             CachedMeta info = mMetaCache.get(id);
             if (info == null) {

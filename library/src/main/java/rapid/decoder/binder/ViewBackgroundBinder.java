@@ -21,6 +21,14 @@ public class ViewBackgroundBinder extends ViewBinder<View> {
         return binder;
     }
 
+    private ViewBackgroundBinder() {
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public ViewBackgroundBinder(View v) {
+        init(v);
+    }
+
     @Override
     public void recycle() {
         POOL.recycle(this);

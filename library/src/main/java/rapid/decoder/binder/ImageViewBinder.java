@@ -1,7 +1,6 @@
 package rapid.decoder.binder;
 
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.widget.ImageView;
 
 import rapid.decoder.cache.ResourcePool;
@@ -20,6 +19,14 @@ public class ImageViewBinder extends ViewBinder<ImageView> {
         ImageViewBinder binder = POOL.obtainNotReset();
         binder.init(v);
         return binder;
+    }
+
+    private ImageViewBinder() {
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public ImageViewBinder(ImageView v) {
+        init(v);
     }
 
     @Override

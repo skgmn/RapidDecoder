@@ -25,7 +25,7 @@ class BackgroundTaskManager {
             if (sWeakTasks == null) {
                 sWeakTasks = new WeakHashMap<Object, BackgroundTask>();
             } else {
-                cancelRecord(sWeakTasks, key);
+                cancelTask(sWeakTasks, key);
             }
             sWeakTasks.put(key, task);
         } else {
@@ -33,7 +33,7 @@ class BackgroundTaskManager {
             if (sStrongTasks == null) {
                 sStrongTasks = new HashMap<Object, BackgroundTask>();
             } else {
-                cancelRecord(sStrongTasks, key);
+                cancelTask(sStrongTasks, key);
             }
             sStrongTasks.put(key, task);
         }
@@ -57,20 +57,20 @@ class BackgroundTaskManager {
     }
 
     public static boolean cancelStrong(Object key) {
-        if (sStrongTasks == null) return false;
-        BackgroundTask task = sStrongTasks.remove(key);
+        return sStrongTasks != null && cancelTask(sStrongTasks, key);
+    }
+
+    public static boolean cancelWeak(Object key) {
+        return sWeakTasks != null && cancelTask(sWeakTasks, key);
+    }
+
+    private static boolean cancelTask(Map<Object, BackgroundTask> map, Object key) {
+        BackgroundTask task = map.remove(key);
         if (task != null) {
             task.cancel();
             return true;
         } else {
             return false;
-        }
-    }
-
-    private static void cancelRecord(Map<Object, BackgroundTask> map, Object key) {
-        BackgroundTask task = map.remove(key);
-        if (task != null) {
-            task.cancel();
         }
     }
 

@@ -55,7 +55,7 @@ public abstract class BitmapDecoder extends Decodable {
     // Cache
     //
 
-    private static final long DEFAULT_CACHE_SIZE = 4 * 1024 * 1024; // 4MB
+    private static final long DEFAULT_CACHE_SIZE = 8 * 1024 * 1024;
 
     protected static final Object sMemCacheLock = new Object();
     protected static BitmapLruCache sMemCache;
@@ -620,8 +620,17 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public static boolean isLoadingInBackground() {
         return BackgroundTaskManager.hasAnyTasks();
+    }
+
+    public static boolean cancel(Object key) {
+        if (BackgroundTaskManager.shouldBeWeak(key)) {
+            return BackgroundTaskManager.cancelWeak(key);
+        } else {
+            return BackgroundTaskManager.cancelStrong(key);
+        }
     }
 
     //
@@ -656,10 +665,14 @@ public abstract class BitmapDecoder extends Decodable {
 
     @SuppressWarnings("UnusedDeclaration")
     public static BitmapLoader from(String urlOrPath) {
+        return from(urlOrPath, true);
+    }
+
+    public static BitmapLoader from(String urlOrPath, boolean useCache) {
         if (urlOrPath.contains("://")) {
-            return from(Uri.parse(urlOrPath));
+            return from(Uri.parse(urlOrPath), useCache);
         } else {
-            return new FileBitmapLoader(urlOrPath);
+            return (BitmapLoader) new FileBitmapLoader(urlOrPath).useMemoryCache(useCache);
         }
     }
 

@@ -31,6 +31,14 @@ public class TextViewBinder extends ViewBinder<TextView> {
     private int mWidth;
     private int mHeight;
 
+    private TextViewBinder() {
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public TextViewBinder(TextView v, int gravity, int width, int height) {
+        init(v, gravity, width, height);
+    }
+
     public static TextViewBinder obtain(TextView v, int gravity, int width, int height) {
         TextViewBinder binder = POOL.obtainNotReset();
         binder.init(v, gravity, width, height);
