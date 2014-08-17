@@ -145,8 +145,8 @@ Bitmap bitmap = BitmapDecoder.from("http://somewhere.com/image.jpeg")
         .postProcessor(new BitmapPostProcessor() {
                 @Override
                 public Bitmap process(Bitmap bitmap) {
-                    Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(),
-                        Bitmap.Config.ARGB_8888);
+                    Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(),
+                        bitmap.getHeight(), Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bitmap2);
                     
                     Paint paint = new Paint();
@@ -184,3 +184,18 @@ You can also provide your own custom framing method by extending FramedDecoder a
 Caching
 =======
 
+BitmapDecoder provides memory cache and disk cache. Disk cache only works for network images. Memory cache can be used for decoding bitmaps from network, file, and Android resource by default.
+
+It is needed to initialize caches before any decoding operation.
+
+```java
+// Allocate 2MB for memory cache
+BitmapDecoder.initMemoryCache(2 * 1024 * 1024);
+// Allocate proper amount proportional to screen size for memory cache
+BitmapDecoder.initMemoryCache(context);
+
+// Allocate default 8MB for disk cache
+BitmapDecoder.initDiskCache(context);
+// Allocate 32MB for disk cache
+Bitmapdecoder.initDiskCache(context, 32 * 1024 * 1024);
+```
