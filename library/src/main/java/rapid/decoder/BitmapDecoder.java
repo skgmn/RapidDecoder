@@ -418,7 +418,7 @@ public abstract class BitmapDecoder extends Decodable {
 
     @NonNull
     @Override
-    public abstract BitmapDecoder mutate();
+    public abstract BitmapDecoder fork();
 
     protected int regionWidth() {
         if (mRegion != null) {

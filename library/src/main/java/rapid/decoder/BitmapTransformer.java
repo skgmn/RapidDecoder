@@ -151,7 +151,7 @@ class BitmapTransformer extends BitmapDecoder {
 
     @NonNull
     @Override
-    public BitmapTransformer mutate() {
+    public BitmapTransformer fork() {
         // TODO: Implement this
         return this;
     }

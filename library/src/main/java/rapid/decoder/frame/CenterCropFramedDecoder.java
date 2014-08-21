@@ -49,7 +49,7 @@ class CenterCropFramedDecoder extends FramedDecoder {
     }
 
     @Override
-    public FramedDecoder mutate() {
+    public FramedDecoder fork() {
         return new CenterCropFramedDecoder(this);
     }
 }

@@ -19,7 +19,6 @@ class StreamBitmapLoader extends BitmapLoader {
 	public StreamBitmapLoader(InputStream is) {
 		if (is instanceof TwoPhaseBufferedInputStream &&
 				!((TwoPhaseBufferedInputStream) is).isSecondPhase()) {
-					
 			mIn = (TwoPhaseBufferedInputStream) is;
 		} else {
 			mIn = new TwoPhaseBufferedInputStream(is);
@@ -28,8 +27,8 @@ class StreamBitmapLoader extends BitmapLoader {
 	
 	protected StreamBitmapLoader(StreamBitmapLoader other) {
 		super(other);
-		
-		InputStream is = mIn.getStream();
+
+		InputStream is = other.mIn.getStream();
 		if (is instanceof LazyInputStream) {
 			is = new LazyInputStream(((LazyInputStream) is).getStreamOpener());
 		}
@@ -93,7 +92,7 @@ class StreamBitmapLoader extends BitmapLoader {
 
 	@NonNull
     @Override
-	public BitmapLoader mutate() {
+	public BitmapLoader fork() {
 		return new StreamBitmapLoader(this);
 	}
 }

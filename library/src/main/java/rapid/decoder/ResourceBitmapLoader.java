@@ -68,7 +68,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 
 	@NonNull
     @Override
-	public BitmapLoader mutate() {
+	public BitmapLoader fork() {
 		return new ResourceBitmapLoader(this);
 	}
 	
