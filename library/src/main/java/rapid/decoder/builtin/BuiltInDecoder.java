@@ -9,23 +9,17 @@ import android.os.Build;
 import java.io.IOException;
 import java.io.InputStream;
 
-import rapid.decoder.TwoPhaseBufferedInputStream;
+import rapid.decoder.TwiceReadableInputStream;
 
 public class BuiltInDecoder {
 	private static final String MESSAGE_INVALID_REGION = "rectangle is outside the image";
 	
-	private TwoPhaseBufferedInputStream in;
+	private TwiceReadableInputStream in;
 	private Rect region;
 	private boolean useFilter = true;
 
 	public BuiltInDecoder(InputStream in) {
-		if (in instanceof TwoPhaseBufferedInputStream &&
-				!((TwoPhaseBufferedInputStream) in).isSecondPhase()) {
-			
-			this.in = (TwoPhaseBufferedInputStream) in;
-		} else {
-			this.in = new TwoPhaseBufferedInputStream(in);
-		}
+        this.in = TwiceReadableInputStream.getInstanceFrom(in);
 	}
 
 	@SuppressWarnings("UnusedDeclaration")
@@ -86,7 +80,7 @@ public class BuiltInDecoder {
 			
 			if (opts.mCancel) return null;
 			
-			in.startSecondPhase();
+			in.startSecondRead();
 			
 			final int width = d.getWidth();
 			final int height = d.getHeight();
@@ -110,7 +104,7 @@ public class BuiltInDecoder {
 			
 			if (opts.mCancel) return null;
 			
-			in.startSecondPhase();
+			in.startSecondRead();
 			
 			final int width = d.getWidth();
 			final int height = d.getHeight();

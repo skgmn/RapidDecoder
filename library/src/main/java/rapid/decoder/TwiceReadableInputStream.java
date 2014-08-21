@@ -7,7 +7,7 @@ import java.io.InputStream;
 
 import rapid.decoder.cache.TransactionOutputStream;
 
-public class TwoPhaseBufferedInputStream extends InputStream {
+public class TwiceReadableInputStream extends InputStream {
 	private static final int INITIAL_BUFFER_CAPACITY = 1024;
 	
 	private InputStream mIn;
@@ -20,8 +20,18 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 	
 	private TransactionOutputStream mCacheOutputStream;
 	private boolean mTransactionSucceeded;
+
+    public static TwiceReadableInputStream getInstanceFrom(InputStream in) {
+        if (in instanceof TwiceReadableInputStream &&
+                !((TwiceReadableInputStream) in).isSecondReading()) {
+
+            return (TwiceReadableInputStream) in;
+        } else {
+            return new TwiceReadableInputStream(in);
+        }
+    }
 	
-	public TwoPhaseBufferedInputStream(InputStream in) {
+	public TwiceReadableInputStream(InputStream in) {
 		mIn = in;
 	}
 	
@@ -170,12 +180,12 @@ public class TwoPhaseBufferedInputStream extends InputStream {
 		mIn.close();
 	}
 	
-	public void startSecondPhase() {
+	public void startSecondRead() {
 		mBufferExpandable = false;
 		mSecondPhase = true;
 	}
 	
-	public boolean isSecondPhase() {
+	public boolean isSecondReading() {
 		return mSecondPhase;
 	}
 	

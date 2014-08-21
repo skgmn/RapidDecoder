@@ -259,7 +259,11 @@ public abstract class BitmapDecoder extends Decodable {
      */
     public int width() {
         resolveRequests();
-        return (int) Math.ceil(regionWidth() * mRatioWidth);
+        if (mRegion != null) {
+            return (int) Math.round(regionWidth() * mRatioWidth);
+        } else {
+            return (int) Math.ceil(regionWidth() * mRatioWidth);
+        }
     }
 
     /**
@@ -267,7 +271,11 @@ public abstract class BitmapDecoder extends Decodable {
      */
     public int height() {
         resolveRequests();
-        return (int) Math.ceil(regionHeight() * mRatioHeight);
+        if (mRegion != null) {
+            return (int) Math.round(regionHeight() * mRatioHeight);
+        } else {
+            return (int) Math.ceil(regionHeight() * mRatioHeight);
+        }
     }
 
     /**
@@ -382,8 +390,7 @@ public abstract class BitmapDecoder extends Decodable {
     /**
      * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public BitmapDecoder region(Rect region) {
+    public BitmapDecoder region(@NonNull Rect region) {
         return region(region.left, region.top, region.right, region.bottom);
     }
 
@@ -395,7 +402,6 @@ public abstract class BitmapDecoder extends Decodable {
     /**
      * Set preferred bitmap configuration.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public abstract BitmapDecoder config(Config config);
 
     @SuppressWarnings("UnusedDeclaration")
@@ -411,7 +417,6 @@ public abstract class BitmapDecoder extends Decodable {
      */
     public abstract BitmapDecoder useBuiltInDecoder(boolean force);
 
-    @SuppressWarnings("UnusedDeclaration")
     public abstract BitmapDecoder filterBitmap(boolean filter);
 
     public abstract Bitmap decode();

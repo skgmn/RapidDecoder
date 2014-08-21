@@ -172,7 +172,7 @@ class BitmapTransformer extends BitmapDecoder {
     }
 
     @Override
-    public BitmapDecoder region(Rect region) {
+    public BitmapDecoder region(@NonNull Rect region) {
         if (region == null) {
             if (this.region != null) {
                 RECT.recycle(this.region);

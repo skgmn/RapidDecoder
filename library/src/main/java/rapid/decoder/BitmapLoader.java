@@ -174,11 +174,24 @@ public abstract class BitmapLoader extends BitmapDecoder {
             bitmap.setDensity(Bitmap.DENSITY_NONE);
             Bitmap bitmap2;
 
-            Matrix m = MATRIX.obtain();
-            m.setScale(mAdjustedWidthRatio, mAdjustedHeightRatio);
-            bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
-                    mScaleFilter);
-            MATRIX.recycle(m);
+            if (!mIsMutable) {
+                Matrix m = MATRIX.obtain();
+                m.setScale(mAdjustedWidthRatio, mAdjustedHeightRatio);
+                bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
+                        mScaleFilter);
+                MATRIX.recycle(m);
+            } else {
+                int newWidth = (int) Math.ceil(bitmap.getWidth() * mAdjustedWidthRatio);
+                int newHeight = (int) Math.ceil(bitmap.getHeight() * mAdjustedHeightRatio);
+                bitmap2 = Bitmap.createBitmap(newWidth, newHeight, bitmap.getConfig());
+                Canvas canvas = CANVAS.obtain(bitmap2);
+                Paint paint = PAINT.obtain(mScaleFilter ? Paint.FILTER_BITMAP_FLAG : 0);
+                Rect rectDest = RECT.obtain(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
+                canvas.drawBitmap(bitmap, null, rectDest, paint);
+                RECT.recycle(rectDest);
+                PAINT.recycle(paint);
+                CANVAS.recycle(canvas);
+            }
 
             if (bitmap != bitmap2) {
                 bitmap.recycle();
@@ -249,7 +262,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         final boolean useBuiltInDecoder =
                 this.mUseBuiltInDecoder ||
                         (regional && Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1) ||
-                            (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
+                        (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
                         (mOptions.inSampleSize > 1 && !mScaleFilter);
 
         if (useBuiltInDecoder || regional) {
@@ -258,7 +271,16 @@ public abstract class BitmapLoader extends BitmapDecoder {
         onDecodingStarted(useBuiltInDecoder);
 
         if (useBuiltInDecoder) {
-            return decodeBuiltIn(mRegion);
+            InputStream in = getInputStream();
+            if (in == null) return null;
+
+            TwiceReadableInputStream in2 = TwiceReadableInputStream.getInstanceFrom(in);
+            try {
+                return decodeBuiltIn(in2);
+            } catch (UnsatisfiedLinkError ignored) {
+                in2.seekToBeginning();
+                return decodeInMemory(in2);
+            }
         } else {
             if (regional) {
                 return decodeRegional(mOptions, mRegion);
@@ -266,6 +288,20 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 return decode(mOptions);
             }
         }
+    }
+
+    private Bitmap decodeInMemory(TwiceReadableInputStream in) {
+        Bitmap bitmap = BitmapLoader.from(in).scaleBy(mRatioWidth, mRatioHeight).decode();
+        if (bitmap == null) return null;
+
+        BitmapDecoder decoder = BitmapLoader.from(bitmap);
+        if (mRegion != null) {
+            decoder = decoder.region(mRegion);
+        }
+        return decoder.config(mOptions.inPreferredConfig)
+                .filterBitmap(mScaleFilter)
+                .mutable(mIsMutable)
+                .decode();
     }
 
     @SuppressLint("NewApi")
@@ -318,14 +354,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return inSampleSize;
     }
 
-    protected Bitmap decodeBuiltIn(Rect region) {
-        final InputStream in = getInputStream();
-        if (in == null) return null;
-
+    protected Bitmap decodeBuiltIn(TwiceReadableInputStream in) {
         adjustDensityRatio(true);
 
         final BuiltInDecoder d = new BuiltInDecoder(in);
-        d.setRegion(region);
+        d.setRegion(mRegion);
         d.setUseFilter(mScaleFilter);
 
         final Bitmap bitmap = d.decode(mOptions);
