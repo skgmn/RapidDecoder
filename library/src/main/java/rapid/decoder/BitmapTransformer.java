@@ -3,7 +3,6 @@ package rapid.decoder;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -19,8 +18,8 @@ class BitmapTransformer extends BitmapDecoder {
     private Bitmap mBitmap;
     private boolean scaleFilter;
     private Rect region;
-    private boolean mutable = false;
-    private Config targetConfig;
+    private boolean mIsMutable = false;
+    private Config mTargetConfig;
 
     BitmapTransformer(Bitmap bitmap) {
         mBitmap = bitmap;
@@ -37,11 +36,11 @@ class BitmapTransformer extends BitmapDecoder {
     }
 
     private Bitmap redraw(Bitmap bitmap, Rect rectSrc, int targetWidth, int targetHeight) {
-        Config config = (targetConfig != null ? targetConfig : bitmap.getConfig());
+        Config config = (mTargetConfig != null ? mTargetConfig : bitmap.getConfig());
         Bitmap bitmap2 = Bitmap.createBitmap(targetWidth, targetHeight, config);
         Canvas cv = CANVAS.obtain(bitmap2);
 
-        Rect rectDest = RECT.obtain(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
+        Rect rectDest = RECT.obtain(0, 0, targetWidth, targetHeight);
         Paint paint = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
 
         cv.drawBitmap(bitmap, rectSrc, rectDest, paint);
@@ -53,62 +52,28 @@ class BitmapTransformer extends BitmapDecoder {
 
         CANVAS.recycle(cv);
 
-        return (mutable ? bitmap2 : Bitmap.createBitmap(bitmap2));
+        return bitmap2;
     }
 
     @Override
     public Bitmap decode() {
         resolveCrafts();
 
-        final boolean redraw = !((targetConfig == null || mBitmap.getConfig().equals
-                (targetConfig)) && !mutable);
         Bitmap bitmap;
-
         if (region != null) {
-            if (mRatioWidth == 1f && mRatioHeight == 1f) {
-                if (!redraw) {
-                    bitmap = Bitmap.createBitmap(mBitmap, region.left, region.top, region.width(),
-                            region.height());
-                } else {
-                    bitmap = redraw(mBitmap, region, region.width(), region.height());
-                }
-            } else {
-                if (!redraw) {
-                    Matrix m = MATRIX.obtain();
-                    m.setScale(mRatioWidth, mRatioHeight);
-
-                    bitmap = Bitmap.createBitmap(mBitmap,
-                            region.left, region.top,
-                            region.width(), region.height(),
-                            m, scaleFilter);
-
-                    MATRIX.recycle(m);
-                } else {
-                    bitmap = redraw(mBitmap, region,
-                            Math.round(mRatioWidth * region.width()),
-                            Math.round(mRatioHeight * region.height()));
-                }
-            }
+            bitmap = redraw(mBitmap, region,
+                    Math.round(mRatioWidth * region.width()),
+                    Math.round(mRatioHeight * region.height()));
         } else if (mRatioWidth != 1f || mRatioHeight != 1f) {
-            if (!redraw) {
-                Matrix m = MATRIX.obtain();
-                m.setScale(mRatioWidth, mRatioHeight);
-
-                bitmap = Bitmap.createBitmap(mBitmap,
-                        0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
-                        m, scaleFilter);
-
-                MATRIX.recycle(m);
-            } else {
-                bitmap = redraw(mBitmap, null,
-                        Math.round(mRatioWidth * mBitmap.getWidth()),
-                        Math.round(mRatioHeight * mBitmap.getHeight()));
-            }
+            bitmap = redraw(mBitmap, null,
+                    Math.round(mRatioWidth * mBitmap.getWidth()),
+                    Math.round(mRatioHeight * mBitmap.getHeight()));
         } else {
-            if (!redraw) {
-                bitmap = mBitmap;
-            } else {
+            if (mIsMutable && !mBitmap.isMutable() ||
+                    mTargetConfig != null && !mTargetConfig.equals(mBitmap.getConfig())) {
                 bitmap = redraw(mBitmap, null, mBitmap.getWidth(), mBitmap.getHeight());
+            } else {
+                bitmap = mBitmap;
             }
         }
 
@@ -126,7 +91,6 @@ class BitmapTransformer extends BitmapDecoder {
             region = RECT.obtainNotReset();
         }
         region.set(left, top, right, bottom);
-
         return this;
     }
 
@@ -179,13 +143,13 @@ class BitmapTransformer extends BitmapDecoder {
 
     @Override
     public BitmapDecoder config(Config config) {
-        targetConfig = config;
+        mTargetConfig = config;
         return this;
     }
 
     @Override
     public Config config() {
-        return targetConfig;
+        return mTargetConfig;
     }
 
     @Override
@@ -223,15 +187,15 @@ class BitmapTransformer extends BitmapDecoder {
 
     @Override
     public BitmapDecoder mutable(boolean mutable) {
-        this.mutable = mutable;
+        this.mIsMutable = mutable;
         return this;
     }
 
     @Override
     public int hashCode() {
         final int hashBitmap = mBitmap.hashCode();
-        final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
-        final int hashConfig = (targetConfig == null ? 0 : targetConfig.hashCode());
+        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
+        final int hashConfig = (mTargetConfig == null ? 0 : mTargetConfig.hashCode());
 
         return hashBitmap ^ hashOptions ^ hashConfig ^ craftsHash();
     }
@@ -244,9 +208,10 @@ class BitmapTransformer extends BitmapDecoder {
         final BitmapTransformer d = (BitmapTransformer) o;
         return mBitmap.equals(d.mBitmap) &&
                 (region == null ? d.region == null : region.equals(d.region)) &&
-                mutable == d.mutable &&
+                mIsMutable == d.mIsMutable &&
                 scaleFilter == d.scaleFilter &&
-                (targetConfig == null ? d.targetConfig == null : targetConfig.equals(d.targetConfig));
+                (mTargetConfig == null ? d.mTargetConfig == null : mTargetConfig.equals(d
+                        .mTargetConfig));
     }
 
     @Override
