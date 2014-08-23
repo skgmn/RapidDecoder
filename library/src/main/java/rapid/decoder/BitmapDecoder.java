@@ -35,6 +35,7 @@ import java.util.List;
 
 import rapid.decoder.cache.BitmapLruCache;
 import rapid.decoder.cache.DiskLruCache;
+import rapid.decoder.cache.ResourcePool;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
@@ -137,15 +138,24 @@ public abstract class BitmapDecoder extends Decodable {
     // Queries
     //
 
-    private static final int INITIAL_REQUEST_LIST_CAPACITY = 3;
+    private static final int INITIAL_CRAFTS_LIST_CAPACITY = 2;
 
-    protected static class ScaleTo {
+    private interface Recyclable {
+        void recycle();
+    }
+
+    protected static class ScaleTo implements Recyclable {
+        private static ResourcePool<ScaleTo> POOL = new ResourcePool<ScaleTo>() {
+            @Override
+            protected ScaleTo newInstance() {
+                return new ScaleTo();
+            }
+        };
+
         public float width;
         public float height;
 
-        public ScaleTo(float width, float height) {
-            this.width = width;
-            this.height = height;
+        ScaleTo() {
         }
 
         @Override
@@ -160,15 +170,32 @@ public abstract class BitmapDecoder extends Decodable {
             ScaleTo scaleTo = (ScaleTo) o;
             return width == scaleTo.width && height == scaleTo.height;
         }
+
+        public static ScaleTo obtain(float width, float height) {
+            ScaleTo scaleTo = POOL.obtainNotReset();
+            scaleTo.width = width;
+            scaleTo.height = height;
+            return scaleTo;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
+        }
     }
 
-    protected static class ScaleBy {
+    protected static class ScaleBy implements Recyclable {
+        private static ResourcePool<ScaleBy> POOL = new ResourcePool<ScaleBy>() {
+            @Override
+            protected ScaleBy newInstance() {
+                return new ScaleBy();
+            }
+        };
+
         public float width;
         public float height;
 
-        public ScaleBy(float width, float height) {
-            this.width = width;
-            this.height = height;
+        ScaleBy() {
         }
 
         @Override
@@ -183,19 +210,34 @@ public abstract class BitmapDecoder extends Decodable {
             ScaleBy scaleBy = (ScaleBy) o;
             return width == scaleBy.width && height == scaleBy.height;
         }
+
+        public static ScaleBy obtain(float width, float height) {
+            ScaleBy scaleBy = POOL.obtainNotReset();
+            scaleBy.width = width;
+            scaleBy.height = height;
+            return scaleBy;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
+        }
     }
 
-    protected static class Region {
+    protected static class Region implements Recyclable {
+        private static ResourcePool<Region> POOL = new ResourcePool<Region>() {
+            @Override
+            protected Region newInstance() {
+                return new Region();
+            }
+        };
+
         public int left;
         public int top;
         public int right;
         public int bottom;
 
-        public Region(int left, int top, int right, int bottom) {
-            this.left = left;
-            this.top = top;
-            this.right = right;
-            this.bottom = bottom;
+        Region() {
         }
 
         @Override
@@ -211,36 +253,53 @@ public abstract class BitmapDecoder extends Decodable {
             return left == region.left && top == region.top && right == region.right && bottom ==
                     region.bottom;
         }
+
+        public static Region obtain(int left, int top, int right, int bottom) {
+            Region region = POOL.obtainNotReset();
+            region.left = left;
+            region.top = top;
+            region.right = right;
+            region.bottom = bottom;
+            return region;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
+        }
     }
 
-    protected ArrayList<Object> mRequests;
-    private boolean requestsResolved = false;
+    protected ArrayList<Object> mCrafts;
+    private boolean mCraftsResolved = false;
 
     //
     // Fields
     //
-
+    
     protected float mRatioWidth = 1;
     protected float mRatioHeight = 1;
+    protected IntegerMaker mRatioIntegerMode;
     protected Rect mRegion;
     protected int mHashCode;
     private BitmapPostProcessor mPostProcessor;
+    private int mWidth;
+    private int mHeight;
 
     protected BitmapDecoder() {
     }
 
     protected BitmapDecoder(BitmapDecoder other) {
-        if (other.mRequests != null) {
+        if (other.mCrafts != null) {
             //noinspection unchecked
-            mRequests = (ArrayList<Object>) other.mRequests.clone();
+            mCrafts = (ArrayList<Object>) other.mCrafts.clone();
         }
     }
 
-    protected void addRequest(Object request) {
-        if (mRequests == null) {
-            mRequests = new ArrayList<Object>(INITIAL_REQUEST_LIST_CAPACITY);
+    protected void addCraft(Object craft) {
+        if (mCrafts == null) {
+            mCrafts = new ArrayList<Object>(INITIAL_CRAFTS_LIST_CAPACITY);
         }
-        mRequests.add(request);
+        mCrafts.add(craft);
         mHashCode = 0;
     }
 
@@ -258,16 +317,27 @@ public abstract class BitmapDecoder extends Decodable {
      * @return The estimated width of decoded image.
      */
     public int width() {
-        resolveRequests();
-        return (int) Math.ceil(regionWidth() * mRatioWidth);
+        if (mWidth != 0) {
+            return mWidth;
+        }
+        resolveCrafts();
+        return mWidth = mRatioIntegerMode.toInteger(regionWidth() * mRatioWidth);
     }
 
     /**
      * @return The estimated height of decoded image.
      */
     public int height() {
-        resolveRequests();
-        return (int) Math.ceil(regionHeight() * mRatioHeight);
+        if (mHeight != 0) {
+            return mHeight;
+        }
+        resolveCrafts();
+        return mHeight = mRatioIntegerMode.toInteger(regionHeight() * mRatioHeight);
+    }
+
+    private void invalidateCrafts() {
+        mCraftsResolved = false;
+        mWidth = mHeight = 0;
     }
 
     /**
@@ -292,22 +362,22 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException();
         }
 
-        requestsResolved = false;
+        invalidateCrafts();
 
-        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
-        if (lastRequest != null) {
-            if (lastRequest instanceof ScaleTo) {
-                ScaleTo scaleTo = (ScaleTo) lastRequest;
+        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
+        if (lastCraft != null) {
+            if (lastCraft instanceof ScaleTo) {
+                ScaleTo scaleTo = (ScaleTo) lastCraft;
                 scaleTo.width = width;
                 scaleTo.height = height;
 
                 return this;
-            } else if (lastRequest instanceof ScaleBy) {
-                mRequests.remove(mRequests.size() - 1);
+            } else if (lastCraft instanceof ScaleBy) {
+                mCrafts.remove(mCrafts.size() - 1);
             }
         }
 
-        addRequest(new ScaleTo(width, height));
+        addCraft(ScaleTo.obtain(width, height));
         return this;
     }
 
@@ -326,18 +396,18 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
         }
 
-        requestsResolved = false;
+        invalidateCrafts();
 
-        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
-        if (lastRequest != null) {
-            if (lastRequest instanceof ScaleTo) {
-                ScaleTo scaleTo = (ScaleTo) lastRequest;
+        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
+        if (lastCraft != null) {
+            if (lastCraft instanceof ScaleTo) {
+                ScaleTo scaleTo = (ScaleTo) lastCraft;
                 scaleTo.width = scaleTo.width * widthRatio;
                 scaleTo.height = scaleTo.height * heightRatio;
 
                 return this;
-            } else if (lastRequest instanceof ScaleBy) {
-                ScaleBy scaleBy = (ScaleBy) lastRequest;
+            } else if (lastCraft instanceof ScaleBy) {
+                ScaleBy scaleBy = (ScaleBy) lastCraft;
                 scaleBy.width *= widthRatio;
                 scaleBy.height *= heightRatio;
 
@@ -345,7 +415,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addRequest(new ScaleBy(widthRatio, heightRatio));
+        addCraft(ScaleBy.obtain(widthRatio, heightRatio));
         return this;
     }
 
@@ -360,12 +430,12 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException();
         }
 
-        requestsResolved = false;
+        invalidateCrafts();
 
-        Object lastRequest = (mRequests == null ? null : mRequests.get(mRequests.size() - 1));
-        if (lastRequest != null) {
-            if (lastRequest instanceof Region) {
-                Region region = (Region) lastRequest;
+        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
+        if (lastCraft != null) {
+            if (lastCraft instanceof Region) {
+                Region region = (Region) lastCraft;
                 region.left += left;
                 region.top += top;
                 region.right = region.left + (right - left);
@@ -375,15 +445,14 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addRequest(new Region(left, top, right, bottom));
+        addCraft(Region.obtain(left, top, right, bottom));
         return this;
     }
 
     /**
      * Equivalent to <code>region(region.left, region.top, region.right, region.bottom)</code>.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public BitmapDecoder region(Rect region) {
+    public BitmapDecoder region(@NonNull Rect region) {
         return region(region.left, region.top, region.right, region.bottom);
     }
 
@@ -395,7 +464,6 @@ public abstract class BitmapDecoder extends Decodable {
     /**
      * Set preferred bitmap configuration.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public abstract BitmapDecoder config(Config config);
 
     @SuppressWarnings("UnusedDeclaration")
@@ -411,14 +479,13 @@ public abstract class BitmapDecoder extends Decodable {
      */
     public abstract BitmapDecoder useBuiltInDecoder(boolean force);
 
-    @SuppressWarnings("UnusedDeclaration")
     public abstract BitmapDecoder filterBitmap(boolean filter);
 
     public abstract Bitmap decode();
 
     @NonNull
     @Override
-    public abstract BitmapDecoder mutate();
+    public abstract BitmapDecoder fork();
 
     protected int regionWidth() {
         if (mRegion != null) {
@@ -436,21 +503,22 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected void resolveRequests() {
-        if (requestsResolved) return;
+    protected void resolveCrafts() {
+        if (mCraftsResolved) return;
 
         final float densityRatio = densityRatio();
         mRatioWidth = mRatioHeight = densityRatio;
+        mRatioIntegerMode = IntegerMaker.CEIL;
 
         if (mRegion != null) {
             RECT.recycle(mRegion);
         }
         mRegion = null;
 
-        requestsResolved = true;
-        if (mRequests == null) return;
+        mCraftsResolved = true;
+        if (mCrafts == null) return;
 
-        for (Object r : mRequests) {
+        for (Object r : mCrafts) {
             if (r instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) r;
 
@@ -471,6 +539,7 @@ public abstract class BitmapDecoder extends Decodable {
 
                 mRatioWidth = targetWidth / w;
                 mRatioHeight = targetHeight / h;
+                mRatioIntegerMode = IntegerMaker.ROUND;
             } else if (r instanceof ScaleBy) {
                 ScaleBy scaleBy = (ScaleBy) r;
 
@@ -480,47 +549,34 @@ public abstract class BitmapDecoder extends Decodable {
                 Region rr = (Region) r;
 
                 if (mRegion == null) {
-                    final int left = Math.round(rr.left / mRatioWidth);
-                    final int top = Math.round(rr.top / mRatioHeight);
-                    final int right = Math.round(rr.right / mRatioWidth);
-                    final int bottom = Math.round(rr.bottom / mRatioHeight);
-
                     mRegion = RECT.obtainNotReset();
-
-                    // Check boundaries
-                    mRegion.left = Math.max(0, Math.min(left, sourceWidth()));
-                    mRegion.top = Math.max(0, Math.min(top, sourceHeight()));
-                    mRegion.right = Math.max(mRegion.left, Math.min(right, sourceWidth()));
-                    mRegion.bottom = Math.max(mRegion.top, Math.min(bottom, sourceHeight()));
+                    mRegion.left = Math.round(rr.left / mRatioWidth);
+                    mRegion.top = Math.round(rr.top / mRatioHeight);
+                    mRegion.right = Math.round(rr.right / mRatioWidth);
+                    mRegion.bottom = Math.round(rr.bottom / mRatioHeight);
                 } else {
-                    final int left = mRegion.left + Math.round(rr.left / mRatioWidth);
-                    final int top = mRegion.top + Math.round(rr.top / mRatioHeight);
-                    final int right = mRegion.left + Math.round((rr.right - rr.left) / mRatioWidth);
-                    final int bottom = mRegion.top + Math.round((rr.bottom - rr.top) /
-                            mRatioHeight);
-
-                    // Check boundaries
-                    mRegion.left = Math.max(0, Math.min(left, mRegion.right));
-                    mRegion.top = Math.max(0, Math.min(top, mRegion.bottom));
-                    mRegion.right = Math.max(mRegion.left, Math.min(right, mRegion.right));
-                    mRegion.bottom = Math.max(mRegion.top, Math.min(bottom, mRegion.bottom));
+                    mRegion.left = mRegion.left + Math.round(rr.left / mRatioWidth);
+                    mRegion.top = mRegion.top + Math.round(rr.top / mRatioHeight);
+                    mRegion.right = mRegion.left + Math.round((rr.right - rr.left) / mRatioWidth);
+                    mRegion.bottom = mRegion.top + Math.round((rr.bottom - rr.top) / mRatioHeight);
                 }
 
                 mRatioWidth = (float) (rr.right - rr.left) / mRegion.width();
                 mRatioHeight = (float) (rr.bottom - rr.top) / mRegion.height();
+                mRatioIntegerMode = IntegerMaker.ROUND;
             }
         }
     }
 
-    protected boolean requestsEquals(BitmapDecoder other) {
-        if (mRequests == null) {
-            return other.mRequests == null || other.mRequests.isEmpty();
+    protected boolean craftsEqual(BitmapDecoder other) {
+        if (mCrafts == null) {
+            return other.mCrafts == null || other.mCrafts.isEmpty();
         } else {
-            int otherSize = (other.mRequests == null ? 0 : other.mRequests.size());
-            if (mRequests.size() != otherSize) return false;
+            int otherSize = (other.mCrafts == null ? 0 : other.mCrafts.size());
+            if (mCrafts.size() != otherSize) return false;
 
-            Iterator<Object> it1 = mRequests.iterator();
-            Iterator<Object> it2 = other.mRequests.iterator();
+            Iterator<Object> it1 = mCrafts.iterator();
+            Iterator<Object> it2 = other.mCrafts.iterator();
 
             while (it1.hasNext()) {
                 if (!it2.hasNext() || !it1.next().equals(it2.next())) return false;
@@ -530,8 +586,8 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected int requestsHash() {
-        return (mRequests == null ? 0 : mRequests.hashCode());
+    protected int craftsHash() {
+        return (mCrafts == null ? 0 : mCrafts.hashCode());
     }
 
     /**
@@ -615,6 +671,15 @@ public abstract class BitmapDecoder extends Decodable {
     protected void finalize() throws Throwable {
         try {
             RECT.recycle(mRegion);
+            if (mCrafts != null) {
+                //noinspection ForLoopReplaceableByForEach
+                for (int i = 0, c = mCrafts.size(); i < c; ++i) {
+                    Object craft = mCrafts.get(i);
+                    if (craft instanceof Recyclable) {
+                        ((Recyclable) craft).recycle();
+                    }
+                }
+            }
         } finally {
             super.finalize();
         }

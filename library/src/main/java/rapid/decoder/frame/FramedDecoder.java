@@ -38,7 +38,7 @@ public abstract class FramedDecoder extends Decodable {
         return this;
     }
 
-    public abstract FramedDecoder mutate();
+    public abstract FramedDecoder fork();
 
     protected abstract void getBounds(BitmapMeta meta, int frameWidth, int frameHeight,
                                       @Nullable Rect outSrc, @Nullable Rect outDest);
@@ -50,7 +50,7 @@ public abstract class FramedDecoder extends Decodable {
         if (!(region.left == 0 && region.top == 0 && region.right == meta.width() && region
                 .bottom == meta.height())) {
 
-            decoder = decoder.mutate().region(region);
+            decoder = decoder.fork().region(region);
         }
         RECT.recycle(region);
         return decoder;

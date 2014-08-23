@@ -67,7 +67,7 @@ class FitGravityFramedDecoder extends FramedDecoder {
     }
 
     @Override
-    public FramedDecoder mutate() {
+    public FramedDecoder fork() {
         return new FitGravityFramedDecoder(this);
     }
 }

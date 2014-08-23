@@ -14,26 +14,25 @@ import java.io.InputStream;
 import rapid.decoder.cache.TransactionOutputStream;
 
 class StreamBitmapLoader extends BitmapLoader {
-	private TwoPhaseBufferedInputStream mIn;
+	private TwiceReadableInputStream mIn;
 	
 	public StreamBitmapLoader(InputStream is) {
-		if (is instanceof TwoPhaseBufferedInputStream &&
-				!((TwoPhaseBufferedInputStream) is).isSecondPhase()) {
-					
-			mIn = (TwoPhaseBufferedInputStream) is;
+		if (is instanceof TwiceReadableInputStream &&
+				!((TwiceReadableInputStream) is).isSecondReading()) {
+			mIn = (TwiceReadableInputStream) is;
 		} else {
-			mIn = new TwoPhaseBufferedInputStream(is);
+			mIn = new TwiceReadableInputStream(is);
 		}
 	}
 	
 	protected StreamBitmapLoader(StreamBitmapLoader other) {
 		super(other);
-		
-		InputStream is = mIn.getStream();
+
+		InputStream is = other.mIn.getStream();
 		if (is instanceof LazyInputStream) {
 			is = new LazyInputStream(((LazyInputStream) is).getStreamOpener());
 		}
-		mIn = new TwoPhaseBufferedInputStream(is);
+		mIn = new TwiceReadableInputStream(is);
 	}
 	
 	@Override
@@ -76,7 +75,7 @@ class StreamBitmapLoader extends BitmapLoader {
 	@Override
 	protected void onDecodingStarted(boolean builtInDecoder) {
 		if (!builtInDecoder) {
-			mIn.startSecondPhase();
+			mIn.startSecondRead();
 		}
 		mIn.seekToBeginning();
 	}
@@ -93,7 +92,7 @@ class StreamBitmapLoader extends BitmapLoader {
 
 	@NonNull
     @Override
-	public BitmapLoader mutate() {
+	public BitmapLoader fork() {
 		return new StreamBitmapLoader(this);
 	}
 }

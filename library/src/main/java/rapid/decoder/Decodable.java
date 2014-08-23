@@ -151,7 +151,7 @@ public abstract class Decodable implements BitmapMeta {
     @SuppressWarnings("UnusedDeclaration")
     public abstract void draw(Canvas cv, Rect bounds);
 
-    public abstract Decodable mutate();
+    public abstract Decodable fork();
 
     public abstract boolean isCancelled();
 

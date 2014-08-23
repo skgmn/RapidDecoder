@@ -28,7 +28,7 @@ class FitXYFramedDecoder extends FramedDecoder {
     }
 
     @Override
-    public FramedDecoder mutate() {
+    public FramedDecoder fork() {
         return new FitXYFramedDecoder(this);
     }
 }
