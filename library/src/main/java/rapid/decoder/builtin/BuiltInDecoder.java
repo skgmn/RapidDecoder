@@ -72,6 +72,7 @@ public class BuiltInDecoder {
 	}
 	
 	private Bitmap decodeJpeg(Options opts) {
+        JpegDecoder.initDecoder();
 		final JpegDecoder d = new JpegDecoder(in);
 		try {
 			if (!d.begin()) {
@@ -96,6 +97,7 @@ public class BuiltInDecoder {
 	}
 	
 	private Bitmap decodePng(Options opts) {
+        PngDecoder.initDecoder();
 		final PngDecoder d = new PngDecoder(in);
 		try {
 			if (!d.begin()) {

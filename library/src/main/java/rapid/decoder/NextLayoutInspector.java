@@ -17,16 +17,13 @@ public class NextLayoutInspector {
     @SuppressLint("NewApi")
     public static void inspectNextLayout(View v, final OnNextLayoutListener listener) {
         //noinspection ConstantConditions,PointlessBooleanExpression
-        if (TEST_COMPAT || Build.VERSION.SDK_INT < Build.VERSION_CODES
-                .HONEYCOMB) {
-
+        if (TEST_COMPAT || Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             new LayoutChangeInspector(v, listener).startInspect();
         } else {
             v.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override
                 public void onLayoutChange(View v, int left, int top, int right, int bottom,
                                            int oldLeft, int oldTop, int oldRight, int oldBottom) {
-
                     v.removeOnLayoutChangeListener(this);
                     listener.onNextLayout(v);
                 }
@@ -34,7 +31,8 @@ public class NextLayoutInspector {
         }
     }
 
-    private static class LayoutChangeInspector implements Runnable, ViewTreeObserver.OnGlobalLayoutListener {
+    private static class LayoutChangeInspector implements Runnable,
+            ViewTreeObserver.OnGlobalLayoutListener {
         private WeakReference<View> mViewRef;
         private int mLeft;
         private int mTop;

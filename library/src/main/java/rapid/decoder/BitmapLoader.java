@@ -7,7 +7,6 @@ import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -150,12 +149,14 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         //
 
-        resolveRequests();
+        resolveCrafts();
 
         // Setup sample size.
 
-        final boolean postScaleBy = (mRatioWidth != 1 || mRatioHeight != 1);
-        if (postScaleBy) {
+        mAdjustedWidthRatio = mRatioWidth;
+        mAdjustedHeightRatio = mRatioHeight;
+
+        if (mRatioWidth != 1 || mRatioHeight != 1) {
             mOptions.inSampleSize = calculateInSampleSizeByRatio();
         } else {
             mOptions.inSampleSize = 1;
@@ -170,33 +171,22 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         // Scale it finally.
 
-        if (postScaleBy) {
+        if (mAdjustedWidthRatio != 1 || mAdjustedHeightRatio != 1) {
             bitmap.setDensity(Bitmap.DENSITY_NONE);
             Bitmap bitmap2;
 
-            if (!mIsMutable) {
-                Matrix m = MATRIX.obtain();
-                m.setScale(mAdjustedWidthRatio, mAdjustedHeightRatio);
-                bitmap2 = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m,
-                        mScaleFilter);
-                MATRIX.recycle(m);
-            } else {
-                int newWidth = (int) Math.ceil(bitmap.getWidth() * mAdjustedWidthRatio);
-                int newHeight = (int) Math.ceil(bitmap.getHeight() * mAdjustedHeightRatio);
-                bitmap2 = Bitmap.createBitmap(newWidth, newHeight, bitmap.getConfig());
-                Canvas canvas = CANVAS.obtain(bitmap2);
-                Paint paint = PAINT.obtain(mScaleFilter ? Paint.FILTER_BITMAP_FLAG : 0);
-                Rect rectDest = RECT.obtain(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
-                canvas.drawBitmap(bitmap, null, rectDest, paint);
-                RECT.recycle(rectDest);
-                PAINT.recycle(paint);
-                CANVAS.recycle(canvas);
-            }
+            int newWidth = mRatioIntegerMode.toInteger(bitmap.getWidth() * mAdjustedWidthRatio);
+            int newHeight = mRatioIntegerMode.toInteger(bitmap.getHeight() * mAdjustedHeightRatio);
+            bitmap2 = Bitmap.createBitmap(newWidth, newHeight, bitmap.getConfig());
+            Canvas canvas = CANVAS.obtain(bitmap2);
+            Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+            Rect rectDest = RECT.obtain(0, 0, newWidth, newHeight);
+            canvas.drawBitmap(bitmap, null, rectDest, paint);
+            RECT.recycle(rectDest);
+            PAINT.recycle(paint);
+            CANVAS.recycle(canvas);
 
-            if (bitmap != bitmap2) {
-                bitmap.recycle();
-            }
-
+            bitmap.recycle();
             bitmap2.setDensity(mOptions.inTargetDensity);
             bitmap = bitmap2;
         }
@@ -223,9 +213,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     private int calculateInSampleSizeByRatio() {
-        mAdjustedWidthRatio = mRatioWidth;
-        mAdjustedHeightRatio = mRatioHeight;
-
         int sampleSize = 1;
         while (mAdjustedWidthRatio <= 0.5f && mAdjustedHeightRatio <= 0.5f) {
             sampleSize *= 2;
@@ -245,7 +232,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
             return decode();
         }
 
-        resolveRequests();
+        resolveCrafts();
         mOptions.inSampleSize = calculateSampleSize(regionWidth(), regionHeight(),
                 targetWidth, targetHeight);
 
@@ -261,7 +248,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                         mRegion.width() == width() && mRegion.height() == height());
         final boolean useBuiltInDecoder =
                 this.mUseBuiltInDecoder ||
-                        (regional && Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1) ||
+                        (regional && Build.VERSION.SDK_INT < 10) ||
                         (mIsMutable && (Build.VERSION.SDK_INT < 11 || regional)) ||
                         (mOptions.inSampleSize > 1 && !mScaleFilter);
 
@@ -296,7 +283,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         BitmapDecoder decoder = BitmapLoader.from(bitmap);
         if (mRegion != null) {
-            decoder = decoder.region(mRegion);
+            int left = Math.round(mRegion.left * mRatioWidth);
+            int top = Math.round(mRegion.top * mRatioHeight);
+            int right = left + width();
+            int bottom = top + height();
+            decoder = decoder.region(left, top, right, bottom);
         }
         return decoder.config(mOptions.inPreferredConfig)
                 .filterBitmap(mScaleFilter)
@@ -364,7 +355,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         final Bitmap bitmap = d.decode(mOptions);
         d.close();
 
-        return mIsMutable ? bitmap : Bitmap.createBitmap(bitmap);
+        return bitmap;
     }
 
     @Override
@@ -460,7 +451,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions
                 .inPreferredConfig.hashCode());
 
-        mHashCode = hashId ^ hashOptions ^ hashConfig ^ requestsHash();
+        mHashCode = hashId ^ hashOptions ^ hashConfig ^ craftsHash();
         return mHashCode;
     }
 
@@ -477,7 +468,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 (mId == null ? d.mId == null : mId.equals(d.mId)) &&
                 mIsMutable == d.mIsMutable &&
                 mScaleFilter == d.mScaleFilter &&
-                requestsEquals(d);
+                craftsEqual(d);
     }
 
     BitmapDecoder id(Object id) {

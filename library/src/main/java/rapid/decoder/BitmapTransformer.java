@@ -58,7 +58,7 @@ class BitmapTransformer extends BitmapDecoder {
 
     @Override
     public Bitmap decode() {
-        resolveRequests();
+        resolveCrafts();
 
         final boolean redraw = !((targetConfig == null || mBitmap.getConfig().equals
                 (targetConfig)) && !mutable);
@@ -173,15 +173,7 @@ class BitmapTransformer extends BitmapDecoder {
 
     @Override
     public BitmapDecoder region(@NonNull Rect region) {
-        if (region == null) {
-            if (this.region != null) {
-                RECT.recycle(this.region);
-            }
-            this.region = null;
-        } else {
-            region(region.left, region.top, region.right, region.bottom);
-        }
-
+        region(region.left, region.top, region.right, region.bottom);
         return this;
     }
 
@@ -241,7 +233,7 @@ class BitmapTransformer extends BitmapDecoder {
         final int hashOptions = (mutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
         final int hashConfig = (targetConfig == null ? 0 : targetConfig.hashCode());
 
-        return hashBitmap ^ hashOptions ^ hashConfig ^ requestsHash();
+        return hashBitmap ^ hashOptions ^ hashConfig ^ craftsHash();
     }
 
     @Override

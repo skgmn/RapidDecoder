@@ -7,9 +7,17 @@ import android.graphics.Rect;
 import java.io.InputStream;
 
 public class PngDecoder {
-    static {
-        System.loadLibrary("png-decoder");
-        init();
+    private static boolean sInitialized;
+    private static boolean sHasLibrary;
+    public static void initDecoder() {
+        if (!sInitialized) {
+            sInitialized = true;
+            System.loadLibrary("png-decoder");
+            init();
+            sHasLibrary = true;
+        } else if (!sHasLibrary) {
+            throw new UnsatisfiedLinkError();
+        }
     }
 
     private static native void init();

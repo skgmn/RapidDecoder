@@ -7,9 +7,17 @@ import android.graphics.Rect;
 import java.io.InputStream;
 
 public class JpegDecoder {
-    static {
-        System.loadLibrary("jpeg-decoder");
-        init();
+    private static boolean sInitialized;
+    private static boolean sHasLibrary;
+    public static void initDecoder() {
+        if (!sInitialized) {
+            sInitialized = true;
+            System.loadLibrary("jpeg-decoder");
+            init();
+            sHasLibrary = true;
+        } else if (!sHasLibrary) {
+            throw new UnsatisfiedLinkError();
+        }
     }
 
     private static native void init();
@@ -22,8 +30,7 @@ public class JpegDecoder {
 			Config config, Options opts);
 	
 	private long decoder;
-	private boolean eof = false;
-	
+
 	public JpegDecoder(InputStream in) {
 		decoder = createNativeDecoder(in);
 	}
@@ -57,10 +64,6 @@ public class JpegDecoder {
 		}
 
 		return nativeGetHeight(decoder);
-	}
-	
-	public boolean isEndOfStream() {
-		return eof;
 	}
 	
 	public Bitmap decode(Rect bounds, boolean filter, Config config, Options opts) {
