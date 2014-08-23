@@ -281,6 +281,8 @@ public abstract class BitmapLoader extends BitmapDecoder {
         Bitmap bitmap = BitmapLoader.from(in).scaleBy(mRatioWidth, mRatioHeight).decode();
         if (bitmap == null) return null;
 
+        mAdjustedWidthRatio = mAdjustedHeightRatio = 1;
+
         BitmapDecoder decoder = BitmapLoader.from(bitmap);
         if (mRegion != null) {
             int left = Math.round(mRegion.left * mRatioWidth);

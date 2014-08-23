@@ -35,6 +35,7 @@ import java.util.List;
 
 import rapid.decoder.cache.BitmapLruCache;
 import rapid.decoder.cache.DiskLruCache;
+import rapid.decoder.cache.ResourcePool;
 import rapid.decoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
@@ -139,13 +140,22 @@ public abstract class BitmapDecoder extends Decodable {
 
     private static final int INITIAL_CRAFTS_LIST_CAPACITY = 2;
 
-    protected static class ScaleTo {
+    private interface Recyclable {
+        void recycle();
+    }
+
+    protected static class ScaleTo implements Recyclable {
+        private static ResourcePool<ScaleTo> POOL = new ResourcePool<ScaleTo>() {
+            @Override
+            protected ScaleTo newInstance() {
+                return new ScaleTo();
+            }
+        };
+
         public float width;
         public float height;
 
-        public ScaleTo(float width, float height) {
-            this.width = width;
-            this.height = height;
+        ScaleTo() {
         }
 
         @Override
@@ -160,15 +170,32 @@ public abstract class BitmapDecoder extends Decodable {
             ScaleTo scaleTo = (ScaleTo) o;
             return width == scaleTo.width && height == scaleTo.height;
         }
+
+        public static ScaleTo obtain(float width, float height) {
+            ScaleTo scaleTo = POOL.obtainNotReset();
+            scaleTo.width = width;
+            scaleTo.height = height;
+            return scaleTo;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
+        }
     }
 
-    protected static class ScaleBy {
+    protected static class ScaleBy implements Recyclable {
+        private static ResourcePool<ScaleBy> POOL = new ResourcePool<ScaleBy>() {
+            @Override
+            protected ScaleBy newInstance() {
+                return new ScaleBy();
+            }
+        };
+
         public float width;
         public float height;
 
-        public ScaleBy(float width, float height) {
-            this.width = width;
-            this.height = height;
+        ScaleBy() {
         }
 
         @Override
@@ -183,19 +210,34 @@ public abstract class BitmapDecoder extends Decodable {
             ScaleBy scaleBy = (ScaleBy) o;
             return width == scaleBy.width && height == scaleBy.height;
         }
+
+        public static ScaleBy obtain(float width, float height) {
+            ScaleBy scaleBy = POOL.obtainNotReset();
+            scaleBy.width = width;
+            scaleBy.height = height;
+            return scaleBy;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
+        }
     }
 
-    protected static class Region {
+    protected static class Region implements Recyclable {
+        private static ResourcePool<Region> POOL = new ResourcePool<Region>() {
+            @Override
+            protected Region newInstance() {
+                return new Region();
+            }
+        };
+
         public int left;
         public int top;
         public int right;
         public int bottom;
 
-        public Region(int left, int top, int right, int bottom) {
-            this.left = left;
-            this.top = top;
-            this.right = right;
-            this.bottom = bottom;
+        Region() {
         }
 
         @Override
@@ -210,6 +252,20 @@ public abstract class BitmapDecoder extends Decodable {
             Region region = (Region) o;
             return left == region.left && top == region.top && right == region.right && bottom ==
                     region.bottom;
+        }
+
+        public static Region obtain(int left, int top, int right, int bottom) {
+            Region region = POOL.obtainNotReset();
+            region.left = left;
+            region.top = top;
+            region.right = right;
+            region.bottom = bottom;
+            return region;
+        }
+
+        @Override
+        public void recycle() {
+            POOL.recycle(this);
         }
     }
 
@@ -321,7 +377,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addCraft(new ScaleTo(width, height));
+        addCraft(ScaleTo.obtain(width, height));
         return this;
     }
 
@@ -359,7 +415,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addCraft(new ScaleBy(widthRatio, heightRatio));
+        addCraft(ScaleBy.obtain(widthRatio, heightRatio));
         return this;
     }
 
@@ -389,7 +445,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addCraft(new Region(left, top, right, bottom));
+        addCraft(Region.obtain(left, top, right, bottom));
         return this;
     }
 
@@ -615,6 +671,15 @@ public abstract class BitmapDecoder extends Decodable {
     protected void finalize() throws Throwable {
         try {
             RECT.recycle(mRegion);
+            if (mCrafts != null) {
+                //noinspection ForLoopReplaceableByForEach
+                for (int i = 0, c = mCrafts.size(); i < c; ++i) {
+                    Object craft = mCrafts.get(i);
+                    if (craft instanceof Recyclable) {
+                        ((Recyclable) craft).recycle();
+                    }
+                }
+            }
         } finally {
             super.finalize();
         }
