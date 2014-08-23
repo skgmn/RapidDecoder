@@ -26,10 +26,8 @@ android {
 }
 
 dependencies {
-    //noinspection GradleDynamicVersion
-    compile 'com.android.support:support-annotations:+'
-    //noinspection GradleDynamicVersion
-    provided 'com.android.support:support-v4:+'
+    compile 'com.android.support:support-annotations:20.0.0'
+    provided 'com.android.support:support-v4:20.0.0'
 }
 
 apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
