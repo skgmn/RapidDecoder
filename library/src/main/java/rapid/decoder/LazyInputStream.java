@@ -73,7 +73,6 @@ class LazyInputStream extends InputStream {
             if (mIn == null) {
                 mIn = new ByteArrayInputStream(new byte[0]);
             }
-            mOpener = null;
         }
         return mIn;
     }
