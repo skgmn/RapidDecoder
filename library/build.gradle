@@ -8,8 +8,8 @@ android {
         applicationId "rapid.decoder"
         minSdkVersion 8
         targetSdkVersion 20
-        versionCode 2
-        versionName "0.2.0"
+        versionCode 3
+        versionName "0.2.1"
     }
     lintOptions {
         abortOnError false
@@ -30,4 +30,5 @@ dependencies {
     provided 'com.android.support:support-v4:20.0.0'
 }
 
-apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
+//apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
+apply from: '../gradle-mvn-push.gradle'
