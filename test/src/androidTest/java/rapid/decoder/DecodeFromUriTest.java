@@ -7,6 +7,9 @@ public class DecodeFromUriTest extends AndroidTestCase {
     public void testInvalidUri() {
         Bitmap bitmap = BitmapDecoder.from(getContext(), "android.resource://a.b.c/12345").decode();
         assertNull(bitmap);
+
+        bitmap = BitmapDecoder.from(getContext(), "://a.b.c/12345").decode();
+        assertNull(bitmap);
     }
 
     public void testValidUri() {
