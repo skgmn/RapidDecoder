@@ -3,10 +3,10 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>rapid.decoder</groupId>
-  <artifactId>jpeg-decoder</artifactId>
-  <version>0.2.2</version>
+  <artifactId>png-decoder</artifactId>
+  <version>0.2.3</version>
   <packaging>aar</packaging>
-  <name>RapidDecoder jpeg decoder</name>
+  <name>RapidDecoder png decoder</name>
   <description></description>
   <url>https://github.com/suckgamony/RapidDecoder</url>
   <licenses>
