@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -46,9 +47,6 @@ import static rapid.decoder.cache.ResourcePool.*;
 public abstract class BitmapDecoder extends Decodable {
     static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
 
-    private static final String MESSAGE_INVALID_URI = "Invalid uri: %s";
-    private static final String MESSAGE_PACKAGE_NOT_FOUND = "Package not found: %s";
-    private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: %s";
     private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context" +
             ". Use BitmapDecoder.from(Context, Uri) instead.";
 
@@ -275,7 +273,7 @@ public abstract class BitmapDecoder extends Decodable {
     //
     // Fields
     //
-    
+
     protected float mRatioWidth = 1;
     protected float mRatioHeight = 1;
     protected IntegerMaker mRatioIntegerMode;
@@ -728,17 +726,24 @@ public abstract class BitmapDecoder extends Decodable {
         return new ResourceBitmapLoader(res, id);
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public static BitmapLoader from(String urlOrPath) {
-        return from(urlOrPath, true);
+    public static BitmapLoader from(@NonNull String uriOrPath) {
+        return from(uriOrPath, true);
     }
 
-    public static BitmapLoader from(String urlOrPath, boolean useCache) {
-        if (urlOrPath.contains("://")) {
-            return from(Uri.parse(urlOrPath), useCache);
+    public static BitmapLoader from(@NonNull String uriOrPath, boolean useCache) {
+        if (uriOrPath.contains("://")) {
+            return from(Uri.parse(uriOrPath), useCache);
         } else {
-            return (BitmapLoader) new FileBitmapLoader(urlOrPath).useMemoryCache(useCache);
+            return (BitmapLoader) new FileBitmapLoader(uriOrPath).useMemoryCache(useCache);
         }
+    }
+
+    public static BitmapDecoder from(Context context, @NonNull String uri) {
+        return from(context, Uri.parse(uri));
+    }
+
+    public static BitmapDecoder from(Context context, String uri, boolean useCache) {
+        return from(context, Uri.parse(uri), useCache);
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -752,19 +757,20 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static BitmapLoader from(Uri uri) {
+    public static BitmapLoader from(@NonNull Uri uri) {
         return from(null, uri, true);
     }
 
-    public static BitmapLoader from(Uri uri, boolean useCache) {
+    public static BitmapLoader from(@NonNull Uri uri, boolean useCache) {
         return from(null, uri, useCache);
     }
 
-    public static BitmapLoader from(Context context, final Uri uri) {
+    public static BitmapLoader from(Context context, @NonNull final Uri uri) {
         return from(context, uri, true);
     }
 
-    public static BitmapLoader from(final Context context, final Uri uri, boolean useCache) {
+    public static BitmapLoader from(final Context context, @NonNull final Uri uri,
+                                    boolean useCache) {
         String scheme = uri.getScheme();
 
         if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
@@ -772,13 +778,7 @@ public abstract class BitmapDecoder extends Decodable {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
             }
 
-            List<String> segments = uri.getPathSegments();
-            if (segments.size() != 2 || !segments.get(0).equals("drawable")) {
-                throw new IllegalArgumentException(String.format(MESSAGE_INVALID_URI, uri));
-            }
-
             Resources res;
-
             String packageName = uri.getAuthority();
             if (context.getPackageName().equals(packageName)) {
                 res = context.getResources();
@@ -787,19 +787,28 @@ public abstract class BitmapDecoder extends Decodable {
                 try {
                     res = pm.getResourcesForApplication(packageName);
                 } catch (NameNotFoundException e) {
-                    throw new IllegalArgumentException(String.format(MESSAGE_PACKAGE_NOT_FOUND,
-                            packageName));
+                    return new NullBitmapLoader();
                 }
             }
 
-            String resName = segments.get(1);
-            int id = res.getIdentifier(resName, "drawable", packageName);
-            if (id == 0) {
-                throw new IllegalArgumentException(String.format(MESSAGE_RESOURCE_NOT_FOUND,
-                        resName));
+            int id = 0;
+            List<String> segments = uri.getPathSegments();
+            int size = segments.size();
+            if (size == 2 && segments.get(0).equals("drawable")) {
+                String resName = segments.get(1);
+                id = res.getIdentifier(resName, "drawable", packageName);
+            } else if (size == 1 && TextUtils.isDigitsOnly(segments.get(0))) {
+                try {
+                    id = Integer.parseInt(segments.get(0));
+                } catch (NumberFormatException ignored) {
+                }
             }
 
-            return (BitmapLoader) new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
+            if (id == 0) {
+                return new NullBitmapLoader();
+            } else {
+                return (BitmapLoader) new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
+            }
         } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
             return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
         } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
