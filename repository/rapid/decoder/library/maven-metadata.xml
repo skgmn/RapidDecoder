@@ -2,11 +2,11 @@
 <metadata>
   <groupId>rapid.decoder</groupId>
   <artifactId>library</artifactId>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
   <versioning>
     <versions>
-      <version>0.2.1</version>
+      <version>0.2.2</version>
     </versions>
-    <lastUpdated>20140827073610</lastUpdated>
+    <lastUpdated>20140831100436</lastUpdated>
   </versioning>
 </metadata>
