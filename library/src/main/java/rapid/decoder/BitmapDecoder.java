@@ -772,8 +772,7 @@ public abstract class BitmapDecoder extends Decodable {
     public static BitmapLoader from(final Context context, @NonNull final Uri uri,
                                     boolean useCache) {
         String scheme = uri.getScheme();
-
-        if (scheme.equals(ContentResolver.SCHEME_ANDROID_RESOURCE)) {
+        if (ContentResolver.SCHEME_ANDROID_RESOURCE.equals(scheme)) {
             if (context == null) {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
             }
@@ -809,9 +808,9 @@ public abstract class BitmapDecoder extends Decodable {
             } else {
                 return (BitmapLoader) new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
             }
-        } else if (scheme.equals(ContentResolver.SCHEME_FILE)) {
+        } else if (ContentResolver.SCHEME_FILE.equals(scheme)) {
             return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
-        } else if (scheme.equals("http") || scheme.equals("https") || scheme.equals("ftp")) {
+        } else if ("http".equals(scheme) || "https".equals(scheme) || "ftp".equals(scheme)) {
             String uriString = uri.toString();
             BitmapLoader d = null;
 
@@ -850,7 +849,6 @@ public abstract class BitmapDecoder extends Decodable {
             if (context == null) {
                 throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
             }
-
             final ContentResolver cr = context.getContentResolver();
             StreamBitmapLoader d = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
                 @Nullable

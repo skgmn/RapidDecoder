@@ -3,10 +3,10 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>rapid.decoder</groupId>
-  <artifactId>png-decoder</artifactId>
-  <version>0.2.2</version>
+  <artifactId>library</artifactId>
+  <version>0.2.3</version>
   <packaging>aar</packaging>
-  <name>RapidDecoder png decoder</name>
+  <name>RapidDecoder library</name>
   <description></description>
   <url>https://github.com/suckgamony/RapidDecoder</url>
   <licenses>
@@ -27,4 +27,12 @@
     <developerConnection>scm:git@github.com:suckgamony/RapidDecoder.git</developerConnection>
     <url>https://github.com/suckgamony/RapidDecoder</url>
   </scm>
+  <dependencies>
+    <dependency>
+      <groupId>com.android.support</groupId>
+      <artifactId>support-annotations</artifactId>
+      <version>20.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 </project>
