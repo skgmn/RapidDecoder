@@ -56,7 +56,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         mId = other.mId;
 
-        mOptions = Cloner.clone(other.mOptions);
+        mOptions = CloneUtils.clone(other.mOptions);
 
         mIsMutable = other.mIsMutable;
         mScaleFilter = other.mScaleFilter;
