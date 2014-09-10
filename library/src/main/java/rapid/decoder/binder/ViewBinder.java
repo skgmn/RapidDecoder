@@ -95,6 +95,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         return this;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public ViewBinder<T> errorImage(final int resId) {
         mErrorImageInflater = new DrawableInflater() {
             @Override

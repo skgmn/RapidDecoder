@@ -516,4 +516,5 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected ViewFrameBuilder setupFrameBuilder(ViewBinder<?> binder, FramingMethod framing) {
         return new ViewFrameBuilder(this, binder, framing);
     }
+
 }

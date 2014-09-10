@@ -19,6 +19,7 @@ import rapid.decoder.frame.ScaleTypeFraming;
 public abstract class Decodable implements BitmapMeta {
     public interface OnBitmapDecodedListener {
         void onBitmapDecoded(@Nullable Bitmap bitmap, @Nullable CacheSource cacheSource);
+
         void onCancel();
     }
 
@@ -62,6 +63,9 @@ public abstract class Decodable implements BitmapMeta {
                     if (bitmap != null) {
                         task.cancel();
                         binder.bind(bitmap, false);
+                        if (listener != null) {
+                            listener.onBitmapDecoded(bitmap, CacheSource.MEMORY);
+                        }
                         return;
                     }
                 }
@@ -71,7 +75,8 @@ public abstract class Decodable implements BitmapMeta {
         task.setDecodable(this);
         task.setOnBitmapDecodedListener(new OnBitmapDecodedListener() {
             @Override
-            public void onBitmapDecoded(@Nullable Bitmap bitmap, @Nullable CacheSource cacheSource) {
+            public void onBitmapDecoded(@Nullable Bitmap bitmap,
+                                        @Nullable CacheSource cacheSource) {
                 if (bitmap == null) {
                     binder.showErrorImage();
                     if (listener != null) {

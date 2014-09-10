@@ -13,29 +13,51 @@ import java.io.IOException;
 import java.io.InputStream;
 
 class ResourceBitmapLoader extends BitmapLoader {
-	Resources res;
+    private static class Identifier {
+        public Resources res;
+        public int id;
+
+        private Identifier(Resources res, int id) {
+            this.res = res;
+            this.id = id;
+        }
+
+        @Override
+        public int hashCode() {
+            return res.hashCode() ^ id;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Identifier)) return false;
+
+            Identifier id2 = (Identifier) o;
+            return res.equals(id2.res) && id == id2.id;
+        }
+    }
 
 	private float densityRatio;
 
 	public ResourceBitmapLoader(Resources res, int id) {
-		this.res = res;
-        mId = id;
+        mId = new Identifier(res, id);
 	}
 	
 	protected ResourceBitmapLoader(ResourceBitmapLoader other) {
 		super(other);
-		res = other.res;
 		densityRatio = other.densityRatio;
 	}
 
 	@Override
 	protected Bitmap decode(Options opts) {
-		return BitmapFactory.decodeResource(res, (Integer) mId, opts);
+        Identifier id = (Identifier) mId;
+		return BitmapFactory.decodeResource(id.res, id.id, opts);
 	}
 	
 	@Override
 	protected InputStream getInputStream() {
-		return res.openRawResource((Integer) mId);
+		Identifier id = (Identifier) mId;
+        return id.res.openRawResource(id.id);
 	}
 
 	@TargetApi(Build.VERSION_CODES.GINGERBREAD_MR1)
@@ -74,7 +96,8 @@ class ResourceBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ res.hashCode() ^ mId.hashCode();
+        Identifier id = (Identifier) mId;
+		return super.hashCode() ^ id.res.hashCode() ^ id.id;
 	}
 	
 	@Override
@@ -83,6 +106,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 		if (!(o instanceof ResourceBitmapLoader) || !super.equals(o)) return false;
 		
 		final ResourceBitmapLoader d = (ResourceBitmapLoader) o;
-		return res.equals(d.res) && mId.equals(d.mId);
+        Identifier id = (Identifier) mId;
+        return id.equals(d.mId);
 	}
 }

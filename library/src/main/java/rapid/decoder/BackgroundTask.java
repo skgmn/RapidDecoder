@@ -8,7 +8,17 @@ import java.lang.ref.WeakReference;
 
 import rapid.decoder.cache.CacheSource;
 
-class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
+class BackgroundTask extends AsyncTask<Object, Object, BackgroundTask.Result> {
+    public static class Result {
+        public Bitmap bitmap;
+        public CacheSource cacheSource;
+
+        public Result(Bitmap bitmap, CacheSource cacheSource) {
+            this.bitmap = bitmap;
+            this.cacheSource = cacheSource;
+        }
+    }
+
     private Decodable mDecodable;
     private Decodable.OnBitmapDecodedListener mListener;
     private ViewFrameBuilder mFrameBuilder;
@@ -26,8 +36,33 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         mListener = listener;
     }
 
+    private boolean removeKey() {
+        if (mKey == null) return false;
+        if (mKey instanceof WeakReference) {
+            return BackgroundTaskManager.removeWeak(((WeakReference) mKey).get()) != null;
+        } else {
+            return BackgroundTaskManager.removeStrong(mKey) != null;
+        }
+    }
+
     @Override
-    protected Object[] doInBackground(Object... params) {
+    protected void onPostExecute(Result result) {
+        if (removeKey()) {
+            if (mListener != null) {
+                if (result == null) {
+                    mListener.onBitmapDecoded(null, null);
+                } else {
+                    mListener.onBitmapDecoded(result.bitmap, result.cacheSource);
+                }
+                mListener = null;
+            }
+        } else {
+            dispatchCancel();
+        }
+    }
+
+    @Override
+    protected Result doInBackground(Object... params) {
         Decodable d = null;
         if (mFrameBuilder != null) {
             d = mFrameBuilder.getFramedDecoder(false);
@@ -40,35 +75,17 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
         if (bitmap == null || isCancelled()) return null;
 
         CacheSource cacheSource = d.cacheSource();
-        return new Object[] { bitmap, cacheSource };
+        return new Result(bitmap, cacheSource);
     }
 
-    private boolean removeKey() {
-        if (mKey == null) return false;
-        if (mKey instanceof WeakReference) {
-            return BackgroundTaskManager.removeWeak(((WeakReference) mKey).get()) != null;
-        } else {
-            return BackgroundTaskManager.removeStrong(mKey) != null;
-        }
-    }
-
-    @Override
-    protected void onPostExecute(Object[] result) {
-        if (removeKey()) {
-            if (result == null) {
-                mListener.onBitmapDecoded(null, null);
-            } else {
-                mListener.onBitmapDecoded((Bitmap) result[0], (CacheSource) result[1]);
-            }
-        } else {
-            mListener.onCancel();
-        }
-    }
-
-    @Override
     protected void onCancelled() {
+        dispatchCancel();
+    }
+
+    private void dispatchCancel() {
         if (mListener != null) {
             mListener.onCancel();
+            mListener = null;
         }
     }
 
@@ -78,6 +95,7 @@ class BackgroundTask extends AsyncTask<Object, Object, Object[]> {
             mDecodable.cancel();
         }
         removeKey();
+        dispatchCancel();
     }
 
     public void setFrameBuilder(ViewFrameBuilder builder) {
