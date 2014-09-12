@@ -7,7 +7,7 @@ Add this repository to _build.gradle_ in your project's root.
 allprojects {
     repositories {
         maven {
-            url 'https://github.com/nirvanfallacy/RapidDecoder/raw/master/repository'
+            url 'https://github.com/suckgamony/RapidDecoder/raw/master/repository'
         }
     }
 }
@@ -17,9 +17,9 @@ Add dependencies to _build.gradle_ in your module.
 
 ```
 dependencies {
-    compile 'rapid.decoder:library:0.2.2'
-    compile 'rapid.decoder:jpeg-decoder:0.2.2'
-    compile 'rapid.decoder:png-decoder:0.2.2'
+    compile 'rapid.decoder:library:0.2.3'
+    compile 'rapid.decoder:jpeg-decoder:0.2.3'
+    compile 'rapid.decoder:png-decoder:0.2.3'
 }
 ```
 
