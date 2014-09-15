@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>rapid.decoder</groupId>
   <artifactId>png-decoder</artifactId>
-  <version>0.2.3</version>
+  <version>0.2.4</version>
   <packaging>aar</packaging>
   <name>RapidDecoder png decoder</name>
   <description></description>
