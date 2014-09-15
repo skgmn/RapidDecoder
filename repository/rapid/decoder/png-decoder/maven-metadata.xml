@@ -2,11 +2,11 @@
 <metadata>
   <groupId>rapid.decoder</groupId>
   <artifactId>png-decoder</artifactId>
-  <version>0.2.3</version>
+  <version>0.2.4</version>
   <versioning>
     <versions>
-      <version>0.2.3</version>
+      <version>0.2.4</version>
     </versions>
-    <lastUpdated>20140831111405</lastUpdated>
+    <lastUpdated>20140915063740</lastUpdated>
   </versioning>
 </metadata>
