@@ -532,6 +532,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return new ViewFrameBuilder(this, binder, framing);
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public BitmapLoader quality(@NonNull Quality quality) {
         quality.applyTo(mOptions);
         mShouldConvertToOpaqueOnScale = quality.shouldConvertToOpaqueOnScale();
