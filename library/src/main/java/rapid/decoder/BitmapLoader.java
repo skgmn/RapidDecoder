@@ -32,6 +32,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected boolean mIsMutable;
     private boolean mScaleFilter = true;
     private boolean mUseBuiltInDecoder = false;
+    private boolean mShouldConvertToOpaqueOnScale = false;
     Object mId;
     boolean mIsFromDiskCache;
     protected CacheSource mCacheSource;
@@ -177,9 +178,17 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
             int newWidth = mRatioIntegerMode.toInteger(bitmap.getWidth() * mAdjustedWidthRatio);
             int newHeight = mRatioIntegerMode.toInteger(bitmap.getHeight() * mAdjustedHeightRatio);
-            bitmap2 = Bitmap.createBitmap(newWidth, newHeight, bitmap.getConfig());
+            Config newConfig = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig
+                    ());
+            bitmap2 = Bitmap.createBitmap(newWidth, newHeight, newConfig);
             Canvas canvas = CANVAS.obtain(bitmap2);
             Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+            if (Config.RGB_565.equals(newConfig) && !Config.RGB_565.equals(bitmap.getConfig())) {
+                if (paint == null) {
+                    paint = PAINT.obtain();
+                }
+                paint.setDither(true);
+            }
             Rect rectDest = RECT.obtain(0, 0, newWidth, newHeight);
             canvas.drawBitmap(bitmap, null, rectDest, paint);
             RECT.recycle(rectDest);
@@ -188,6 +197,12 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
             bitmap.recycle();
             bitmap2.setDensity(mOptions.inTargetDensity);
+            bitmap = bitmap2;
+        } else if (mShouldConvertToOpaqueOnScale) {
+            Bitmap bitmap2 = new BitmapTransformer(bitmap).config(Config.RGB_565).decode();
+            if (bitmap != bitmap2) {
+                bitmap.recycle();
+            }
             bitmap = bitmap2;
         }
 
@@ -412,13 +427,13 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     @Override
-    public BitmapDecoder useBuiltInDecoder(boolean force) {
+    public BitmapLoader useBuiltInDecoder(boolean force) {
         this.mUseBuiltInDecoder = force;
         return this;
     }
 
     @Override
-    public BitmapDecoder config(Config config) {
+    public BitmapLoader config(Config config) {
         mOptions.inPreferredConfig = config;
         return this;
     }
@@ -473,7 +488,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 craftsEqual(d);
     }
 
-    BitmapDecoder id(Object id) {
+    BitmapLoader id(Object id) {
         if (mId != null) {
             throw new IllegalStateException("id can be set only once.");
         }
@@ -482,11 +497,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return this;
     }
 
-    public BitmapDecoder id(@NonNull Uri uri) {
+    public BitmapLoader id(@NonNull Uri uri) {
         return id((Object) uri);
     }
 
-    public BitmapDecoder id(@NonNull String uri) {
+    public BitmapLoader id(@NonNull String uri) {
         return id(Uri.parse(uri));
     }
 
@@ -496,7 +511,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     @Override
-    public BitmapDecoder filterBitmap(boolean filter) {
+    public BitmapLoader filterBitmap(boolean filter) {
         mScaleFilter = filter;
         mHashCode = 0;
         return this;
@@ -517,4 +532,9 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return new ViewFrameBuilder(this, binder, framing);
     }
 
+    public BitmapLoader quality(@NonNull Quality quality) {
+        quality.applyTo(mOptions);
+        mShouldConvertToOpaqueOnScale = quality.shouldConvertToOpaqueOnScale();
+        return this;
+    }
 }
