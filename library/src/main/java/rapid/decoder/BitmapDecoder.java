@@ -103,6 +103,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public static void initDiskCache(Context context) {
         initDiskCache(context, DEFAULT_CACHE_SIZE);
     }
@@ -648,6 +649,7 @@ public abstract class BitmapDecoder extends Decodable {
         return 1f;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public BitmapDecoder postProcessor(BitmapPostProcessor processor) {
         mPostProcessor = processor;
         return this;
@@ -806,7 +808,8 @@ public abstract class BitmapDecoder extends Decodable {
             if (id == 0) {
                 return new NullBitmapLoader();
             } else {
-                return (BitmapLoader) new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
+                return (ResourceBitmapLoader) new ResourceBitmapLoader(res, id)
+                        .useMemoryCache(useCache);
             }
         } else if (ContentResolver.SCHEME_FILE.equals(scheme)) {
             return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);

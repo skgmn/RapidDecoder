@@ -30,7 +30,7 @@ public class NullBitmapLoader extends BitmapLoader {
     }
 
     @Override
-    public BitmapDecoder config(Bitmap.Config config) {
+    public BitmapLoader config(Bitmap.Config config) {
         return null;
     }
 
@@ -46,12 +46,12 @@ public class NullBitmapLoader extends BitmapLoader {
     }
 
     @Override
-    public BitmapDecoder useBuiltInDecoder(boolean force) {
+    public BitmapLoader useBuiltInDecoder(boolean force) {
         return null;
     }
 
     @Override
-    public BitmapDecoder filterBitmap(boolean filter) {
+    public BitmapLoader filterBitmap(boolean filter) {
         return null;
     }
 
