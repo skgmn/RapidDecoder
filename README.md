@@ -17,9 +17,9 @@ Add dependencies to _build.gradle_ in your module.
 
 ```
 dependencies {
-    compile 'rapid.decoder:library:0.2.4'
-    compile 'rapid.decoder:jpeg-decoder:0.2.4'
-    compile 'rapid.decoder:png-decoder:0.2.4'
+    compile 'rapid.decoder:library:0.2.5'
+    compile 'rapid.decoder:jpeg-decoder:0.2.5'
+    compile 'rapid.decoder:png-decoder:0.2.5'
 }
 ```
 
