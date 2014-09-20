@@ -541,4 +541,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
         mShouldConvertToOpaqueOnScale = quality.shouldConvertToOpaqueOnScale();
         return this;
     }
+
+    @Override
+    public BitmapLoader useMemoryCache(boolean useCache) {
+        super.useMemoryCache(useCache);
+        return this;
+    }
 }
