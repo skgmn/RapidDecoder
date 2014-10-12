@@ -748,7 +748,6 @@ public abstract class BitmapDecoder extends Decodable {
         return from(context, Uri.parse(uri), useCache);
     }
 
-    @SuppressWarnings("UnusedDeclaration")
     public static BitmapLoader from(FileDescriptor fd) {
         return new FileDescriptorBitmapLoader(fd);
     }
