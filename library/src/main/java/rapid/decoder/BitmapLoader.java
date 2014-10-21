@@ -261,7 +261,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected Bitmap executeDecoding() {
         final boolean regional = mRegion != null &&
                 !(mRegion.left == 0 && mRegion.top == 0 &&
-                        mRegion.width() == width() && mRegion.height() == height());
+                        mRegion.width() == sourceWidth() && mRegion.height() == sourceHeight());
         final boolean useBuiltInDecoder =
                 this.mUseBuiltInDecoder ||
                         (regional && Build.VERSION.SDK_INT < 10) ||
