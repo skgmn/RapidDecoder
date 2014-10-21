@@ -8,8 +8,8 @@ android {
         applicationId "rapid.decoder"
         minSdkVersion 8
         targetSdkVersion 20
-        versionCode 7
-        versionName "0.2.5"
+        versionCode 8
+        versionName "0.2.6"
     }
     lintOptions {
         abortOnError false
