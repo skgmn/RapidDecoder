@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>rapid.decoder</groupId>
   <artifactId>library</artifactId>
-  <version>0.2.5</version>
+  <version>0.2.6</version>
   <packaging>aar</packaging>
   <name>RapidDecoder library</name>
   <description></description>
