@@ -1,15 +1,15 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 20
-    buildToolsVersion "20.0.0"
+    compileSdkVersion 21
+    buildToolsVersion "21.0.2"
 
     defaultConfig {
         applicationId "rapid.decoder"
         minSdkVersion 8
-        targetSdkVersion 20
-        versionCode 8
-        versionName "0.2.6"
+        targetSdkVersion 21
+        versionCode 9
+        versionName "0.2.6.1"
     }
     lintOptions {
         abortOnError false
@@ -26,8 +26,10 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-annotations:20.0.0'
-    provided 'com.android.support:support-v4:20.0.0'
+    //noinspection GradleDynamicVersion
+    compile 'com.android.support:support-annotations:+'
+    //noinspection GradleDynamicVersion
+    provided 'com.android.support:support-v4:+'
 }
 
 //apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
