@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 
 public enum Quality {
+    @SuppressWarnings("UnusedDeclaration")
     UNDEFINED {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -25,6 +26,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     HIGH_OPAQUE {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -36,6 +38,7 @@ public enum Quality {
             return true;
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     MID {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -46,6 +49,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     MID_OPAQUE {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -56,6 +60,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     LOW {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -66,6 +71,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     LOW_OPAQUE {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -76,6 +82,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     LOWEST {
         @Override
         void applyTo(BitmapFactory.Options options) {
@@ -86,6 +93,7 @@ public enum Quality {
             }
         }
     },
+    @SuppressWarnings("UnusedDeclaration")
     LOWEST_OPAQUE {
         @Override
         void applyTo(BitmapFactory.Options options) {

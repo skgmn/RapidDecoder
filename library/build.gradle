@@ -2,26 +2,17 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.0.2"
+    buildToolsVersion "21.1.1"
 
     defaultConfig {
         applicationId "rapid.decoder"
         minSdkVersion 8
         targetSdkVersion 21
         versionCode 9
-        versionName "0.2.6.1"
+        versionName "0.2.7"
     }
     lintOptions {
         abortOnError false
-    }
-    buildTypes {
-        release {
-            runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            runProguard false
-        }
     }
 }
 
