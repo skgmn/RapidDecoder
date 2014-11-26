@@ -179,8 +179,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
             int newWidth = mRatioIntegerMode.toInteger(bitmap.getWidth() * mAdjustedWidthRatio);
             int newHeight = mRatioIntegerMode.toInteger(bitmap.getHeight() * mAdjustedHeightRatio);
-            Config newConfig = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig
-                    ());
+            Config newConfig = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig());
+            if (newConfig == null) {
+                newConfig = Config.ARGB_8888;
+            }
             bitmap2 = Bitmap.createBitmap(newWidth, newHeight, newConfig);
             Canvas canvas = CANVAS.obtain(bitmap2);
             Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
@@ -535,6 +537,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return new ViewFrameBuilder(this, binder, framing);
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public BitmapLoader quality(@NonNull Quality quality) {
         quality.applyTo(mOptions);
         mShouldConvertToOpaqueOnScale = quality.shouldConvertToOpaqueOnScale();
