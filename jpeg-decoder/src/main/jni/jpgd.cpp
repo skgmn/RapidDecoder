@@ -1079,12 +1079,12 @@ void jpeg_decoder::read_sof_marker()
 
   m_image_y_size = get_bits(16);
 
-  if ((m_image_y_size < 1) || (m_image_y_size > JPGD_MAX_HEIGHT))
+  if ((m_image_y_size < 1)/* || (m_image_y_size > JPGD_MAX_HEIGHT)*/)
     stop_decoding(JPGD_BAD_HEIGHT);
 
   m_image_x_size = get_bits(16);
 
-  if ((m_image_x_size < 1) || (m_image_x_size > JPGD_MAX_WIDTH))
+  if ((m_image_x_size < 1)/* || (m_image_x_size > JPGD_MAX_WIDTH)*/)
     stop_decoding(JPGD_BAD_WIDTH);
 
   m_comps_in_frame = get_bits(8);
