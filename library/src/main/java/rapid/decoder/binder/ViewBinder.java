@@ -37,6 +37,7 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     private WeakReference<T> mView;
     private DrawableInflater mPlaceholderInflater;
     private DrawableInflater mErrorImageInflater;
+    private DrawableCreator mDrawableCreator;
 
     protected ViewBinder() {
     }
@@ -49,6 +50,9 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
         mEffect = null;
         mFraming = null;
         mView = null;
+        mPlaceholderInflater = null;
+        mErrorImageInflater = null;
+        mDrawableCreator = null;
     }
 
     @Nullable
@@ -60,9 +64,15 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
     public Drawable createDrawable(@NonNull Context context, @Nullable Bitmap bitmap) {
         if (bitmap == null) {
             return null;
+        } else if (mDrawableCreator != null) {
+            return mDrawableCreator.createDrawable(context, bitmap);
         } else {
             return new BitmapDrawable(context.getResources(), bitmap);
         }
+    }
+
+    public void setDrawableCreator(DrawableCreator drawableCreator) {
+        mDrawableCreator = drawableCreator;
     }
 
     public ViewBinder<T> scaleType(final ImageView.ScaleType scaleType) {
