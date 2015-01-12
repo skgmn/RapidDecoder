@@ -13,6 +13,7 @@
 #include <string.h>
 
 //#include <android/log.h>
+//#define LOGE(s, args...) __android_log_write(ANDROID_LOG_ERROR, "asdf", s, ##args);
 
 #include <assert.h>
 #define JPGD_ASSERT(x) assert(x)
@@ -1923,20 +1924,18 @@ void jpeg_decoder::H1V1Convert()
   {
     for (int j = 0; j < 8; j++)
     {
-      if (col >= col_end) break;
+      if (col >= col_end) return;
       if (col >= m_col_offset)
       {
           int y = s[j];
           int cb = s[64+j];
           int cr = s[128+j];
-
             m_composer(d,
                 255,
                 clamp(y + m_crr[cr]),
                 clamp(y + ((m_crg[cr] + m_cbg[cb]) >> 16)),
                 clamp(y + m_cbb[cb]));
       }
-
       ++col;
     }
 
@@ -1961,37 +1960,34 @@ void jpeg_decoder::H2V1Convert()
     {
       for (int j = 0; j < 4; j++)
       {
-        if (col >= col_end) break;
-        if (col >= m_col_offset)
+        if (col >= col_end) return;
+        const int next_col = col + 1;
+        if (next_col >= m_col_offset)
         {
+            const int j2 = j << 1;
             int cb = c[0];
             int cr = c[64];
-
             int rc = m_crr[cr];
             int gc = ((m_crg[cr] + m_cbg[cb]) >> 16);
             int bc = m_cbb[cb];
-
-            int yy = y[j<<1];
-
-            m_composer(d0,
-              255,
-              clamp(yy+rc),
-              clamp(yy+gc),
-              clamp(yy+bc));
-
-            if (++col >= col_end) break;
             if (col >= m_col_offset)
             {
-                yy = y[(j<<1)+1];
+                int yy = y[j2];
                 m_composer(d0,
                   255,
                   clamp(yy+rc),
                   clamp(yy+gc),
                   clamp(yy+bc));
             }
+            if (next_col >= col_end) return;
+            int yy = y[j2+1];
+            m_composer(d0,
+              255,
+              clamp(yy+rc),
+              clamp(yy+gc),
+              clamp(yy+bc));
         }
-
-        ++col;
+        col += 2;
         c++;
       }
       y += 64;
@@ -2025,32 +2021,33 @@ void jpeg_decoder::H1V2Convert()
   {
     for (int j = 0; j < 8; j++)
     {
-      if (col >= col_end) break;
-      if (col >= m_col_offset)
+      if (col >= col_end) return;
+      const int next_col = col + 1;
+      if (next_col >= m_col_offset)
       {
           int cb = c[0+j];
           int cr = c[64+j];
-
           int rc = m_crr[cr];
           int gc = ((m_crg[cr] + m_cbg[cb]) >> 16);
           int bc = m_cbb[cb];
-
-          int yy = y[j];
-          m_composer(d0,
-            255,
-            clamp(yy+rc),
-            clamp(yy+gc),
-            clamp(yy+bc));
-
-          yy = y[8+j];
+          if (col >= m_col_offset)
+          {
+              int yy = y[j];
+              m_composer(d0,
+                255,
+                clamp(yy+rc),
+                clamp(yy+gc),
+                clamp(yy+bc));
+          }
+          if (next_col >= col_end) return;
+          int yy = y[8+j];
           m_composer(d1,
             255,
             clamp(yy+rc),
             clamp(yy+gc),
             clamp(yy+bc));
       }
-
-      ++col;
+      col += 2;
     }
 
     y += 64*4;
@@ -2083,50 +2080,57 @@ void jpeg_decoder::H2V2Convert()
 		{
 			for (int j = 0; j < 8; j += 2)
 			{
-                if (col >= col_end) break;
-                if (col >= m_col_offset)
+                if (col >= col_end) return;
+                if (col + 3 >= m_col_offset)
                 {
                     int cb = c[0];
                     int cr = c[64];
-
                     int rc = m_crr[cr];
                     int gc = ((m_crg[cr] + m_cbg[cb]) >> 16);
                     int bc = m_cbb[cb];
-
-                    int yy = y[j];
-                    m_composer(d0,
-                      255,
-                      clamp(yy+rc),
-                      clamp(yy+gc),
-                      clamp(yy+bc));
-
-                    yy = y[j+8];
-                    m_composer(d1,
-                      255,
-                      clamp(yy+rc),
-                      clamp(yy+gc),
-                      clamp(yy+bc));
-
-                    if (++col >= col_end) break;
                     if (col >= m_col_offset)
                     {
-                        yy = y[j+1];
+                        int yy = y[j];
                         m_composer(d0,
                           255,
                           clamp(yy+rc),
                           clamp(yy+gc),
                           clamp(yy+bc));
-
-                        yy = y[j+8+1];
+                    }
+                    if (++col >= col_end) return;
+                    if (col >= m_col_offset)
+                    {
+                        int yy = y[j+8];
                         m_composer(d1,
                           255,
                           clamp(yy+rc),
                           clamp(yy+gc),
                           clamp(yy+bc));
                     }
-                }
+                    if (++col >= col_end) return;
+                    if (col >= m_col_offset)
+                    {
+                        int yy = y[j+1];
+                        m_composer(d0,
+                          255,
+                          clamp(yy+rc),
+                          clamp(yy+gc),
+                          clamp(yy+bc));
 
-                ++col;
+                    }
+                    if (++col >= col_end) return;
+                    int yy = y[j+8+1];
+                    m_composer(d1,
+                      255,
+                      clamp(yy+rc),
+                      clamp(yy+gc),
+                      clamp(yy+bc));
+                    ++col;
+                }
+                else
+                {
+                    col += 4;
+                }
 				c++;
 			}
 			y += 64;
@@ -2151,7 +2155,7 @@ void jpeg_decoder::gray_convert()
   {
       for (int j = 0; j < 8; ++j)
       {
-          if (col >= col_end) break;
+          if (col >= col_end) return;
           if (col >= m_col_offset)
           {
               m_composer(d, 255, s[j], s[j], s[j]);
@@ -2188,7 +2192,7 @@ void jpeg_decoder::expanded_convert()
       const int Cr_ofs = Y_ofs + 64 * m_expanded_blocks_per_component * 2;
       for (int j = 0; j < 8; j++)
       {
-        if (col >= col_end) break;
+        if (col >= col_end) return;
         if (col >= m_col_offset)
         {
             int y = Py[Y_ofs + j];
