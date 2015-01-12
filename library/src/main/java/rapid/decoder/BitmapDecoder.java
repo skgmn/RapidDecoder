@@ -46,9 +46,10 @@ import static rapid.decoder.cache.ResourcePool.*;
 
 public abstract class BitmapDecoder extends Decodable {
     static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
-
     private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context" +
             ". Use BitmapDecoder.from(Context, Uri) instead.";
+
+    private static final String ASSET_PATH_PREFIX = "/android_asset/";
 
     //
     // Cache
@@ -78,7 +79,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void initMemoryCache(int size) {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
             }
             sMemCache = new BitmapLruCache(size);
         }
@@ -88,7 +92,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void destroyMemoryCache() {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
                 sMemCache = null;
             }
         }
@@ -98,7 +105,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void clearMemoryCache() {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
             }
         }
     }
@@ -134,16 +144,16 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     //
-    // Queries
+    // Transformations
     //
 
-    private static final int INITIAL_CRAFTS_LIST_CAPACITY = 2;
+    private static final int INITIAL_TRANSFORMATION_LIST_CAPACITY = 2;
 
-    private interface Recyclable {
-        void recycle();
+    private static abstract class Transformation {
+        public abstract void recycle();
     }
 
-    protected static class ScaleTo implements Recyclable {
+    protected static class ScaleTo extends Transformation {
         private static ResourcePool<ScaleTo> POOL = new ResourcePool<ScaleTo>() {
             @Override
             protected ScaleTo newInstance() {
@@ -159,7 +169,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         @Override
         public int hashCode() {
-            return 0x44c82f6f ^ Float.floatToIntBits(width) ^ Float.floatToIntBits(height);
+            return Float.floatToIntBits(width) + 31 * Float.floatToIntBits(height);
         }
 
         @Override
@@ -183,7 +193,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected static class ScaleBy implements Recyclable {
+    protected static class ScaleBy extends Transformation {
         private static ResourcePool<ScaleBy> POOL = new ResourcePool<ScaleBy>() {
             @Override
             protected ScaleBy newInstance() {
@@ -199,7 +209,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         @Override
         public int hashCode() {
-            return 0x526eb4b3 ^ Float.floatToIntBits(width) ^ Float.floatToIntBits(height);
+            return Float.floatToIntBits(width) + 31 * Float.floatToIntBits(height);
         }
 
         @Override
@@ -223,7 +233,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected static class Region implements Recyclable {
+    protected static class Region extends Transformation {
         private static ResourcePool<Region> POOL = new ResourcePool<Region>() {
             @Override
             protected Region newInstance() {
@@ -241,7 +251,7 @@ public abstract class BitmapDecoder extends Decodable {
 
         @Override
         public int hashCode() {
-            return 0xfed3839d ^ left ^ top ^ right ^ bottom;
+            return left + 31 * (top + 31 * (right + 31 * bottom));
         }
 
         @Override
@@ -268,8 +278,8 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected ArrayList<Object> mCrafts;
-    private boolean mCraftsResolved = false;
+    protected ArrayList<Transformation> mTransformations;
+    private boolean mTransformationsResolved = false;
 
     //
     // Fields
@@ -288,17 +298,17 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     protected BitmapDecoder(BitmapDecoder other) {
-        if (other.mCrafts != null) {
+        if (other.mTransformations != null) {
             //noinspection unchecked
-            mCrafts = (ArrayList<Object>) other.mCrafts.clone();
+            mTransformations = new ArrayList<>(other.mTransformations);
         }
     }
 
-    protected void addCraft(Object craft) {
-        if (mCrafts == null) {
-            mCrafts = new ArrayList<Object>(INITIAL_CRAFTS_LIST_CAPACITY);
+    protected void addTransformation(Transformation transformation) {
+        if (mTransformations == null) {
+            mTransformations = new ArrayList<>(INITIAL_TRANSFORMATION_LIST_CAPACITY);
         }
-        mCrafts.add(craft);
+        mTransformations.add(transformation);
         mHashCode = 0;
     }
 
@@ -319,7 +329,7 @@ public abstract class BitmapDecoder extends Decodable {
         if (mWidth != 0) {
             return mWidth;
         }
-        resolveCrafts();
+        resolveTransformations();
         return mWidth = mRatioIntegerMode.toInteger(regionWidth() * mRatioWidth);
     }
 
@@ -330,12 +340,12 @@ public abstract class BitmapDecoder extends Decodable {
         if (mHeight != 0) {
             return mHeight;
         }
-        resolveCrafts();
+        resolveTransformations();
         return mHeight = mRatioIntegerMode.toInteger(regionHeight() * mRatioHeight);
     }
 
-    private void invalidateCrafts() {
-        mCraftsResolved = false;
+    private void invalidateTransformations() {
+        mTransformationsResolved = false;
         mWidth = mHeight = 0;
     }
 
@@ -361,22 +371,23 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException();
         }
 
-        invalidateCrafts();
+        invalidateTransformations();
 
-        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
-        if (lastCraft != null) {
-            if (lastCraft instanceof ScaleTo) {
-                ScaleTo scaleTo = (ScaleTo) lastCraft;
+        Object lastTransformation = (mTransformations == null ? null :
+                mTransformations.get(mTransformations.size() - 1));
+        if (lastTransformation != null) {
+            if (lastTransformation instanceof ScaleTo) {
+                ScaleTo scaleTo = (ScaleTo) lastTransformation;
                 scaleTo.width = width;
                 scaleTo.height = height;
 
                 return this;
-            } else if (lastCraft instanceof ScaleBy) {
-                mCrafts.remove(mCrafts.size() - 1);
+            } else if (lastTransformation instanceof ScaleBy) {
+                mTransformations.remove(mTransformations.size() - 1);
             }
         }
 
-        addCraft(ScaleTo.obtain(width, height));
+        addTransformation(ScaleTo.obtain(width, height));
         return this;
     }
 
@@ -395,18 +406,19 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException(MESSAGE_INVALID_RATIO);
         }
 
-        invalidateCrafts();
+        invalidateTransformations();
 
-        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
-        if (lastCraft != null) {
-            if (lastCraft instanceof ScaleTo) {
-                ScaleTo scaleTo = (ScaleTo) lastCraft;
+        Object lastTransformation = (mTransformations == null ? null :
+                mTransformations.get(mTransformations.size() - 1));
+        if (lastTransformation != null) {
+            if (lastTransformation instanceof ScaleTo) {
+                ScaleTo scaleTo = (ScaleTo) lastTransformation;
                 scaleTo.width = scaleTo.width * widthRatio;
                 scaleTo.height = scaleTo.height * heightRatio;
 
                 return this;
-            } else if (lastCraft instanceof ScaleBy) {
-                ScaleBy scaleBy = (ScaleBy) lastCraft;
+            } else if (lastTransformation instanceof ScaleBy) {
+                ScaleBy scaleBy = (ScaleBy) lastTransformation;
                 scaleBy.width *= widthRatio;
                 scaleBy.height *= heightRatio;
 
@@ -414,7 +426,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addCraft(ScaleBy.obtain(widthRatio, heightRatio));
+        addTransformation(ScaleBy.obtain(widthRatio, heightRatio));
         return this;
     }
 
@@ -429,12 +441,13 @@ public abstract class BitmapDecoder extends Decodable {
             throw new IllegalArgumentException();
         }
 
-        invalidateCrafts();
+        invalidateTransformations();
 
-        Object lastCraft = (mCrafts == null ? null : mCrafts.get(mCrafts.size() - 1));
-        if (lastCraft != null) {
-            if (lastCraft instanceof Region) {
-                Region region = (Region) lastCraft;
+        Object lastTransformation = (mTransformations == null ? null :
+                mTransformations.get(mTransformations.size() - 1));
+        if (lastTransformation != null) {
+            if (lastTransformation instanceof Region) {
+                Region region = (Region) lastTransformation;
                 region.left += left;
                 region.top += top;
                 region.right = region.left + (right - left);
@@ -444,7 +457,7 @@ public abstract class BitmapDecoder extends Decodable {
             }
         }
 
-        addCraft(Region.obtain(left, top, right, bottom));
+        addTransformation(Region.obtain(left, top, right, bottom));
         return this;
     }
 
@@ -502,8 +515,8 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected void resolveCrafts() {
-        if (mCraftsResolved) return;
+    protected void resolveTransformations() {
+        if (mTransformationsResolved) return;
 
         final float densityRatio = densityRatio();
         mRatioWidth = mRatioHeight = densityRatio;
@@ -514,10 +527,10 @@ public abstract class BitmapDecoder extends Decodable {
         }
         mRegion = null;
 
-        mCraftsResolved = true;
-        if (mCrafts == null) return;
+        mTransformationsResolved = true;
+        if (mTransformations == null) return;
 
-        for (Object r : mCrafts) {
+        for (Object r : mTransformations) {
             if (r instanceof ScaleTo) {
                 ScaleTo scaleTo = (ScaleTo) r;
 
@@ -567,15 +580,15 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected boolean craftsEqual(BitmapDecoder other) {
-        if (mCrafts == null) {
-            return other.mCrafts == null || other.mCrafts.isEmpty();
+    protected boolean transformationsEqual(BitmapDecoder other) {
+        if (mTransformations == null) {
+            return other.mTransformations == null || other.mTransformations.isEmpty();
         } else {
-            int otherSize = (other.mCrafts == null ? 0 : other.mCrafts.size());
-            if (mCrafts.size() != otherSize) return false;
+            int otherSize = (other.mTransformations == null ? 0 : other.mTransformations.size());
+            if (mTransformations.size() != otherSize) return false;
 
-            Iterator<Object> it1 = mCrafts.iterator();
-            Iterator<Object> it2 = other.mCrafts.iterator();
+            Iterator<Transformation> it1 = mTransformations.iterator();
+            Iterator<Transformation> it2 = other.mTransformations.iterator();
 
             while (it1.hasNext()) {
                 if (!it2.hasNext() || !it1.next().equals(it2.next())) return false;
@@ -585,8 +598,8 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    protected int craftsHash() {
-        return (mCrafts == null ? 0 : mCrafts.hashCode());
+    protected int transformationsHash() {
+        return (mTransformations == null ? 0 : mTransformations.hashCode());
     }
 
     /**
@@ -671,18 +684,24 @@ public abstract class BitmapDecoder extends Decodable {
     protected void finalize() throws Throwable {
         try {
             RECT.recycle(mRegion);
-            if (mCrafts != null) {
+            if (mTransformations != null) {
                 //noinspection ForLoopReplaceableByForEach
-                for (int i = 0, c = mCrafts.size(); i < c; ++i) {
-                    Object craft = mCrafts.get(i);
-                    if (craft instanceof Recyclable) {
-                        ((Recyclable) craft).recycle();
-                    }
+                for (int i = 0, c = mTransformations.size(); i < c; ++i) {
+                    mTransformations.get(i).recycle();
                 }
             }
         } finally {
             super.finalize();
         }
+    }
+
+    public BitmapDecoder reset() {
+        mRatioWidth = mRatioHeight = 1;
+        mTransformationsResolved = false;
+        mRegion = null;
+        mHashCode = 0;
+        mTransformations = null;
+        return this;
     }
 
     @SuppressWarnings("UnusedDeclaration")
@@ -736,15 +755,15 @@ public abstract class BitmapDecoder extends Decodable {
         if (uriOrPath.contains("://")) {
             return from(Uri.parse(uriOrPath), useCache);
         } else {
-            return (BitmapLoader) new FileBitmapLoader(uriOrPath).useMemoryCache(useCache);
+            return new FileBitmapLoader(uriOrPath).useMemoryCache(useCache);
         }
     }
 
-    public static BitmapDecoder from(Context context, @NonNull String uri) {
+    public static BitmapLoader from(Context context, @NonNull String uri) {
         return from(context, Uri.parse(uri));
     }
 
-    public static BitmapDecoder from(Context context, String uri, boolean useCache) {
+    public static BitmapLoader from(Context context, String uri, boolean useCache) {
         return from(context, Uri.parse(uri), useCache);
     }
 
@@ -773,98 +792,108 @@ public abstract class BitmapDecoder extends Decodable {
     public static BitmapLoader from(final Context context, @NonNull final Uri uri,
                                     boolean useCache) {
         String scheme = uri.getScheme();
-        if (ContentResolver.SCHEME_ANDROID_RESOURCE.equals(scheme)) {
-            if (context == null) {
-                throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
-            }
-
-            Resources res;
-            String packageName = uri.getAuthority();
-            if (context.getPackageName().equals(packageName)) {
-                res = context.getResources();
-            } else {
-                PackageManager pm = context.getPackageManager();
-                try {
-                    res = pm.getResourcesForApplication(packageName);
-                } catch (NameNotFoundException e) {
-                    return new NullBitmapLoader();
-                }
-            }
-
-            int id = 0;
-            List<String> segments = uri.getPathSegments();
-            int size = segments.size();
-            if (size == 2 && segments.get(0).equals("drawable")) {
-                String resName = segments.get(1);
-                id = res.getIdentifier(resName, "drawable", packageName);
-            } else if (size == 1 && TextUtils.isDigitsOnly(segments.get(0))) {
-                try {
-                    id = Integer.parseInt(segments.get(0));
-                } catch (NumberFormatException ignored) {
-                }
-            }
-
-            if (id == 0) {
-                return new NullBitmapLoader();
-            } else {
-                return (ResourceBitmapLoader) new ResourceBitmapLoader(res, id)
-                        .useMemoryCache(useCache);
-            }
-        } else if (ContentResolver.SCHEME_FILE.equals(scheme)) {
-            return (BitmapLoader) new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
-        } else if ("http".equals(scheme) || "https".equals(scheme) || "ftp".equals(scheme)) {
-            String uriString = uri.toString();
-            BitmapLoader d = null;
-
-            synchronized (sDiskCacheLock) {
-                if (useCache && sDiskCache != null) {
-                    InputStream in = sDiskCache.get(uriString);
-                    if (in != null) {
-                        d = new StreamBitmapLoader(in);
-                        d.mIsFromDiskCache = true;
-                    }
+        switch (scheme) {
+            case ContentResolver.SCHEME_ANDROID_RESOURCE:
+                if (context == null) {
+                    throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
                 }
 
-                if (d == null) {
-                    StreamBitmapLoader sd = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
-                        @Override
-                        public InputStream openInputStream() {
-                            try {
-                                return new URL(uri.toString()).openStream();
-                            } catch (MalformedURLException e) {
-                                throw new IllegalArgumentException(e);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }));
-                    if (useCache && sDiskCache != null) {
-                        sd.setCacheOutputStream(sDiskCache.getOutputStream(uriString));
-                    }
-                    d = sd;
-                }
-            }
-
-            d.id(uri);
-            return (BitmapLoader) d.useMemoryCache(useCache);
-        } else {
-            if (context == null) {
-                throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
-            }
-            final ContentResolver cr = context.getContentResolver();
-            StreamBitmapLoader d = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
-                @Nullable
-                @Override
-                public InputStream openInputStream() {
+                Resources res;
+                String packageName = uri.getAuthority();
+                if (context.getPackageName().equals(packageName)) {
+                    res = context.getResources();
+                } else {
+                    PackageManager pm = context.getPackageManager();
                     try {
-                        return cr.openInputStream(uri);
-                    } catch (FileNotFoundException e) {
-                        return null;
+                        res = pm.getResourcesForApplication(packageName);
+                    } catch (NameNotFoundException e) {
+                        return new NullBitmapLoader();
                     }
                 }
-            }));
-            d.id(uri);
-            return (BitmapLoader) d.useMemoryCache(useCache);
+
+                int id = 0;
+                List<String> segments = uri.getPathSegments();
+                int size = segments.size();
+                if (size == 2 && segments.get(0).equals("drawable")) {
+                    String resName = segments.get(1);
+                    id = res.getIdentifier(resName, "drawable", packageName);
+                } else if (size == 1 && TextUtils.isDigitsOnly(segments.get(0))) {
+                    try {
+                        id = Integer.parseInt(segments.get(0));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
+                if (id == 0) {
+                    return new NullBitmapLoader();
+                } else {
+                    return new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
+                }
+            case ContentResolver.SCHEME_FILE:
+                String path = uri.getPath();
+                if (path.startsWith(ASSET_PATH_PREFIX)) {
+                    if (context == null) {
+                        throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+                    }
+                    return new AssetBitmapLoader(context,
+                            path.substring(ASSET_PATH_PREFIX.length())).id(uri).useMemoryCache(useCache);
+                } else {
+                    return new FileBitmapLoader(path).useMemoryCache(useCache);
+                }
+            case "http":
+            case "https":
+            case "ftp": {
+                String uriString = uri.toString();
+                BitmapLoader d = null;
+
+                synchronized (sDiskCacheLock) {
+                    if (useCache && sDiskCache != null) {
+                        InputStream in = sDiskCache.get(uriString);
+                        if (in != null) {
+                            d = new StreamBitmapLoader(in);
+                            d.mIsFromDiskCache = true;
+                        }
+                    }
+
+                    if (d == null) {
+                        StreamBitmapLoader sd = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+                            @Override
+                            public InputStream openInputStream() {
+                                try {
+                                    return new URL(uri.toString()).openStream();
+                                } catch (MalformedURLException e) {
+                                    throw new IllegalArgumentException(e);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }));
+                        if (useCache && sDiskCache != null) {
+                            sd.setCacheOutputStream(sDiskCache.getOutputStream(uriString));
+                        }
+                        d = sd;
+                    }
+                }
+                return d.id(uri).useMemoryCache(useCache);
+            }
+            default: {
+                if (context == null) {
+                    throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+                }
+                final ContentResolver cr = context.getContentResolver();
+                StreamBitmapLoader d = new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
+                    @Nullable
+                    @Override
+                    public InputStream openInputStream() {
+                        try {
+                            return cr.openInputStream(uri);
+                        } catch (FileNotFoundException e) {
+                            return null;
+                        }
+                    }
+                }));
+                return d.id(uri).useMemoryCache(useCache);
+            }
         }
     }
 

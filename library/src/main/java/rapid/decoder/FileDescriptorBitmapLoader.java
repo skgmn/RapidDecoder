@@ -31,7 +31,7 @@ class FileDescriptorBitmapLoader extends BitmapLoader {
 	}
 
 	@Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		return new FileInputStream(fd);
 	}
 
@@ -53,7 +53,10 @@ class FileDescriptorBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ fd.hashCode();
+		if (mHashCode == 0) {
+            mHashCode = super.hashCode() + 31 * fd.hashCode();
+        }
+        return mHashCode;
 	}
 	
 	@Override

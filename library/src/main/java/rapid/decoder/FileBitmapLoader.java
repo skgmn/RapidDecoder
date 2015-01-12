@@ -31,7 +31,7 @@ class FileBitmapLoader extends BitmapLoader {
 	}
 
     @Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		try {
 			return new FileInputStream((String) mId);
 		} catch (FileNotFoundException e) {

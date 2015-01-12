@@ -41,13 +41,12 @@ public abstract class BitmapLoader extends BitmapDecoder {
     private int mSourceHeight;
     private boolean mBoundsDecoded;
 
-    // Temporary variables
+    // Transient variables
     private float mAdjustedDensityRatio;
     private float mAdjustedWidthRatio;
     private float mAdjustedHeightRatio;
 
     protected BitmapLoader() {
-        super();
         mOptions = OPTIONS.obtain();
         mOptions.inScaled = false;
     }
@@ -101,7 +100,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
 
         mOptions.inJustDecodeBounds = true;
+        int sampleSize = mOptions.inSampleSize;
+        mOptions.inSampleSize = 1;
         decode(mOptions);
+        mOptions.inSampleSize = sampleSize;
         mOptions.inJustDecodeBounds = false;
         mBoundsDecoded = true;
 
@@ -151,7 +153,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         //
 
-        resolveCrafts();
+        resolveTransformations();
 
         // Setup sample size.
 
@@ -250,7 +252,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
             return decode();
         }
 
-        resolveCrafts();
+        resolveTransformations();
         mOptions.inSampleSize = calculateSampleSize(regionWidth(), regionHeight(),
                 targetWidth, targetHeight);
 
@@ -276,7 +278,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         onDecodingStarted(useBuiltInDecoder);
 
         if (useBuiltInDecoder) {
-            InputStream in = getInputStream();
+            InputStream in = openInputStream();
             if (in == null) return null;
 
             TwiceReadableInputStream in2 = TwiceReadableInputStream.getInstanceFrom(in);
@@ -330,7 +332,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected abstract Bitmap decode(Options opts);
 
     @Nullable
-    protected abstract InputStream getInputStream();
+    protected abstract InputStream openInputStream();
 
     protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 
@@ -464,16 +466,13 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public int hashCode() {
-        if (mHashCode != 0) {
-            return mHashCode;
+        if (mHashCode == 0) {
+            final int hashId = (mId != null ? mId.hashCode() : 0);
+            final int hashOptions = (mIsMutable ? 1 : 0) + 31 * (mScaleFilter ? 1 : 0);
+            final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions.inPreferredConfig.hashCode());
+
+            mHashCode = hashId + 31 * (hashOptions + 31 * (hashConfig + 31 * transformationsHash()));
         }
-
-        final int hashId = (mId != null ? mId.hashCode() : 0);
-        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (mScaleFilter ? 0xAAAAAAAA : 0);
-        final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions
-                .inPreferredConfig.hashCode());
-
-        mHashCode = hashId ^ hashOptions ^ hashConfig ^ craftsHash();
         return mHashCode;
     }
 
@@ -490,7 +489,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 (mId == null ? d.mId == null : mId.equals(d.mId)) &&
                 mIsMutable == d.mIsMutable &&
                 mScaleFilter == d.mScaleFilter &&
-                craftsEqual(d);
+                transformationsEqual(d);
     }
 
     BitmapLoader id(Object id) {
@@ -547,6 +546,24 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @Override
     public BitmapLoader useMemoryCache(boolean useCache) {
         super.useMemoryCache(useCache);
+        return this;
+    }
+
+    @Override
+    public BitmapLoader reset() {
+        super.reset();
+        mOptions.inPreferredConfig = null;
+        mOptions.inDither = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
+            mOptions.inPreferQualityOverSpeed = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                mOptions.inMutable = false;
+            }
+        }
+        mShouldConvertToOpaqueOnScale = false;
+        mIsMutable = false;
+        mScaleFilter = true;
+        mUseBuiltInDecoder = false;
         return this;
     }
 }
