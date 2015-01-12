@@ -53,7 +53,10 @@ class FileDescriptorBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ fd.hashCode();
+		if (mHashCode == 0) {
+            mHashCode = super.hashCode() + 31 * fd.hashCode();
+        }
+        return mHashCode;
 	}
 	
 	@Override

@@ -24,7 +24,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 
         @Override
         public int hashCode() {
-            return res.hashCode() ^ id;
+            return res.hashCode() + 31 * id;
         }
 
         @Override
@@ -96,8 +96,11 @@ class ResourceBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-        Identifier id = (Identifier) mId;
-		return super.hashCode() ^ id.res.hashCode() ^ id.id;
+        if (mHashCode == 0) {
+            Identifier id = (Identifier) mId;
+            mHashCode = super.hashCode() + 31 * (id.res.hashCode() + 31 * id.id);
+        }
+        return mHashCode;
 	}
 	
 	@Override

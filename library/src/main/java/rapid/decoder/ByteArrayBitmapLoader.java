@@ -63,7 +63,10 @@ class ByteArrayBitmapLoader extends BitmapLoader {
 	
 	@Override
 	public int hashCode() {
-		return super.hashCode() ^ Arrays.hashCode(data) ^ offset ^ length;
+		if (mHashCode == 0) {
+            mHashCode = super.hashCode() + 31 * (Arrays.hashCode(data) + 31 * (offset + 31 * length));
+        }
+        return mHashCode;
 	}
 	
 	@Override

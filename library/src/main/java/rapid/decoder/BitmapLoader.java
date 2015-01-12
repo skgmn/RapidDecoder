@@ -41,7 +41,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     private int mSourceHeight;
     private boolean mBoundsDecoded;
 
-    // Temporary variables
+    // Transient variables
     private float mAdjustedDensityRatio;
     private float mAdjustedWidthRatio;
     private float mAdjustedHeightRatio;
@@ -151,7 +151,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         //
 
-        resolveCrafts();
+        resolveTransformations();
 
         // Setup sample size.
 
@@ -250,7 +250,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
             return decode();
         }
 
-        resolveCrafts();
+        resolveTransformations();
         mOptions.inSampleSize = calculateSampleSize(regionWidth(), regionHeight(),
                 targetWidth, targetHeight);
 
@@ -464,16 +464,13 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     @Override
     public int hashCode() {
-        if (mHashCode != 0) {
-            return mHashCode;
+        if (mHashCode == 0) {
+            final int hashId = (mId != null ? mId.hashCode() : 0);
+            final int hashOptions = (mIsMutable ? 1 : 0) + 31 * (mScaleFilter ? 1 : 0);
+            final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions.inPreferredConfig.hashCode());
+
+            mHashCode = hashId + 31 * (hashOptions + 31 * (hashConfig + 31 * transformationsHash()));
         }
-
-        final int hashId = (mId != null ? mId.hashCode() : 0);
-        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (mScaleFilter ? 0xAAAAAAAA : 0);
-        final int hashConfig = (mOptions.inPreferredConfig == null ? 0 : mOptions
-                .inPreferredConfig.hashCode());
-
-        mHashCode = hashId ^ hashOptions ^ hashConfig ^ craftsHash();
         return mHashCode;
     }
 
@@ -490,7 +487,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 (mId == null ? d.mId == null : mId.equals(d.mId)) &&
                 mIsMutable == d.mIsMutable &&
                 mScaleFilter == d.mScaleFilter &&
-                craftsEqual(d);
+                transformationsEqual(d);
     }
 
     BitmapLoader id(Object id) {

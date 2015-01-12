@@ -57,7 +57,7 @@ class BitmapTransformer extends BitmapDecoder {
 
     @Override
     public Bitmap decode() {
-        resolveCrafts();
+        resolveTransformations();
 
         Bitmap bitmap;
         if (region != null) {
@@ -197,7 +197,7 @@ class BitmapTransformer extends BitmapDecoder {
         final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
         final int hashConfig = (mTargetConfig == null ? 0 : mTargetConfig.hashCode());
 
-        return hashBitmap ^ hashOptions ^ hashConfig ^ craftsHash();
+        return hashBitmap ^ hashOptions ^ hashConfig ^ transformationsHash();
     }
 
     @Override
