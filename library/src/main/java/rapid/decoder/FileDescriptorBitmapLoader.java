@@ -31,7 +31,7 @@ class FileDescriptorBitmapLoader extends BitmapLoader {
 	}
 
 	@Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		return new FileInputStream(fd);
 	}
 

@@ -41,7 +41,7 @@ class ByteArrayBitmapLoader extends BitmapLoader {
 	}
 	
 	@Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		return new ByteArrayInputStream(data, offset, length);
 	}
 

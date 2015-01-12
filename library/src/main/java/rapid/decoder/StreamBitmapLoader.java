@@ -68,7 +68,7 @@ class StreamBitmapLoader extends BitmapLoader {
     }
 
     @Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		return mIn;
 	}
 	
@@ -95,4 +95,9 @@ class StreamBitmapLoader extends BitmapLoader {
 	public BitmapLoader fork() {
 		return new StreamBitmapLoader(this);
 	}
+
+    @Override
+    public BitmapLoader reset() {
+        throw new UnsupportedOperationException();
+    }
 }

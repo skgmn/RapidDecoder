@@ -53,7 +53,7 @@ public class MainActivity extends ActionBarActivity {
             }
         };
 
-        mAdapterDrawerMenu = new ArrayAdapter<String>(this,
+        mAdapterDrawerMenu = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, getResources().getStringArray(R.array
                 .drawer_menu_items));
         listDrawerMenu.setAdapter(mAdapterDrawerMenu);
@@ -102,6 +102,9 @@ public class MainActivity extends ActionBarActivity {
                 break;
             case 6:
                 fragment = new WrapContentFragment();
+                break;
+            case 7:
+                fragment = new ResetFragment();
                 break;
             default:
                 return;

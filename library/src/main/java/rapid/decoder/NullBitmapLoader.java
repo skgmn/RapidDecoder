@@ -94,7 +94,7 @@ public class NullBitmapLoader extends BitmapLoader {
 
     @Nullable
     @Override
-    protected InputStream getInputStream() {
+    protected InputStream openInputStream() {
         return null;
     }
 

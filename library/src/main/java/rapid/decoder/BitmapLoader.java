@@ -47,7 +47,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
     private float mAdjustedHeightRatio;
 
     protected BitmapLoader() {
-        super();
         mOptions = OPTIONS.obtain();
         mOptions.inScaled = false;
     }
@@ -101,7 +100,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
 
         mOptions.inJustDecodeBounds = true;
+        int sampleSize = mOptions.inSampleSize;
+        mOptions.inSampleSize = 1;
         decode(mOptions);
+        mOptions.inSampleSize = sampleSize;
         mOptions.inJustDecodeBounds = false;
         mBoundsDecoded = true;
 
@@ -276,7 +278,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         onDecodingStarted(useBuiltInDecoder);
 
         if (useBuiltInDecoder) {
-            InputStream in = getInputStream();
+            InputStream in = openInputStream();
             if (in == null) return null;
 
             TwiceReadableInputStream in2 = TwiceReadableInputStream.getInstanceFrom(in);
@@ -330,7 +332,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected abstract Bitmap decode(Options opts);
 
     @Nullable
-    protected abstract InputStream getInputStream();
+    protected abstract InputStream openInputStream();
 
     protected abstract BitmapRegionDecoder createBitmapRegionDecoder();
 
@@ -544,6 +546,24 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @Override
     public BitmapLoader useMemoryCache(boolean useCache) {
         super.useMemoryCache(useCache);
+        return this;
+    }
+
+    @Override
+    public BitmapLoader reset() {
+        super.reset();
+        mOptions.inPreferredConfig = null;
+        mOptions.inDither = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
+            mOptions.inPreferQualityOverSpeed = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                mOptions.inMutable = false;
+            }
+        }
+        mShouldConvertToOpaqueOnScale = false;
+        mIsMutable = false;
+        mScaleFilter = true;
+        mUseBuiltInDecoder = false;
         return this;
     }
 }

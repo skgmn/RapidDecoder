@@ -55,7 +55,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 	}
 	
 	@Override
-	protected InputStream getInputStream() {
+	protected InputStream openInputStream() {
 		Identifier id = (Identifier) mId;
         return id.res.openRawResource(id.id);
 	}
@@ -64,7 +64,7 @@ class ResourceBitmapLoader extends BitmapLoader {
 	@Override
 	protected BitmapRegionDecoder createBitmapRegionDecoder() {
 		try {
-            InputStream in = getInputStream();
+            InputStream in = openInputStream();
             if (in == null) {
                 return null;
             }

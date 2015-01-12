@@ -46,9 +46,10 @@ import static rapid.decoder.cache.ResourcePool.*;
 
 public abstract class BitmapDecoder extends Decodable {
     static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
-
     private static final String MESSAGE_URI_REQUIRES_CONTEXT = "This type of uri requires Context" +
             ". Use BitmapDecoder.from(Context, Uri) instead.";
+
+    private static final String ASSET_PATH_PREFIX = "/android_asset/";
 
     //
     // Cache
@@ -78,7 +79,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void initMemoryCache(int size) {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
             }
             sMemCache = new BitmapLruCache(size);
         }
@@ -88,7 +92,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void destroyMemoryCache() {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
                 sMemCache = null;
             }
         }
@@ -98,7 +105,10 @@ public abstract class BitmapDecoder extends Decodable {
     public static void clearMemoryCache() {
         synchronized (sMemCacheLock) {
             if (sMemCache != null) {
-                sMemCache.evictAll();
+                try {
+                    sMemCache.evictAll();
+                } catch (IllegalStateException ignored) {
+                }
             }
         }
     }
@@ -685,6 +695,15 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
+    public BitmapDecoder reset() {
+        mRatioWidth = mRatioHeight = 1;
+        mTransformationsResolved = false;
+        mRegion = null;
+        mHashCode = 0;
+        mTransformations = null;
+        return this;
+    }
+
     @SuppressWarnings("UnusedDeclaration")
     public static boolean isLoadingInBackground() {
         return BackgroundTaskManager.hasAnyTasks();
@@ -740,11 +759,11 @@ public abstract class BitmapDecoder extends Decodable {
         }
     }
 
-    public static BitmapDecoder from(Context context, @NonNull String uri) {
+    public static BitmapLoader from(Context context, @NonNull String uri) {
         return from(context, Uri.parse(uri));
     }
 
-    public static BitmapDecoder from(Context context, String uri, boolean useCache) {
+    public static BitmapLoader from(Context context, String uri, boolean useCache) {
         return from(context, Uri.parse(uri), useCache);
     }
 
@@ -811,7 +830,16 @@ public abstract class BitmapDecoder extends Decodable {
                     return new ResourceBitmapLoader(res, id).useMemoryCache(useCache);
                 }
             case ContentResolver.SCHEME_FILE:
-                return new FileBitmapLoader(uri.getPath()).useMemoryCache(useCache);
+                String path = uri.getPath();
+                if (path.startsWith(ASSET_PATH_PREFIX)) {
+                    if (context == null) {
+                        throw new IllegalArgumentException(MESSAGE_URI_REQUIRES_CONTEXT);
+                    }
+                    return new AssetBitmapLoader(context,
+                            path.substring(ASSET_PATH_PREFIX.length())).id(uri).useMemoryCache(useCache);
+                } else {
+                    return new FileBitmapLoader(path).useMemoryCache(useCache);
+                }
             case "http":
             case "https":
             case "ftp": {
@@ -846,9 +874,7 @@ public abstract class BitmapDecoder extends Decodable {
                         d = sd;
                     }
                 }
-
-                d.id(uri);
-                return d.useMemoryCache(useCache);
+                return d.id(uri).useMemoryCache(useCache);
             }
             default: {
                 if (context == null) {
@@ -866,8 +892,7 @@ public abstract class BitmapDecoder extends Decodable {
                         }
                     }
                 }));
-                d.id(uri);
-                return d.useMemoryCache(useCache);
+                return d.id(uri).useMemoryCache(useCache);
             }
         }
     }
