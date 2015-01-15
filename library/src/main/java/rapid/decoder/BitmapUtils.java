@@ -7,6 +7,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.support.annotation.NonNull;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
@@ -45,4 +46,10 @@ public final class BitmapUtils {
 		final int bytesPerPixel = (config.equals(Config.ARGB_8888) ? 4 : 2);
 		return width * height * bytesPerPixel;
 	}
+
+    @NonNull
+    public static Config getConfig(Bitmap bitmap) {
+        Config config = bitmap.getConfig();
+        return config == null ? Config.ARGB_8888 : config;
+    }
 }

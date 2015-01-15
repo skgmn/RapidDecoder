@@ -413,7 +413,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
             bitmap2 = Bitmap.createScaledBitmap(bitmap, width, height, mScaleFilter);
         } else {
-            Config config = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig());
+            Config config = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : BitmapUtils.getConfig(bitmap));
             bitmap2 = Bitmap.createBitmap(width, height, config);
             Canvas cv = CANVAS.obtain(bitmap2);
             if (background != null) {
