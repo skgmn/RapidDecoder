@@ -11,7 +11,7 @@ import android.support.annotation.NonNull;
 
 import static rapid.decoder.cache.ResourcePool.*;
 
-public final class BitmapUtils {
+public class BitmapUtils {
 	@SuppressWarnings("UnusedDeclaration")
     public static Bitmap getBitmap(Drawable d) {
 		if (d instanceof BitmapDrawable) {
