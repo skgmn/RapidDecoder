@@ -2,6 +2,7 @@ package rapid.decoder;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
+import android.os.Handler;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -34,6 +35,7 @@ public class NextLayoutInspector {
     private static class LayoutChangeInspector implements Runnable,
             ViewTreeObserver.OnGlobalLayoutListener {
         private WeakReference<View> mViewRef;
+        private Handler mHandler;
         private int mLeft;
         private int mTop;
         private int mRight;
@@ -41,7 +43,8 @@ public class NextLayoutInspector {
         private OnNextLayoutListener mListener;
 
         public LayoutChangeInspector(View v, OnNextLayoutListener listener) {
-            mViewRef = new WeakReference<View>(v);
+            mViewRef = new WeakReference<>(v);
+            mHandler = v.getHandler();
             mLeft = v.getLeft();
             mTop = v.getTop();
             mRight = v.getRight();
@@ -56,7 +59,7 @@ public class NextLayoutInspector {
             if (!v.isLayoutRequested()) {
                 mListener.onNextLayout(v);
             } else {
-                v.post(this);
+                mHandler.post(this);
                 v.getViewTreeObserver().addOnGlobalLayoutListener(this);
             }
         }
@@ -75,18 +78,18 @@ public class NextLayoutInspector {
                 removeOnGlobalLayoutListener(v);
                 mListener.onNextLayout(v);
             } else {
-                v.post(this);
+                mHandler.post(this);
             }
         }
 
         @Override
         public void onGlobalLayout() {
+            mHandler.removeCallbacks(this);
             View v = mViewRef.get();
-            if (v == null) return;
-
-            removeOnGlobalLayoutListener(v);
-            v.removeCallbacks(this);
-            mListener.onNextLayout(v);
+            if (v != null) {
+                removeOnGlobalLayoutListener(v);
+                mListener.onNextLayout(v);
+            }
         }
 
         @SuppressWarnings("deprecation")
