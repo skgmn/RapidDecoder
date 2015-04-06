@@ -3,7 +3,11 @@ package rapid.decoder.binder;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RectShape;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
@@ -94,6 +98,22 @@ public abstract class ViewBinder<T extends View> implements Effect.EffectTarget 
             @Override
             public Drawable inflate(Context context) {
                 return context.getResources().getDrawable(resId);
+            }
+        };
+        return this;
+    }
+
+    public ViewBinder<T> placeholderColor(final int color) {
+        mPlaceholderInflater = new DrawableInflater() {
+            @Override
+            public Drawable inflate(Context context) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+                    ShapeDrawable d = new ShapeDrawable(new RectShape());
+                    d.getPaint().setColor(color);
+                    return d;
+                } else {
+                    return new ColorDrawable(color);
+                }
             }
         };
         return this;

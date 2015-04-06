@@ -23,6 +23,7 @@ class FitGravityFramedDecoder extends FramedDecoder {
 
     protected FitGravityFramedDecoder(FitGravityFramedDecoder other) {
         super(other);
+        mGravity = other.mGravity;
     }
 
     @Override
