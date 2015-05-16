@@ -3,6 +3,7 @@ package rapid.decoder;
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -50,6 +51,11 @@ public class NextLayoutInspector {
             mRight = v.getRight();
             mBottom = v.getBottom();
             mListener = listener;
+
+            // Handler can be null here on Gingerbread.
+            if (mHandler == null) {
+                mHandler = new Handler(Looper.getMainLooper());
+            }
         }
 
         public void startInspect() {
