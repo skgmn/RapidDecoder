@@ -1,19 +1,15 @@
 package rapid.decoder.cache;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-
 import android.annotation.SuppressLint;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory.Options;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
+
+import java.util.ArrayList;
 
 public abstract class ResourcePool<T> {
 	private static final int DEFAULT_CAPACITY = 4;
@@ -166,94 +162,6 @@ public abstract class ResourcePool<T> {
 		}
 	};
 	
-	public static class CanvasPool extends ResourcePool<Canvas> {
-		private Field Canvas_mNativeCanvas;
-		private Field Canvas_mBitmap;
-		private Field Canvas_mGL;
-		private Field Canvas_mDensity;
-		private Method Canvas_initRaster;
-		private Method Canvas_finalizer;
-		
-		@Override
-		protected Canvas newInstance() {
-			return new Canvas();
-		}
-		
-		@Override
-		protected boolean onRecycle(Canvas obj) {
-			if (Build.VERSION.SDK_INT >= 14) {
-				obj.setBitmap(null);
-				return true;
-			} else if (Build.VERSION.SDK_INT >= 11) {
-				// No source available for Honeycomb.
-				return false;
-			} else {
-				// Canvas.setBitmap(null) throws an NullPointerException before API Level 14.
-				
-				try {
-					if (Canvas_mNativeCanvas == null) {
-						Canvas_mNativeCanvas = Canvas.class.getDeclaredField("mNativeCanvas");
-						Canvas_mNativeCanvas.setAccessible(true);
-					}
-					if (Canvas_mBitmap == null) {
-						Canvas_mBitmap = Canvas.class.getDeclaredField("mBitmap");
-						Canvas_mBitmap.setAccessible(true);
-					}
-					if (Canvas_mGL == null) {
-						Canvas_mGL = Canvas.class.getDeclaredField("mGL");
-						Canvas_mGL.setAccessible(true);
-					}
-					if (Canvas_initRaster == null) {
-						Canvas_initRaster = Canvas.class.getDeclaredMethod("initRaster", Integer.TYPE);
-						Canvas_initRaster.setAccessible(true);
-					}
-					if (Canvas_mDensity == null) {
-						Canvas_mDensity = Canvas.class.getDeclaredField("mDensity");
-						Canvas_mDensity.setAccessible(true);
-					}
-					if (Canvas_finalizer == null) {
-						Canvas_finalizer = Canvas.class.getDeclaredMethod("finalizer", Integer.TYPE);
-						Canvas_finalizer.setAccessible(true);
-					}
-					
-					Object gl = Canvas_mGL.get(obj);
-					if (gl != null) {
-						return false;
-					}
-					
-					int nativeCanvas = Canvas_mNativeCanvas.getInt(obj);
-					if (nativeCanvas != 0) {
-						Canvas_finalizer.invoke(null, nativeCanvas);
-					}
-					
-					int nullCanvas = (Integer) Canvas_initRaster.invoke(null, 0);
-					Canvas_mNativeCanvas.set(obj, nullCanvas);
-					
-					Canvas_mBitmap.set(obj, null);
-					Canvas_mDensity.set(obj, Bitmap.DENSITY_NONE);
-					
-					return true;
-				} catch (Exception e) {
-					return false;
-				}
-			}
-		}
-		
-		@Override
-		protected void onReset(Canvas obj) {
-			obj.clipRect(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
-			obj.setDrawFilter(null);
-			obj.setMatrix(null);
-		}
-		
-		public Canvas obtain(Bitmap bitmap) {
-			final Canvas cv = obtainImpl(true);
-			cv.setBitmap(bitmap);
-			return cv;
-		}
-	}
-	public static final CanvasPool CANVAS = new CanvasPool();
-	
 	public static void clearPools() {
 		synchronized (ResourcePool.class) {
 			if (pools != null) {
@@ -269,7 +177,7 @@ public abstract class ResourcePool<T> {
 	public ResourcePool() {
 		synchronized (ResourcePool.class) {
 			if (pools == null) {
-				pools = new ArrayList<ResourcePool<?>>();
+				pools = new ArrayList<>();
 			}
 			pools.add(this);
 		}

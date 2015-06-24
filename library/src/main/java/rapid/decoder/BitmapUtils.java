@@ -1,15 +1,13 @@
 package rapid.decoder;
 
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.PixelFormat;
-import android.graphics.Bitmap.Config;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
-
-import static rapid.decoder.cache.ResourcePool.*;
 
 public class BitmapUtils {
 	@SuppressWarnings("UnusedDeclaration")
@@ -24,10 +22,9 @@ public class BitmapUtils {
 			d.setDither(opaque);
 			d.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
 			
-			Canvas cv = CANVAS.obtain(bitmap);
+			Canvas cv = new Canvas(bitmap);
 			d.draw(cv);
-			CANVAS.recycle(cv);
-			
+
 			return bitmap;
 		}
 	}

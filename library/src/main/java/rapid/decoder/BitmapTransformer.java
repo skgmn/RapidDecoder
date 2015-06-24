@@ -38,7 +38,7 @@ class BitmapTransformer extends BitmapDecoder {
     private Bitmap redraw(Bitmap bitmap, Rect rectSrc, int targetWidth, int targetHeight) {
         Config config = (mTargetConfig != null ? mTargetConfig : bitmap.getConfig());
         Bitmap bitmap2 = Bitmap.createBitmap(targetWidth, targetHeight, config);
-        Canvas cv = CANVAS.obtain(bitmap2);
+        Canvas cv = new Canvas(bitmap2);
 
         Rect rectDest = RECT.obtain(0, 0, targetWidth, targetHeight);
         Paint paint = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
@@ -49,8 +49,6 @@ class BitmapTransformer extends BitmapDecoder {
             PAINT.recycle(paint);
         }
         RECT.recycle(rectDest);
-
-        CANVAS.recycle(cv);
 
         return bitmap2;
     }
@@ -163,7 +161,7 @@ class BitmapTransformer extends BitmapDecoder {
             bitmap2 = Bitmap.createScaledBitmap(mBitmap, width, height, scaleFilter);
         } else {
             bitmap2 = Bitmap.createBitmap(width, height, mBitmap.getConfig());
-            Canvas cv = CANVAS.obtain(bitmap2);
+            Canvas cv = new Canvas(bitmap2);
             if (background != null) {
                 background.setBounds(0, 0, width, height);
                 background.draw(cv);
@@ -171,7 +169,6 @@ class BitmapTransformer extends BitmapDecoder {
             Paint p = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
             cv.drawBitmap(mBitmap, null, rectDest, p);
             PAINT.recycle(p);
-            CANVAS.recycle(cv);
         }
 
         if (mBitmap != bitmap2) {

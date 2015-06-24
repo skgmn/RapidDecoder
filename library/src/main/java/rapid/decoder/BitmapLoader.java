@@ -186,7 +186,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
                 newConfig = Config.ARGB_8888;
             }
             bitmap2 = Bitmap.createBitmap(newWidth, newHeight, newConfig);
-            Canvas canvas = CANVAS.obtain(bitmap2);
+            Canvas canvas = new Canvas(bitmap2);
             Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
             if (Config.RGB_565.equals(newConfig) && !Config.RGB_565.equals(bitmap.getConfig())) {
                 if (paint == null) {
@@ -198,7 +198,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
             canvas.drawBitmap(bitmap, null, rectDest, paint);
             RECT.recycle(rectDest);
             PAINT.recycle(paint);
-            CANVAS.recycle(canvas);
 
             bitmap.recycle();
             bitmap2.setDensity(mOptions.inTargetDensity);
@@ -415,7 +414,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         } else {
             Config config = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : BitmapUtils.getConfig(bitmap));
             bitmap2 = Bitmap.createBitmap(width, height, config);
-            Canvas cv = CANVAS.obtain(bitmap2);
+            Canvas cv = new Canvas(bitmap2);
             if (background != null) {
                 background.setBounds(0, 0, width, height);
                 background.draw(cv);
@@ -423,7 +422,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
             Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
             cv.drawBitmap(bitmap, null, rectDest, p);
             PAINT.recycle(p);
-            CANVAS.recycle(cv);
         }
 
         // Don't recycle it if memory cache is enabled because it could be from the cache.
