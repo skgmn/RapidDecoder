@@ -128,14 +128,13 @@ public class ContactsFragment extends ListFragment implements LoaderManager
                         .contacts_profile_image_placeholder);
                 Bitmap bitmap2 = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap
                         .Config.ARGB_8888);
-                Canvas canvas = CANVAS.obtain(bitmap2);
+                Canvas canvas = new Canvas(bitmap2);
                 placeholder.setBounds(0, 0, bitmap2.getWidth(), bitmap2.getHeight());
                 placeholder.draw(canvas);
                 Paint paint = PAINT.obtain();
                 paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
                 canvas.drawBitmap(bitmap, 0, 0, paint);
                 PAINT.recycle(paint);
-                CANVAS.recycle(canvas);
 
                 return bitmap2;
             }

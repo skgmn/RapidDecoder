@@ -79,21 +79,23 @@ public abstract class FramedDecoder extends Decodable {
             }
         } else {
             decoder = setRegion(mDecoder, mDecoder, frameWidth, frameHeight, rectDest);
-            Bitmap bitmap1 = decoder.decodeApproximately();
-            boolean filter = decoder.filterBitmap();
-            if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == frameWidth && rectDest.bottom ==
-                    frameHeight) {
-                bitmap = Bitmap.createScaledBitmap(bitmap1, frameWidth, frameHeight, filter);
-            } else {
-                bitmap = Bitmap.createBitmap(frameWidth, frameHeight, bitmap1.getConfig());
-                Canvas canvas = new Canvas(bitmap);
-                if (background != null) {
-                    background.setBounds(0, 0, frameWidth, frameHeight);
-                    background.draw(canvas);
+            Bitmap decodedBitmap = decoder.decodeApproximately();
+            if (decodedBitmap != null) {
+                boolean filter = decoder.filterBitmap();
+                if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == frameWidth && rectDest.bottom ==
+                        frameHeight) {
+                    bitmap = Bitmap.createScaledBitmap(decodedBitmap, frameWidth, frameHeight, filter);
+                } else {
+                    bitmap = Bitmap.createBitmap(frameWidth, frameHeight, decodedBitmap.getConfig());
+                    Canvas canvas = new Canvas(bitmap);
+                    if (background != null) {
+                        background.setBounds(0, 0, frameWidth, frameHeight);
+                        background.draw(canvas);
+                    }
+                    Paint paint = filter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null;
+                    canvas.drawBitmap(decodedBitmap, null, rectDest, paint);
+                    PAINT.recycle(paint);
                 }
-                Paint paint = filter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null;
-                canvas.drawBitmap(bitmap1, null, rectDest, paint);
-                PAINT.recycle(paint);
             }
         }
         RECT.recycle(rectDest);
@@ -105,7 +107,7 @@ public abstract class FramedDecoder extends Decodable {
 
     @Override
     public Bitmap getCachedBitmap() {
-        return decode(true);
+        return decodeImpl(true);
     }
 
     @Override

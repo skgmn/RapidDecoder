@@ -152,10 +152,12 @@ public abstract class Decodable implements BitmapMeta {
     @Nullable
     protected abstract Bitmap decode(boolean approximately);
 
+    @Nullable
     public final Bitmap decode() {
         return decode(false);
     }
 
+    @Nullable
     public final Bitmap decodeApproximately() {
         return decode(true);
     }
