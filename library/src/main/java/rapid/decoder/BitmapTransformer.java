@@ -5,19 +5,17 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.cache.CacheSource;
 
-import static rapid.decoder.cache.ResourcePool.*;
+import static rapid.decoder.cache.ResourcePool.PAINT;
+import static rapid.decoder.cache.ResourcePool.RECT;
 
 class BitmapTransformer extends BitmapDecoder {
     private Bitmap mBitmap;
-    private boolean scaleFilter;
-    private Rect region;
+    private boolean mScaleFilter;
     private boolean mIsMutable = false;
     private Config mTargetConfig;
 
@@ -35,15 +33,15 @@ class BitmapTransformer extends BitmapDecoder {
         return mBitmap.getHeight();
     }
 
-    private Bitmap redraw(Bitmap bitmap, Rect rectSrc, int targetWidth, int targetHeight) {
-        Config config = (mTargetConfig != null ? mTargetConfig : bitmap.getConfig());
+    private Bitmap redraw(Rect rectSrc, int targetWidth, int targetHeight) {
+        Config config = (mTargetConfig != null ? mTargetConfig : mBitmap.getConfig());
         Bitmap bitmap2 = Bitmap.createBitmap(targetWidth, targetHeight, config);
         Canvas cv = new Canvas(bitmap2);
 
         Rect rectDest = RECT.obtain(0, 0, targetWidth, targetHeight);
-        Paint paint = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+        Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
 
-        cv.drawBitmap(bitmap, rectSrc, rectDest, paint);
+        cv.drawBitmap(mBitmap, rectSrc, rectDest, paint);
 
         if (paint != null) {
             PAINT.recycle(paint);
@@ -54,27 +52,21 @@ class BitmapTransformer extends BitmapDecoder {
     }
 
     @Override
-    public Bitmap decode() {
+    protected Bitmap decode(boolean approximately) {
         resolveTransformations();
-
         Bitmap bitmap;
-        if (region != null) {
-            bitmap = redraw(mBitmap, region,
-                    Math.round(mRatioWidth * region.width()),
-                    Math.round(mRatioHeight * region.height()));
+        if (mRegion != null) {
+            bitmap = redraw(mRegion, width(), height());
         } else if (mRatioWidth != 1f || mRatioHeight != 1f) {
-            bitmap = redraw(mBitmap, null,
-                    Math.round(mRatioWidth * mBitmap.getWidth()),
-                    Math.round(mRatioHeight * mBitmap.getHeight()));
+            bitmap = redraw(null, width(), height());
         } else {
             if (mIsMutable && !mBitmap.isMutable() ||
                     mTargetConfig != null && !mTargetConfig.equals(mBitmap.getConfig())) {
-                bitmap = redraw(mBitmap, null, mBitmap.getWidth(), mBitmap.getHeight());
+                bitmap = redraw(null, mBitmap.getWidth(), mBitmap.getHeight());
             } else {
                 bitmap = mBitmap;
             }
         }
-
         return postProcess(bitmap);
     }
 
@@ -84,27 +76,13 @@ class BitmapTransformer extends BitmapDecoder {
     }
 
     @Override
-    public BitmapDecoder region(int left, int top, int right, int bottom) {
-        if (region == null) {
-            region = RECT.obtainNotReset();
-        }
-        region.set(left, top, right, bottom);
-        return this;
-    }
-
-    @Override
-    public void draw(Canvas cv, Rect rectDest) {
-        final Paint p = PAINT.obtain(Paint.FILTER_BITMAP_FLAG);
-        cv.drawBitmap(mBitmap, region, rectDest, p);
+    public void draw(Canvas cv, int left, int top) {
+        resolveTransformations();
+        final Paint p = mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null;
+        Rect rectDest = RECT.obtain(left, top, left + width(), top + height());
+        cv.drawBitmap(mBitmap, mRegion, rectDest, p);
+        RECT.recycle(rectDest);
         PAINT.recycle(p);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        if (region != null) {
-            RECT.recycle(region);
-        }
-        super.finalize();
     }
 
     @Override
@@ -134,12 +112,6 @@ class BitmapTransformer extends BitmapDecoder {
     }
 
     @Override
-    public BitmapDecoder region(@NonNull Rect region) {
-        region(region.left, region.top, region.right, region.bottom);
-        return this;
-    }
-
-    @Override
     public BitmapDecoder config(Config config) {
         mTargetConfig = config;
         return this;
@@ -148,33 +120,6 @@ class BitmapTransformer extends BitmapDecoder {
     @Override
     public Config config() {
         return mTargetConfig;
-    }
-
-    @Override
-    public Bitmap createAndDraw(int width, int height, @NonNull Rect rectDest, @Nullable Drawable
-            background) {
-
-        Bitmap bitmap2;
-        if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == width && rectDest.bottom
-                == height) {
-
-            bitmap2 = Bitmap.createScaledBitmap(mBitmap, width, height, scaleFilter);
-        } else {
-            bitmap2 = Bitmap.createBitmap(width, height, mBitmap.getConfig());
-            Canvas cv = new Canvas(bitmap2);
-            if (background != null) {
-                background.setBounds(0, 0, width, height);
-                background.draw(cv);
-            }
-            Paint p = (scaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
-            cv.drawBitmap(mBitmap, null, rectDest, p);
-            PAINT.recycle(p);
-        }
-
-        if (mBitmap != bitmap2) {
-            mBitmap.recycle();
-        }
-        return bitmap2;
     }
 
     @Override
@@ -191,7 +136,7 @@ class BitmapTransformer extends BitmapDecoder {
     @Override
     public int hashCode() {
         final int hashBitmap = mBitmap.hashCode();
-        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (scaleFilter ? 0xAAAAAAAA : 0);
+        final int hashOptions = (mIsMutable ? 0x55555555 : 0) | (mScaleFilter ? 0xAAAAAAAA : 0);
         final int hashConfig = (mTargetConfig == null ? 0 : mTargetConfig.hashCode());
 
         return hashBitmap ^ hashOptions ^ hashConfig ^ transformationsHash();
@@ -203,17 +148,21 @@ class BitmapTransformer extends BitmapDecoder {
         if (!(o instanceof BitmapTransformer)) return false;
 
         final BitmapTransformer d = (BitmapTransformer) o;
-        return mBitmap.equals(d.mBitmap) &&
-                (region == null ? d.region == null : region.equals(d.region)) &&
+        return super.transformationsEqual(d) &&
                 mIsMutable == d.mIsMutable &&
-                scaleFilter == d.scaleFilter &&
-                (mTargetConfig == null ? d.mTargetConfig == null : mTargetConfig.equals(d
-                        .mTargetConfig));
+                mScaleFilter == d.mScaleFilter &&
+                (mTargetConfig == null ? d.mTargetConfig == null : mTargetConfig == d.mTargetConfig) &&
+                mBitmap.equals(d.mBitmap);
     }
 
     @Override
     public BitmapDecoder filterBitmap(boolean filter) {
-        scaleFilter = filter;
+        mScaleFilter = filter;
         return this;
+    }
+
+    @Override
+    public boolean filterBitmap() {
+        return mScaleFilter;
     }
 }

@@ -2,6 +2,7 @@ package rapid.decoder.frame;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
@@ -12,7 +13,8 @@ import rapid.decoder.BitmapMeta;
 import rapid.decoder.Decodable;
 import rapid.decoder.cache.CacheSource;
 
-import static rapid.decoder.cache.ResourcePool.*;
+import static rapid.decoder.cache.ResourcePool.PAINT;
+import static rapid.decoder.cache.ResourcePool.RECT;
 
 public abstract class FramedDecoder extends Decodable {
     private BitmapDecoder mDecoder;
@@ -43,13 +45,11 @@ public abstract class FramedDecoder extends Decodable {
     protected abstract void getBounds(BitmapMeta meta, int frameWidth, int frameHeight,
                                       @Nullable Rect outSrc, @Nullable Rect outDest);
 
-    private BitmapDecoder setRegion(BitmapDecoder decoder, BitmapMeta meta, int frameWidth,
-                                    int frameHeight, Rect destRegion) {
+    private BitmapDecoder setRegion(BitmapDecoder decoder, BitmapMeta meta, int frameWidth, int frameHeight, Rect
+            destRegion) {
         Rect region = RECT.obtainNotReset();
         getBounds(meta, frameWidth, frameHeight, region, destRegion);
-        if (!(region.left == 0 && region.top == 0 && region.right == meta.width() && region
-                .bottom == meta.height())) {
-
+        if (region.left != 0 || region.top != 0 || region.right != meta.width() || region.bottom != meta.height()) {
             decoder = decoder.fork().region(region);
         }
         RECT.recycle(region);
@@ -57,16 +57,17 @@ public abstract class FramedDecoder extends Decodable {
     }
 
     @Override
-    public void draw(Canvas cv, Rect bounds) {
-        setRegion(mDecoder, mDecoder, bounds.width(), bounds.height(), null).draw(cv, bounds);
+    public void draw(Canvas cv, int left, int top) {
+        setRegion(mDecoder, mDecoder, frameWidth, frameHeight, null).draw(cv, left, top);
     }
 
+    @Nullable
     @Override
-    public Bitmap decode() {
-        return decode(false);
+    protected Bitmap decode(boolean approximately) {
+        return decodeImpl(false);
     }
 
-    private Bitmap decode(boolean fromCache) {
+    private Bitmap decodeImpl(boolean fromCache) {
         Rect rectDest = RECT.obtainNotReset();
         BitmapDecoder decoder = null;
         Bitmap bitmap = null;
@@ -78,7 +79,22 @@ public abstract class FramedDecoder extends Decodable {
             }
         } else {
             decoder = setRegion(mDecoder, mDecoder, frameWidth, frameHeight, rectDest);
-            bitmap = decoder.createAndDraw(frameWidth, frameHeight, rectDest, background);
+            Bitmap bitmap1 = decoder.decodeApproximately();
+            boolean filter = decoder.filterBitmap();
+            if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == frameWidth && rectDest.bottom ==
+                    frameHeight) {
+                bitmap = Bitmap.createScaledBitmap(bitmap1, frameWidth, frameHeight, filter);
+            } else {
+                bitmap = Bitmap.createBitmap(frameWidth, frameHeight, bitmap1.getConfig());
+                Canvas canvas = new Canvas(bitmap);
+                if (background != null) {
+                    background.setBounds(0, 0, frameWidth, frameHeight);
+                    background.draw(canvas);
+                }
+                Paint paint = filter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null;
+                canvas.drawBitmap(bitmap1, null, rectDest, paint);
+                PAINT.recycle(paint);
+            }
         }
         RECT.recycle(rectDest);
         if (decoder != null) {

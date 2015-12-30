@@ -4,8 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -25,8 +23,7 @@ public class NullBitmapLoader extends BitmapLoader {
     }
 
     @Override
-    public void draw(Canvas cv, Rect rectDest) {
-
+    public void draw(Canvas cv, int left, int top) {
     }
 
     @Override
@@ -36,12 +33,6 @@ public class NullBitmapLoader extends BitmapLoader {
 
     @Override
     public Bitmap.Config config() {
-        return null;
-    }
-
-    @Override
-    public Bitmap createAndDraw(int width, int height, @NonNull Rect rectDest, @Nullable Drawable
-            background) {
         return null;
     }
 
@@ -62,11 +53,11 @@ public class NullBitmapLoader extends BitmapLoader {
 
     @Override
     public void cancel() {
-
     }
 
+    @Nullable
     @Override
-    public Bitmap decode() {
+    protected Bitmap decode(boolean approximately) {
         return null;
     }
 

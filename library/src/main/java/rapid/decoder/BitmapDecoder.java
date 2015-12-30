@@ -10,10 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
-import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -42,7 +40,8 @@ import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;
 
-import static rapid.decoder.cache.ResourcePool.*;
+import static rapid.decoder.cache.ResourcePool.POINT;
+import static rapid.decoder.cache.ResourcePool.RECT;
 
 public abstract class BitmapDecoder extends Decodable {
     static final String MESSAGE_INVALID_RATIO = "Ratio should be positive.";
@@ -469,20 +468,11 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     /**
-     * Directly draw the image to canvas without any unnecessary scaling.
-     */
-    public abstract void draw(Canvas cv, Rect rectDest);
-
-    /**
      * Set preferred bitmap configuration.
      */
     public abstract BitmapDecoder config(Config config);
 
-    @SuppressWarnings("UnusedDeclaration")
     public abstract Config config();
-
-    public abstract Bitmap createAndDraw(int width, int height, @NonNull Rect rectDest,
-                                         @Nullable Drawable background);
 
     /**
      * Tell the decoder to either force using built-in decoder or not.
@@ -493,7 +483,7 @@ public abstract class BitmapDecoder extends Decodable {
 
     public abstract BitmapDecoder filterBitmap(boolean filter);
 
-    public abstract Bitmap decode();
+    public abstract boolean filterBitmap();
 
     @NonNull
     @Override
@@ -624,23 +614,8 @@ public abstract class BitmapDecoder extends Decodable {
     }
 
     /**
-     * Equivalent to {@link #draw(Canvas, Rect)}.
-     */
-    public void draw(Canvas cv, int left, int top, int right, int bottom) {
-        final Rect bounds = RECT.obtain(left, top, right, bottom);
-        draw(cv, bounds);
-        RECT.recycle(bounds);
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public void draw(Canvas cv, int left, int top) {
-        draw(cv, left, top, left + width(), top + height());
-    }
-
-    /**
      * Equivalent to <code>mutable(true)</code>.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public BitmapDecoder mutable() {
         return mutable(true);
     }

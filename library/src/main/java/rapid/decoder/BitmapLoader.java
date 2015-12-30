@@ -9,7 +9,6 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -22,7 +21,9 @@ import rapid.decoder.builtin.BuiltInDecoder;
 import rapid.decoder.cache.CacheSource;
 import rapid.decoder.frame.FramingMethod;
 
-import static rapid.decoder.cache.ResourcePool.*;
+import static rapid.decoder.cache.ResourcePool.OPTIONS;
+import static rapid.decoder.cache.ResourcePool.PAINT;
+import static rapid.decoder.cache.ResourcePool.RECT;
 
 public abstract class BitmapLoader extends BitmapDecoder {
     @SuppressWarnings("UnusedDeclaration")
@@ -135,8 +136,9 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
     }
 
+    @Nullable
     @Override
-    public Bitmap decode() {
+    protected Bitmap decode(boolean approximately) {
         final boolean memCacheEnabled = isMemoryCacheEnabled();
         if (memCacheEnabled) {
             final Bitmap cachedBitmap = getCachedBitmap();
@@ -175,46 +177,48 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         // Scale it finally.
 
-        if (mAdjustedWidthRatio != 1 || mAdjustedHeightRatio != 1) {
-            bitmap.setDensity(Bitmap.DENSITY_NONE);
-            Bitmap bitmap2;
+        if (!approximately) {
+            if (mAdjustedWidthRatio != 1 || mAdjustedHeightRatio != 1) {
+                bitmap.setDensity(Bitmap.DENSITY_NONE);
+                Bitmap bitmap2;
 
-            int newWidth = mRatioIntegerMode.toInteger(bitmap.getWidth() * mAdjustedWidthRatio);
-            int newHeight = mRatioIntegerMode.toInteger(bitmap.getHeight() * mAdjustedHeightRatio);
-            Config newConfig = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig());
-            if (newConfig == null) {
-                newConfig = Config.ARGB_8888;
-            }
-            bitmap2 = Bitmap.createBitmap(newWidth, newHeight, newConfig);
-            Canvas canvas = new Canvas(bitmap2);
-            Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
-            if (Config.RGB_565.equals(newConfig) && !Config.RGB_565.equals(bitmap.getConfig())) {
-                if (paint == null) {
-                    paint = PAINT.obtain();
+                int newWidth = mRatioIntegerMode.toInteger(bitmap.getWidth() * mAdjustedWidthRatio);
+                int newHeight = mRatioIntegerMode.toInteger(bitmap.getHeight() * mAdjustedHeightRatio);
+                Config newConfig = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : bitmap.getConfig());
+                if (newConfig == null) {
+                    newConfig = Config.ARGB_8888;
                 }
-                paint.setDither(true);
-            }
-            Rect rectDest = RECT.obtain(0, 0, newWidth, newHeight);
-            canvas.drawBitmap(bitmap, null, rectDest, paint);
-            RECT.recycle(rectDest);
-            PAINT.recycle(paint);
+                bitmap2 = Bitmap.createBitmap(newWidth, newHeight, newConfig);
+                Canvas canvas = new Canvas(bitmap2);
+                Paint paint = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+                if (Config.RGB_565.equals(newConfig) && !Config.RGB_565.equals(bitmap.getConfig())) {
+                    if (paint == null) {
+                        paint = PAINT.obtain();
+                    }
+                    paint.setDither(true);
+                }
+                Rect rectDest = RECT.obtain(0, 0, newWidth, newHeight);
+                canvas.drawBitmap(bitmap, null, rectDest, paint);
+                RECT.recycle(rectDest);
+                PAINT.recycle(paint);
 
-            bitmap.recycle();
-            bitmap2.setDensity(mOptions.inTargetDensity);
-            bitmap = bitmap2;
-        } else if (mShouldConvertToOpaqueOnScale) {
-            Bitmap bitmap2 = new BitmapTransformer(bitmap).config(Config.RGB_565).decode();
-            if (bitmap != bitmap2) {
                 bitmap.recycle();
+                bitmap2.setDensity(mOptions.inTargetDensity);
+                bitmap = bitmap2;
+            } else if (mShouldConvertToOpaqueOnScale) {
+                Bitmap bitmap2 = new BitmapTransformer(bitmap).config(Config.RGB_565).decode();
+                if (bitmap != bitmap2) {
+                    bitmap.recycle();
+                }
+                bitmap = bitmap2;
             }
-            bitmap = bitmap2;
         }
 
         if (mOptions.mCancel) return null;
         bitmap = postProcess(bitmap);
         if (bitmap == null) return null;
 
-        if (memCacheEnabled) {
+        if (memCacheEnabled && !approximately) {
             synchronized (sMemCacheLock) {
                 if (sMemCache != null) {
                     sMemCache.put(this, bitmap);
@@ -240,24 +244,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
         }
 
         return sampleSize;
-    }
-
-    private Bitmap decodeDontResizeButSample(int targetWidth, int targetHeight) {
-        boolean memCacheEnabled = isMemoryCacheEnabled();
-        synchronized (sMemCacheLock) {
-            memCacheEnabled &= (sMemCache != null);
-        }
-        if (memCacheEnabled) {
-            return decode();
-        }
-
-        resolveTransformations();
-        mOptions.inSampleSize = calculateSampleSize(regionWidth(), regionHeight(),
-                targetWidth, targetHeight);
-
-        Bitmap bitmap = executeDecoding();
-        mCacheSource = mIsFromDiskCache ? CacheSource.DISK : CacheSource.NOT_CACHED;
-        return bitmap;
     }
 
     @SuppressLint("NewApi")
@@ -347,25 +333,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return (d == null ? null : d.decodeRegion(region, opts));
     }
 
-    private static int calculateSampleSize(int width, int height, int reqWidth, int reqHeight) {
-        // Raw height and width of image
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
-    }
-
     protected Bitmap decodeBuiltIn(TwiceReadableInputStream in) {
         adjustDensityRatio(true);
 
@@ -387,48 +354,22 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     @Override
-    public void draw(Canvas cv, Rect rectDest) {
-        final Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
+    public void draw(Canvas cv, int left, int top) {
+        final Bitmap bitmap = decode(true);
+        if (bitmap == null) return;
 
-        final Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
-        cv.drawBitmap(bitmap, null, rectDest, p);
-        PAINT.recycle(p);
-
-        bitmap.recycle();
-    }
-
-    @Override
-    @Nullable
-    public Bitmap createAndDraw(int width, int height, @NonNull Rect rectDest,
-                                @Nullable Drawable background) {
-
-        Bitmap bitmap = decodeDontResizeButSample(rectDest.width(), rectDest.height());
-        if (bitmap == null) return null;
-
-        Bitmap bitmap2;
-        if (rectDest.left == 0 && rectDest.top == 0 && rectDest.right == width && rectDest.bottom
-                == height && (Config.RGB_565.equals(bitmap.getConfig()) ||
-                !mShouldConvertToOpaqueOnScale)) {
-
-            bitmap2 = Bitmap.createScaledBitmap(bitmap, width, height, mScaleFilter);
+        int width = width();
+        int height = height();
+        if (bitmap.getWidth() == width && bitmap.getHeight() == height) {
+            cv.drawBitmap(bitmap, left, top, null);
         } else {
-            Config config = (mShouldConvertToOpaqueOnScale ? Config.RGB_565 : BitmapUtils.getConfig(bitmap));
-            bitmap2 = Bitmap.createBitmap(width, height, config);
-            Canvas cv = new Canvas(bitmap2);
-            if (background != null) {
-                background.setBounds(0, 0, width, height);
-                background.draw(cv);
-            }
-            Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+            final Paint p = (mScaleFilter ? PAINT.obtain(Paint.FILTER_BITMAP_FLAG) : null);
+            Rect rectDest = RECT.obtain(left, top, left + width, top + height);
             cv.drawBitmap(bitmap, null, rectDest, p);
+            RECT.recycle(rectDest);
             PAINT.recycle(p);
         }
-
-        // Don't recycle it if memory cache is enabled because it could be from the cache.
-        if (bitmap != bitmap2 && !isMemoryCacheEnabled()) {
-            bitmap.recycle();
-        }
-        return bitmap2;
+        bitmap.recycle();
     }
 
     @Override
@@ -517,6 +458,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
         mScaleFilter = filter;
         mHashCode = 0;
         return this;
+    }
+
+    @Override
+    public boolean filterBitmap() {
+        return mScaleFilter;
     }
 
     @Override
