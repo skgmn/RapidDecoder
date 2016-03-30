@@ -16,7 +16,7 @@ public class ImageViewBinder extends ViewBinder<ImageView> {
     };
 
     public static ImageViewBinder obtain(ImageView v) {
-        ImageViewBinder binder = POOL.obtainNotReset();
+        ImageViewBinder binder = POOL.obtainDirty();
         binder.init(v);
         return binder;
     }

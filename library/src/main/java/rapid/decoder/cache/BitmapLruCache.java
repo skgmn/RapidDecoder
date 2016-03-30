@@ -12,11 +12,11 @@ import rapid.decoder.BitmapLoader;
 import rapid.decoder.BitmapMeta;
 import rapid.decoder.BitmapUtils;
 
-public class BitmapLruCache extends LruCache<BitmapLoader, Bitmap> {
+public class BitmapLruCache extends LruCache<MemoryCacheKey, Bitmap> {
     private static class CachedMeta implements BitmapMeta {
         public int width;
         public int height;
-        public WeakHashMap<Bitmap, Object> bitmaps = new WeakHashMap<Bitmap, Object>();
+        public Map<Bitmap, Void> bitmaps = new WeakHashMap<>();
 
         @Override
         public int width() {
@@ -29,46 +29,46 @@ public class BitmapLruCache extends LruCache<BitmapLoader, Bitmap> {
         }
     }
 
-    private HashMap<BitmapLoader, WeakReference<Bitmap>> mEvictedBitmap =
-            new HashMap<BitmapLoader, WeakReference<Bitmap>>();
-    private HashMap<Object, CachedMeta> mMetaCache = new HashMap<Object, CachedMeta>();
+    private Map<MemoryCacheKey, WeakReference<Bitmap>> mEvictedBitmap = new HashMap<>();
+    private Map<Object, CachedMeta> mMetaCache = new HashMap<>();
 
     public BitmapLruCache(int maxSize) {
         super(maxSize);
     }
 
     @Override
-    protected int sizeOf(BitmapLoader key, Bitmap value) {
+    protected int sizeOf(MemoryCacheKey key, Bitmap value) {
         return BitmapUtils.getByteCount(value);
     }
 
     @Override
-    protected void entryRemoved(boolean evicted, BitmapLoader key, Bitmap oldValue,
+    protected void entryRemoved(boolean evicted, MemoryCacheKey key, Bitmap oldValue,
                                 Bitmap newValue) {
         if (!oldValue.isRecycled()) {
-            mEvictedBitmap.put(key, new WeakReference<Bitmap>(oldValue));
+            mEvictedBitmap.put(key, new WeakReference<>(oldValue));
         }
     }
 
     @Override
-    public Bitmap put(BitmapLoader key, Bitmap value) {
+    public Bitmap put(MemoryCacheKey key, Bitmap value) {
         Bitmap bitmap = super.put(key, value);
-        Object id = key.a();
+        BitmapLoader loader = key.loader;
+        Object id = loader.a();
         if (id != null) {
             CachedMeta info = mMetaCache.get(id);
             if (info == null) {
                 info = new CachedMeta();
                 mMetaCache.put(id, info);
             }
-            info.width = key.sourceWidth();
-            info.height = key.sourceHeight();
+            info.width = loader.sourceWidth();
+            info.height = loader.sourceHeight();
             info.bitmaps.put(value, null);
         }
         return bitmap;
     }
 
     @Override
-    public Bitmap get(BitmapLoader key) {
+    public Bitmap get(MemoryCacheKey key) {
         Bitmap bitmap = super.get(key);
         if (bitmap != null) {
             if (bitmap.isRecycled()) {
@@ -113,10 +113,10 @@ public class BitmapLruCache extends LruCache<BitmapLoader, Bitmap> {
     }
 
     private void gcEvictedBitmaps() {
-        Iterator<Map.Entry<BitmapLoader, WeakReference<Bitmap>>> it = mEvictedBitmap.entrySet()
+        Iterator<Map.Entry<MemoryCacheKey, WeakReference<Bitmap>>> it = mEvictedBitmap.entrySet()
                 .iterator();
         while (it.hasNext()) {
-            Map.Entry<BitmapLoader, WeakReference<Bitmap>> entry = it.next();
+            Map.Entry<MemoryCacheKey, WeakReference<Bitmap>> entry = it.next();
             Bitmap bitmap = entry.getValue().get();
             if (bitmap == null || bitmap.isRecycled()) {
                 it.remove();

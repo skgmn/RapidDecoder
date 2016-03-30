@@ -16,7 +16,7 @@ public class ViewBackgroundBinder extends ViewBinder<View> {
     };
 
     public static ViewBackgroundBinder obtain(View v) {
-        ViewBackgroundBinder binder = POOL.obtainNotReset();
+        ViewBackgroundBinder binder = POOL.obtainDirty();
         binder.init(v);
         return binder;
     }

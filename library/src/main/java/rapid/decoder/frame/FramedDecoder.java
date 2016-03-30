@@ -19,8 +19,8 @@ import static rapid.decoder.cache.ResourcePool.RECT;
 public abstract class FramedDecoder extends Decodable {
     private BitmapDecoder mDecoder;
     protected Drawable background;
-    protected int frameWidth;
-    protected int frameHeight;
+    protected final int frameWidth;
+    protected final int frameHeight;
     protected CacheSource mCacheSource;
 
     public FramedDecoder(BitmapDecoder decoder, int frameWidth, int frameHeight) {
@@ -47,7 +47,7 @@ public abstract class FramedDecoder extends Decodable {
 
     private BitmapDecoder setRegion(BitmapDecoder decoder, BitmapMeta meta, int frameWidth, int frameHeight, Rect
             destRegion) {
-        Rect region = RECT.obtainNotReset();
+        Rect region = RECT.obtainDirty();
         getBounds(meta, frameWidth, frameHeight, region, destRegion);
         if (region.left != 0 || region.top != 0 || region.right != meta.width() || region.bottom != meta.height()) {
             decoder = decoder.fork().region(region);
@@ -68,14 +68,14 @@ public abstract class FramedDecoder extends Decodable {
     }
 
     private Bitmap decodeImpl(boolean fromCache) {
-        Rect rectDest = RECT.obtainNotReset();
+        Rect rectDest = RECT.obtainDirty();
         BitmapDecoder decoder = null;
         Bitmap bitmap = null;
         if (fromCache) {
             BitmapMeta meta = mDecoder.getCachedMeta();
             if (meta != null) {
                 decoder = setRegion(mDecoder, meta, frameWidth, frameHeight, rectDest);
-                bitmap = decoder.getCachedBitmap();
+                bitmap = decoder.getCachedBitmap(true);
             }
         } else {
             decoder = setRegion(mDecoder, mDecoder, frameWidth, frameHeight, rectDest);
@@ -106,7 +106,7 @@ public abstract class FramedDecoder extends Decodable {
     }
 
     @Override
-    public Bitmap getCachedBitmap() {
+    public Bitmap getCachedBitmap(boolean approximately) {
         return decodeImpl(true);
     }
 

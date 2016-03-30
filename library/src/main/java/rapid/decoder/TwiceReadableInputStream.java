@@ -166,18 +166,21 @@ public class TwiceReadableInputStream extends InputStream {
 	
 	@Override
 	public void close() throws IOException {
-		if (mCacheOutputStream != null) {
-			try {
-				if (mTransactionSucceeded) {
-					mCacheOutputStream.close();
-				} else {
-					mCacheOutputStream.rollback();
+		try {
+			if (mCacheOutputStream != null) {
+				try {
+					if (mTransactionSucceeded) {
+						mCacheOutputStream.close();
+					} else {
+						mCacheOutputStream.rollback();
+					}
+				} catch (IOException ignored) {
 				}
-			} catch (IOException ignored) {
+				mCacheOutputStream = null;
 			}
-			mCacheOutputStream = null;
+		} finally {
+			mIn.close();
 		}
-		mIn.close();
 	}
 	
 	public void startSecondRead() {

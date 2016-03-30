@@ -35,15 +35,6 @@ class StreamBitmapLoader extends BitmapLoader {
 		mIn = new TwiceReadableInputStream(is);
 	}
 	
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			mIn.close();
-		} finally {
-			super.finalize();
-		}
-	}
-	
 	void setCacheOutputStream(TransactionOutputStream out) {
 		mIn.setCacheOutputStream(out);
 	}
@@ -95,9 +86,4 @@ class StreamBitmapLoader extends BitmapLoader {
 	public BitmapLoader fork() {
 		return new StreamBitmapLoader(this);
 	}
-
-    @Override
-    public BitmapLoader reset() {
-        throw new UnsupportedOperationException();
-    }
 }

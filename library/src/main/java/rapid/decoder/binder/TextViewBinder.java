@@ -40,7 +40,7 @@ public class TextViewBinder extends ViewBinder<TextView> {
     }
 
     public static TextViewBinder obtain(TextView v, int gravity, int width, int height) {
-        TextViewBinder binder = POOL.obtainNotReset();
+        TextViewBinder binder = POOL.obtainDirty();
         binder.init(v, gravity, width, height);
         return binder;
     }

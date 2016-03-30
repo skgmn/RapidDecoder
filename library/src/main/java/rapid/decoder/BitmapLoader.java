@@ -19,6 +19,7 @@ import java.io.InputStream;
 import rapid.decoder.binder.ViewBinder;
 import rapid.decoder.builtin.BuiltInDecoder;
 import rapid.decoder.cache.CacheSource;
+import rapid.decoder.cache.MemoryCacheKey;
 import rapid.decoder.frame.FramingMethod;
 
 import static rapid.decoder.cache.ResourcePool.OPTIONS;
@@ -129,10 +130,10 @@ public abstract class BitmapLoader extends BitmapDecoder {
     }
 
     @Override
-    public Bitmap getCachedBitmap() {
+    public Bitmap getCachedBitmap(boolean approximately) {
         synchronized (sMemCacheLock) {
             if (sMemCache == null) return null;
-            return sMemCache.get(this);
+            return sMemCache.get(new MemoryCacheKey(this, approximately));
         }
     }
 
@@ -141,7 +142,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
     protected Bitmap decode(boolean approximately) {
         final boolean memCacheEnabled = isMemoryCacheEnabled();
         if (memCacheEnabled) {
-            final Bitmap cachedBitmap = getCachedBitmap();
+            final Bitmap cachedBitmap = getCachedBitmap(approximately);
             if (cachedBitmap != null) {
                 mCacheSource = CacheSource.MEMORY;
                 return cachedBitmap;
@@ -218,10 +219,11 @@ public abstract class BitmapLoader extends BitmapDecoder {
         bitmap = postProcess(bitmap);
         if (bitmap == null) return null;
 
-        if (memCacheEnabled && !approximately) {
+        // TODO: Check !approximately cache whether it's indentical
+        if (memCacheEnabled) {
             synchronized (sMemCacheLock) {
                 if (sMemCache != null) {
-                    sMemCache.put(this, bitmap);
+                    sMemCache.put(new MemoryCacheKey(this, approximately), bitmap);
                 }
             }
         }
@@ -490,24 +492,6 @@ public abstract class BitmapLoader extends BitmapDecoder {
     @Override
     public BitmapLoader useMemoryCache(boolean useCache) {
         super.useMemoryCache(useCache);
-        return this;
-    }
-
-    @Override
-    public BitmapLoader reset() {
-        super.reset();
-        mOptions.inPreferredConfig = null;
-        mOptions.inDither = false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
-            mOptions.inPreferQualityOverSpeed = false;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                mOptions.inMutable = false;
-            }
-        }
-        mShouldConvertToOpaqueOnScale = false;
-        mIsMutable = false;
-        mScaleFilter = true;
-        mUseBuiltInDecoder = false;
         return this;
     }
 }

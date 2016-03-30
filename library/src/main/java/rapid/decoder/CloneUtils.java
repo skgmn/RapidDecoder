@@ -9,7 +9,7 @@ import static rapid.decoder.cache.ResourcePool.*;
 public final class CloneUtils {
 	@SuppressLint("NewApi")
 	public static Options clone(Options other) {
-		final Options opts = OPTIONS.obtainNotReset();
+		final Options opts = OPTIONS.obtainDirty();
 		
 		opts.inDensity = other.inDensity;
 		opts.inDither = other.inDither;

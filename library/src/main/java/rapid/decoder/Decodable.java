@@ -58,7 +58,7 @@ public abstract class Decodable implements BitmapMeta {
             if (!async) {
                 FramedDecoder framedDecoder = frameBuilder.getFramedDecoder(true);
                 if (framedDecoder != null) {
-                    Bitmap bitmap = framedDecoder.getCachedBitmap();
+                    Bitmap bitmap = framedDecoder.getCachedBitmap(true);
                     if (bitmap != null) {
                         task.cancel();
                         binder.bind(bitmap, false);
@@ -137,7 +137,7 @@ public abstract class Decodable implements BitmapMeta {
         return this;
     }
 
-    public Bitmap getCachedBitmap() {
+    public Bitmap getCachedBitmap(boolean approximately) {
         return null;
     }
 

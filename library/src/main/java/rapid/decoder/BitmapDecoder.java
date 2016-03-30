@@ -63,14 +63,18 @@ public abstract class BitmapDecoder extends Decodable {
     static DiskLruCache sDiskCache;
 
     public static void initMemoryCache(Context context) {
+        initMemoryCache(context, 2);
+    }
+
+    public static void initMemoryCache(Context context, float factor) {
         final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         final Display display = wm.getDefaultDisplay();
 
-        Point size = POINT.obtainNotReset();
+        Point size = POINT.obtainDirty();
         DisplayCompat.getSize(display, size);
 
         final Config defaultConfig = Build.VERSION.SDK_INT < 9 ? Config.RGB_565 : Config.ARGB_8888;
-        initMemoryCache(2 * BitmapUtils.getByteCount(size.x, size.y, defaultConfig));
+        initMemoryCache((int) (factor * BitmapUtils.getByteCount(size.x, size.y, defaultConfig)));
 
         POINT.recycle(size);
     }
@@ -180,7 +184,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
 
         public static ScaleTo obtain(float width, float height) {
-            ScaleTo scaleTo = POOL.obtainNotReset();
+            ScaleTo scaleTo = POOL.obtainDirty();
             scaleTo.width = width;
             scaleTo.height = height;
             return scaleTo;
@@ -220,7 +224,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
 
         public static ScaleBy obtain(float width, float height) {
-            ScaleBy scaleBy = POOL.obtainNotReset();
+            ScaleBy scaleBy = POOL.obtainDirty();
             scaleBy.width = width;
             scaleBy.height = height;
             return scaleBy;
@@ -263,7 +267,7 @@ public abstract class BitmapDecoder extends Decodable {
         }
 
         public static Region obtain(int left, int top, int right, int bottom) {
-            Region region = POOL.obtainNotReset();
+            Region region = POOL.obtainDirty();
             region.left = left;
             region.top = top;
             region.right = right;
@@ -551,7 +555,7 @@ public abstract class BitmapDecoder extends Decodable {
                 Region rr = (Region) r;
 
                 if (mRegion == null) {
-                    mRegion = RECT.obtainNotReset();
+                    mRegion = RECT.obtainDirty();
                     mRegion.left = Math.round(rr.left / mRatioWidth);
                     mRegion.top = Math.round(rr.top / mRatioHeight);
                     mRegion.right = Math.round(rr.right / mRatioWidth);
@@ -877,11 +881,18 @@ public abstract class BitmapDecoder extends Decodable {
         return new BitmapTransformer(bitmap);
     }
 
-    public static BitmapLoader from(final Queriable q) {
+    public static BitmapLoader from(Context context, Uri uri, String[] projection) {
+        return from(context, uri, projection, null, null, null);
+    }
+
+    public static BitmapLoader from(final Context context, final Uri uri, final String[] projection,
+                                    final String selection, final String[] selectionArgs,
+                                    final String sortOrder) {
         return new StreamBitmapLoader(new LazyInputStream(new StreamOpener() {
             @Override
             public InputStream openInputStream() {
-                Cursor cursor = q.query();
+                Cursor cursor = context.getContentResolver().query(uri, projection, selection,
+                        selectionArgs, sortOrder);
                 if (cursor == null) {
                     return null;
                 }
@@ -898,6 +909,6 @@ public abstract class BitmapDecoder extends Decodable {
                     cursor.close();
                 }
             }
-        }));
+        })).id(uri);
     }
 }

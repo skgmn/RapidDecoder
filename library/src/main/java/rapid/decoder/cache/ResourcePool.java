@@ -194,12 +194,12 @@ public abstract class ResourcePool<T> {
 		return obtainImpl(true);
 	}
 	
-	public T obtainNotReset() {
+	public T obtainDirty() {
 		return obtainImpl(false);
 	}
 	
 	@SuppressWarnings("unchecked")
-	T obtainImpl(boolean reset) {
+	T obtainImpl(boolean clean) {
 		synchronized (this) {
 			if (stack == null || top == 0) {
 				return newInstance();
@@ -207,7 +207,7 @@ public abstract class ResourcePool<T> {
 				final T obj = (T) stack[--top];
 				stack[top] = null;
 				
-				if (reset) onReset(obj);
+				if (clean) onReset(obj);
 				return obj;
 			}
 		}
