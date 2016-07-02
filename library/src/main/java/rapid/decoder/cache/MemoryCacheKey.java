@@ -5,8 +5,6 @@ import android.support.annotation.NonNull;
 import rapid.decoder.BitmapLoader;
 
 public class MemoryCacheKey {
-    private static MemoryCacheKey sTempKey;
-
     @NonNull
     public final BitmapLoader loader;
     public final boolean approximately;

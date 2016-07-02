@@ -22,6 +22,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -324,6 +325,8 @@ public abstract class BitmapDecoder extends Decodable {
      * @return The height of the source image.
      */
     public abstract int sourceHeight();
+
+    public abstract String mimeType();
 
     /**
      * @return The estimated width of decoded image.
@@ -736,6 +739,10 @@ public abstract class BitmapDecoder extends Decodable {
         } else {
             return new FileBitmapLoader(uriOrPath).useMemoryCache(useCache);
         }
+    }
+
+    public static BitmapLoader from(File file) {
+        return new FileBitmapLoader(file.getAbsolutePath());
     }
 
     public static BitmapLoader from(Context context, @NonNull String uri) {

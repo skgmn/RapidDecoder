@@ -33,6 +33,11 @@ class DrawableTransformer extends BitmapDecoder {
         return mDrawable.getIntrinsicHeight();
     }
 
+    @Override
+    public String mimeType() {
+        return "image/bmp";
+    }
+
     private Bitmap redraw(Rect rectSrc, int targetWidth, int targetHeight) {
         Config config = getTargetConfig();
         Bitmap bitmap = Bitmap.createBitmap(targetWidth, targetHeight, config);

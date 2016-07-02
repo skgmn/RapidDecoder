@@ -136,6 +136,11 @@ public abstract class FramedDecoder extends Decodable {
     }
 
     @Override
+    public String mimeType() {
+        return mDecoder.mimeType();
+    }
+
+    @Override
     public CacheSource cacheSource() {
         return mCacheSource;
     }

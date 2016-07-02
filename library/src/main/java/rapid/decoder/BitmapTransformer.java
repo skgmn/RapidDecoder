@@ -33,6 +33,11 @@ class BitmapTransformer extends BitmapDecoder {
         return mBitmap.getHeight();
     }
 
+    @Override
+    public String mimeType() {
+        return "image/bmp";
+    }
+
     private Bitmap redraw(Rect rectSrc, int targetWidth, int targetHeight) {
         Config config = (mTargetConfig != null ? mTargetConfig : mBitmap.getConfig());
         Bitmap bitmap2 = Bitmap.createBitmap(targetWidth, targetHeight, config);

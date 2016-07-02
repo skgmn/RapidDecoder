@@ -41,6 +41,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
     private int mSourceWidth;
     private int mSourceHeight;
+    private String mMimeType;
     private boolean mBoundsDecoded;
 
     // Transient variables
@@ -111,6 +112,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
 
         mSourceWidth = Math.max(0, mOptions.outWidth);
         mSourceHeight = Math.max(0, mOptions.outHeight);
+        mMimeType = mOptions.outMimeType;
     }
 
     @Override
@@ -127,6 +129,14 @@ public abstract class BitmapLoader extends BitmapDecoder {
             decodeBounds();
         }
         return mSourceHeight;
+    }
+
+    @Override
+    public String mimeType() {
+        if (mMimeType == null) {
+            decodeBounds();
+        }
+        return mMimeType;
     }
 
     @Override
@@ -450,8 +460,7 @@ public abstract class BitmapLoader extends BitmapDecoder {
         return id(Uri.parse(uri));
     }
 
-    @ForInternalUse
-    public Object a() {
+    public Object id() {
         return mId;
     }
 
