@@ -1,0 +1,5 @@
+package rapiddecoder
+
+object RapidDecoder {
+
+}
