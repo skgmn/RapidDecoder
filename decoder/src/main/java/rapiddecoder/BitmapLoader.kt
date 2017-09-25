@@ -25,9 +25,9 @@ abstract class BitmapLoader {
         scaleTo(Math.round(height * (this.width.toFloat() / this.height)), height)
     }
 
-    abstract fun loadBitmap(approx: Boolean): Bitmap
+    abstract fun loadBitmap(options: LoadBitmapOptions): Bitmap
 
-    fun loadBitmap() = loadBitmap(false)
+    fun loadBitmap() = loadBitmap(LoadBitmapOptions())
 
     protected fun checkScaleToArguments(width: Int, height: Int) {
         if (width <= 0 || height <= 0) {

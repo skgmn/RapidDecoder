@@ -37,7 +37,7 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        return RegionTransformDecoder(source,
+        return source.region(
                 Math.round(left / x),
                 Math.round(top / y),
                 Math.round(right / x),
@@ -45,7 +45,7 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun loadBitmap(approx: Boolean): Bitmap {
+    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val opts = BitmapFactory.Options()
         opts.inSampleSize = 1
 
@@ -58,7 +58,7 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
         }
 
         val bitmap = synchronized(decodeLock) { source.decode(opts) }
-        if (ratioX == 1f && ratioY == 1f) {
+        if (ratioX == 1f && ratioY == 1f || !options.finalScale) {
             return bitmap
         }
 

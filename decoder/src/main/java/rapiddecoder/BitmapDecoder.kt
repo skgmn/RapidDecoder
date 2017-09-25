@@ -20,7 +20,7 @@ internal abstract class BitmapDecoder : BitmapLoader() {
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader =
             RegionTransformDecoder(this, left, top, right, bottom)
 
-    override fun loadBitmap(approx: Boolean): Bitmap =
+    override fun loadBitmap(options: LoadBitmapOptions): Bitmap =
             synchronized(decodeLock) { decode(BitmapFactory.Options()) }
 
     internal abstract fun decode(opts: BitmapFactory.Options): Bitmap
