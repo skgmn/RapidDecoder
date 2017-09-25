@@ -1,12 +1,10 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 
-internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
-                                       private val targetWidth: Float,
-                                       private val targetHeight: Float) : BitmapDecoder() {
+internal class ScaleToTransformLoader(private val source: BitmapLoader,
+                                      private val targetWidth: Float,
+                                      private val targetHeight: Float) : BitmapLoader() {
     override val width: Int
         get() = Math.round(targetWidth)
     override val height: Int
@@ -30,7 +28,7 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
             return if (floatWidth == targetWidth && floatHeight == targetHeight) {
                 this
             } else {
-                ScaleToTransformDecoder(source, floatWidth, floatHeight)
+                ScaleToTransformLoader(source, floatWidth, floatHeight)
             }
         }
     }
@@ -47,7 +45,7 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
                     source.height.toFloat() == newHeight) {
                 source
             } else {
-                ScaleToTransformDecoder(source, newWidth, newHeight)
+                ScaleToTransformLoader(source, newWidth, newHeight)
             }
         }
     }
@@ -64,37 +62,14 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = BitmapFactory.Options()
-        opts.inSampleSize = 1
-        opts.inScaled = false
-
-        var sourceWidth: Float = source.sourceWidth.toFloat()
-        var sourceHeight: Float = source.sourceHeight.toFloat()
-        val targetWidth = Math.round(targetWidth)
-        val targetHeight = Math.round(targetHeight)
-        while (sourceWidth >= targetWidth * 2 && sourceHeight >= targetHeight * 2) {
-            opts.inSampleSize *= 2
-            sourceWidth /= 2
-            sourceHeight /= 2
-        }
-
-        val bitmap = synchronized(decodeLock) { source.decode(opts) }
-        if (bitmap.width == targetWidth && bitmap.height == targetHeight
-                || !options.finalScale) {
-            return bitmap
-        }
-
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight,
+        val bitmap1 = source.loadBitmap(options)
+        val bitmap2 = Bitmap.createScaledBitmap(bitmap1,
+                Math.round(targetWidth),
+                Math.round(targetHeight),
                 options.filterBitmap)
-        if (scaledBitmap !== bitmap) {
-            bitmap.recycle()
+        if (bitmap1 !== bitmap2) {
+            bitmap1.recycle()
         }
-        return scaledBitmap
+        return bitmap2
     }
-
-    override fun decode(opts: BitmapFactory.Options): Bitmap = source.decode(opts)
-
-    override fun decodeBounds(opts: BitmapFactory.Options) = source.decodeBounds(opts)
-
-    override fun createRegionDecoder(): BitmapRegionDecoder = source.createRegionDecoder()
 }

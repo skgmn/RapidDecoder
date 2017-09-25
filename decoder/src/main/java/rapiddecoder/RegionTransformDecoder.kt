@@ -25,6 +25,8 @@ internal class RegionTransformDecoder(private val source: BitmapDecoder,
         get() = right - left
     override val height: Int
         get() = bottom - top
+    override val hasSize: Boolean
+        get() = source.hasSize
     override val sourceWidth: Int
         get() = source.sourceWidth
     override val sourceHeight: Int
@@ -34,7 +36,11 @@ internal class RegionTransformDecoder(private val source: BitmapDecoder,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
+        return if (hasSize && this.width == width && this.height == height) {
+            this
+        } else {
+            ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
+        }
     }
 
     override fun scaleBy(x: Float, y: Float): BitmapLoader {
@@ -47,6 +53,9 @@ internal class RegionTransformDecoder(private val source: BitmapDecoder,
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
+        if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+            return this
+        }
         val newLeft = this.left + left
         val newTop = this.top + top
         return RegionTransformDecoder(source, newLeft, newTop,

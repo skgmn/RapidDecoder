@@ -14,6 +14,8 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
     override val height: Int by lazy {
         Math.round(source.height * y)
     }
+    override val hasSize: Boolean
+        get() = source.hasSize
     override val sourceWidth: Int
         get() = source.sourceWidth
     override val sourceHeight: Int
@@ -23,7 +25,11 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return ScaleToTransformDecoder(source, width.toFloat(), height.toFloat())
+        return if (source.hasSize && source.width == width && source.height == height) {
+            source
+        } else {
+            ScaleToTransformDecoder(source, width.toFloat(), height.toFloat())
+        }
     }
 
     override fun scaleBy(x: Float, y: Float): BitmapLoader {
@@ -69,7 +75,8 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
 
         val m = Matrix()
         m.setScale(sx, sy)
-        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m, true)
+        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m,
+                options.filterBitmap)
         if (scaledBitmap !== bitmap) {
             bitmap.recycle()
         }

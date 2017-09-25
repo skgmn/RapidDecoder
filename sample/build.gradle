@@ -5,7 +5,7 @@ android {
     buildToolsVersion "25.0.3"
 
     defaultConfig {
-        applicationId "rapid.decoder.sample"
+        applicationId "rapiddecoder.sample"
         minSdkVersion 10
         targetSdkVersion 25
         versionCode 1
@@ -17,8 +17,6 @@ android {
 
 dependencies {
     compile project(':decoder')
-    compile project(':jpeg-decoder')
-    compile project(':png-decoder')
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:20.0.0'
+    compile 'com.android.support:appcompat-v7:25.3.1'
 }

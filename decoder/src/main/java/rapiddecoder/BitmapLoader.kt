@@ -2,6 +2,7 @@ package rapiddecoder
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Rect
 
 abstract class BitmapLoader {
     abstract val sourceWidth: Int
@@ -9,10 +10,13 @@ abstract class BitmapLoader {
     abstract val width: Int
     abstract val height: Int
     abstract val mimeType: String?
+    abstract val hasSize: Boolean
 
     abstract fun scaleTo(width: Int, height: Int): BitmapLoader
     abstract fun scaleBy(x: Float, y: Float): BitmapLoader
     abstract fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader
+
+    fun region(bounds: Rect) = region(bounds.left, bounds.top, bounds.right, bounds.bottom)
 
     fun scaleWidth(width: Int) {
         if (width <= 0) {

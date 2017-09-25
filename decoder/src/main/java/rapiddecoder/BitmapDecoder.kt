@@ -9,16 +9,27 @@ internal abstract class BitmapDecoder : BitmapLoader() {
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
+        if (hasSize && width == this.width && height == this.height) {
+            return this
+        }
         return ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
     }
 
     override fun scaleBy(x: Float, y: Float): BitmapLoader {
         checkScaleByArguments(x, y)
-        return ScaleByTransformDecoder(this, x, y)
+        return if (x == 1f && y == 1f) {
+            this
+        } else {
+            ScaleByTransformDecoder(this, x, y)
+        }
     }
 
-    override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader =
-            RegionTransformDecoder(this, left, top, right, bottom)
+    override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
+        if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+            return this
+        }
+        return RegionTransformDecoder(this, left, top, right, bottom)
+    }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap =
             synchronized(decodeLock) { decode(BitmapFactory.Options()) }

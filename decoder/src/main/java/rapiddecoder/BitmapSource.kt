@@ -7,6 +7,7 @@ internal abstract class BitmapSource : BitmapDecoder() {
     private var bitmapHeight = -1
     private var transformedWidth = -1
     private var transformedHeight = -1
+    private var boundsDecoded = false
     private var imageMimeType: String? = null
 
     override val sourceWidth: Int
@@ -69,6 +70,9 @@ internal abstract class BitmapSource : BitmapDecoder() {
             return imageMimeType
         }
 
+    override val hasSize: Boolean
+        get() = synchronized(decodeLock) { boundsDecoded }
+
     private fun decodeBounds() {
         val opts = BitmapFactory.Options()
         opts.inJustDecodeBounds = true
@@ -87,5 +91,6 @@ internal abstract class BitmapSource : BitmapDecoder() {
         bitmapHeight = opts.outHeight
         transformedWidth = Math.ceil(opts.outWidth * scale).toInt()
         transformedHeight = Math.ceil(opts.outHeight * scale).toInt()
+        boundsDecoded = true
     }
 }
