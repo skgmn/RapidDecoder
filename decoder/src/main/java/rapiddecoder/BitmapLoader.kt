@@ -1,5 +1,6 @@
 package rapiddecoder
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 
 abstract class BitmapLoader {
@@ -39,5 +40,10 @@ abstract class BitmapLoader {
         if (x <= 0f || y <= 0f) {
             throw IllegalArgumentException("x and y should be positive")
         }
+    }
+
+    companion object {
+        fun fromResource(res: Resources, resId: Int): BitmapLoader =
+                BitmapFromResource(res, resId)
     }
 }

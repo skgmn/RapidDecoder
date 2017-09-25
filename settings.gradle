@@ -1,1 +1,1 @@
-include ':decoder', ':sample', ':test', ':png-decoder', ':jpeg-decoder'
+include ':decoder', ':test'

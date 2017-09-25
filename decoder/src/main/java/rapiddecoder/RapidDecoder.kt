@@ -1,5 +1,0 @@
-package rapiddecoder
-
-object RapidDecoder {
-
-}

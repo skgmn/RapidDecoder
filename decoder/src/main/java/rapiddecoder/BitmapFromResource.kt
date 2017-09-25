@@ -9,6 +9,7 @@ internal class BitmapFromResource(private val res: Resources,
                                   private val resId: Int) : BitmapSource() {
     override fun decode(opts: BitmapFactory.Options): Bitmap {
         val bitmap = BitmapFactory.decodeResource(res, resId, opts)
+                ?: throw Resources.NotFoundException("id=$resId")
         saveMetadata(opts)
         return bitmap
     }

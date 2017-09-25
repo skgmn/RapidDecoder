@@ -1,6 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="rapid.decoder.test">
+<manifest package="rapiddecoder.test">
 
-    <application android:allowBackup="true"/>
+    <application />
 
 </manifest>

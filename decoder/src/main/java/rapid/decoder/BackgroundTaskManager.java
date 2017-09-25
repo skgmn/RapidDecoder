@@ -89,8 +89,7 @@ class BackgroundTaskManager {
     static boolean shouldBeWeak(Object o) {
         return o instanceof View ||
                 o instanceof Activity ||
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment ||
-                hasSupportLibraryV4() && o instanceof android.support.v4.app.Fragment;
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment;
     }
 
     public static boolean hasAnyTasks() {

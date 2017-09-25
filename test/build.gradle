@@ -1,23 +1,26 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 25
     buildToolsVersion '25.0.3'
 
     defaultConfig {
-        applicationId "rapid.decoder.test"
-        minSdkVersion 10
+        applicationId "rapiddecoder.test"
+        minSdkVersion 19
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
-    }
-    buildTypes {
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':decoder')
-    compile project(':png-decoder')
-    compile project(':jpeg-decoder')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    testCompile 'junit:junit:4.12'
+
+    androidTestCompile 'com.android.support.test:runner:0.5'
+    androidTestCompile 'com.android.support:support-annotations:25.3.1'
 }
