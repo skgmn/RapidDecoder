@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.support.test.InstrumentationRegistry
 import junit.framework.Assert.assertTrue
 import org.junit.Assert.assertEquals
@@ -67,5 +68,24 @@ class BitmapFromResourceTest {
         assertEquals(scaleTargetHeight, height)
         assertEquals(scaleTargetWidth, bitmap1.width)
         assertEquals(scaleTargetHeight, bitmap1.height)
+    }
+
+    @Test
+    fun scaleBy() {
+        val sx = 0.3f
+        val sy = 0.4f
+
+        val bitmap1 = BitmapLoader.fromResource(res, R.drawable.dummy_image)
+                .scaleBy(sx, sy).loadBitmap()
+
+        val opts = BitmapFactory.Options()
+        opts.inSampleSize = 2
+        val bitmap2 = BitmapFactory.decodeResource(res, R.drawable.dummy_image, opts)
+
+        val m = Matrix()
+        m.setScale(sx * 2f, sy * 2f)
+        val bitmap3 = Bitmap.createBitmap(bitmap2, 0, 0, bitmap2.width, bitmap2.height, m, true)
+
+        assertTrue(bitmap1.sameAs(bitmap3))
     }
 }

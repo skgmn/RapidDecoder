@@ -56,10 +56,10 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
 
         var sx = x
         var sy = y
-        while (sx >= 2f && sy >= 2f) {
+        while (sx <= 0.5f && sy <= 0.5f) {
             opts.inSampleSize *= 2
-            sx /= 2f
-            sy /= 2f
+            sx *= 2f
+            sy *= 2f
         }
 
         val bitmap = synchronized(decodeLock) { source.decode(opts) }
