@@ -3,6 +3,7 @@ package rapiddecoder
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
+import android.graphics.Matrix
 
 internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
                                        private val x: Float,
@@ -13,6 +14,10 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
     override val height: Int by lazy {
         Math.round(source.height * y)
     }
+    override val sourceWidth: Int
+        get() = source.sourceWidth
+    override val sourceHeight: Int
+        get() = source.sourceHeight
     override val mimeType: String?
         get() = source.mimeType
 
@@ -49,23 +54,22 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
         val opts = BitmapFactory.Options()
         opts.inSampleSize = 1
 
-        var ratioX = x
-        var ratioY = y
-        while (ratioX >= 2f && ratioY >= 2f) {
+        var sx = x
+        var sy = y
+        while (sx >= 2f && sy >= 2f) {
             opts.inSampleSize *= 2
-            ratioX /= 2f
-            ratioY /= 2f
+            sx /= 2f
+            sy /= 2f
         }
 
         val bitmap = synchronized(decodeLock) { source.decode(opts) }
-        if (ratioX == 1f && ratioY == 1f || !options.finalScale) {
+        if (sx == 1f && sy == 1f || !options.finalScale) {
             return bitmap
         }
 
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap,
-                Math.round(bitmap.width * ratioX),
-                Math.round(bitmap.height * ratioY),
-                true)
+        val m = Matrix()
+        m.setScale(sx, sy)
+        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m, true)
         if (scaledBitmap !== bitmap) {
             bitmap.recycle()
         }

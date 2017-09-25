@@ -25,6 +25,10 @@ internal class RegionTransformDecoder(private val source: BitmapDecoder,
         get() = right - left
     override val height: Int
         get() = bottom - top
+    override val sourceWidth: Int
+        get() = source.sourceWidth
+    override val sourceHeight: Int
+        get() = source.sourceHeight
     override val mimeType: String?
         get() = source.mimeType
 

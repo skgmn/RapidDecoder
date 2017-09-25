@@ -4,6 +4,8 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 
 abstract class BitmapLoader {
+    abstract val sourceWidth: Int
+    abstract val sourceHeight: Int
     abstract val width: Int
     abstract val height: Int
     abstract val mimeType: String?

@@ -11,6 +11,10 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
         get() = Math.round(targetWidth)
     override val height: Int
         get() = Math.round(targetHeight)
+    override val sourceWidth: Int
+        get() = source.sourceWidth
+    override val sourceHeight: Int
+        get() = source.sourceHeight
     override val mimeType: String?
         get() = source.mimeType
 
@@ -48,9 +52,10 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val opts = BitmapFactory.Options()
         opts.inSampleSize = 1
+        opts.inScaled = false
 
-        var sourceWidth = source.width
-        var sourceHeight = source.height
+        var sourceWidth: Float = source.sourceWidth.toFloat()
+        var sourceHeight: Float = source.sourceHeight.toFloat()
         val targetWidth = Math.round(targetWidth)
         val targetHeight = Math.round(targetHeight)
         while (sourceWidth >= targetWidth * 2 && sourceHeight >= targetHeight * 2) {

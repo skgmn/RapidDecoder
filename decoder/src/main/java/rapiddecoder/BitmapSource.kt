@@ -5,9 +5,11 @@ import android.graphics.BitmapFactory
 internal abstract class BitmapSource : BitmapDecoder() {
     private var bitmapWidth = -1
     private var bitmapHeight = -1
+    private var transformedWidth = -1
+    private var transformedHeight = -1
     private var imageMimeType: String? = null
 
-    override val width: Int
+    override val sourceWidth: Int
         get() {
             if (bitmapWidth == -1) {
                 synchronized(decodeLock) {
@@ -19,7 +21,7 @@ internal abstract class BitmapSource : BitmapDecoder() {
             return bitmapWidth
         }
 
-    override val height: Int
+    override val sourceHeight: Int
         get() {
             if (bitmapHeight == -1) {
                 synchronized(decodeLock) {
@@ -29,6 +31,30 @@ internal abstract class BitmapSource : BitmapDecoder() {
                 }
             }
             return bitmapHeight
+        }
+
+    override val width: Int
+        get() {
+            if (transformedWidth == -1) {
+                synchronized(decodeLock) {
+                    if (transformedWidth == -1) {
+                        decodeBounds()
+                    }
+                }
+            }
+            return transformedWidth
+        }
+
+    override val height: Int
+        get() {
+            if (transformedHeight == -1) {
+                synchronized(decodeLock) {
+                    if (transformedHeight == -1) {
+                        decodeBounds()
+                    }
+                }
+            }
+            return transformedHeight
         }
 
     override val mimeType: String?
@@ -50,8 +76,16 @@ internal abstract class BitmapSource : BitmapDecoder() {
     }
 
     protected fun saveMetadata(opts: BitmapFactory.Options) {
+        imageMimeType = opts.outMimeType
+        val scale =
+                if (opts.inScaled && opts.inDensity != 0 && opts.inTargetDensity != 0) {
+                    opts.inTargetDensity.toDouble() / opts.inDensity
+                } else {
+                    1.0
+                }
         bitmapWidth = opts.outWidth
         bitmapHeight = opts.outHeight
-        imageMimeType = opts.outMimeType
+        transformedWidth = Math.ceil(opts.outWidth * scale).toInt()
+        transformedHeight = Math.ceil(opts.outHeight * scale).toInt()
     }
 }
