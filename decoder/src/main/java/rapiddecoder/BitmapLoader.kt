@@ -3,6 +3,7 @@ package rapiddecoder
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 
 abstract class BitmapLoader {
     abstract val sourceWidth: Int
@@ -31,6 +32,11 @@ abstract class BitmapLoader {
         }
         scaleTo(Math.round(height * (this.width.toFloat() / this.height)), height)
     }
+
+    @JvmOverloads
+    fun frame(framer: Framer, frameWidth: Int, frameHeight: Int,
+              background: Drawable? = null): BitmapLoader =
+            FramedBitmapLoader(this, framer, frameWidth, frameHeight, background)
 
     abstract fun loadBitmap(options: LoadBitmapOptions): Bitmap
 

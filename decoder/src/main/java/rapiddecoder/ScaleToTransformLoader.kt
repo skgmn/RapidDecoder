@@ -62,14 +62,14 @@ internal class ScaleToTransformLoader(private val source: BitmapLoader,
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val bitmap1 = source.loadBitmap(options)
-        val bitmap2 = Bitmap.createScaledBitmap(bitmap1,
-                Math.round(targetWidth),
-                Math.round(targetHeight),
+        val sourceBitmap = source.loadBitmap(options)
+        val scaledBitmap = Bitmap.createScaledBitmap(sourceBitmap,
+                Math.ceil(targetWidth.toDouble()).toInt(),
+                Math.ceil(targetHeight.toDouble()).toInt(),
                 options.filterBitmap)
-        if (bitmap1 !== bitmap2) {
-            bitmap1.recycle()
+        if (sourceBitmap !== scaledBitmap) {
+            sourceBitmap.recycle()
         }
-        return bitmap2
+        return scaledBitmap
     }
 }

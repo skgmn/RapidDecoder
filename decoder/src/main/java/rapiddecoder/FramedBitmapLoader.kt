@@ -6,7 +6,8 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 
-abstract class FramedBitmapLoader(private val source: BitmapLoader,
+internal class FramedBitmapLoader(private val source: BitmapLoader,
+                                  private val framer: Framer,
                                   private val frameWidth: Int,
                                   private val frameHeight: Int,
                                   private val background: Drawable? = null) : BitmapLoader() {
@@ -24,21 +25,37 @@ abstract class FramedBitmapLoader(private val source: BitmapLoader,
         get() = true
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
-        if (frameWidth == width && frameHeight == height) {
-            return this
+        checkScaleToArguments(width, height)
+        return if (frameWidth == width && frameHeight == height) {
+            this
         } else {
-            return ScaleToTransformLoader(this, width.toFloat(), height.toFloat())
+            ScaleToTransformLoader(this, width.toFloat(), height.toFloat())
         }
     }
 
-    protected abstract fun getBounds(sourceWidth: Int, sourceHeight: Int,
-                                     frameWidth: Int, frameHeight: Int,
-                                     outSrc: Rect, outDest: Rect)
+    override fun scaleBy(x: Float, y: Float): BitmapLoader {
+        checkScaleByArguments(x, y)
+        return if (x == 1f && y == 1f) {
+            this
+        } else {
+            ScaleByTransformLoader(this, x, y)
+        }
+    }
+
+    override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
+        return if (left <= 0 && top <= 0 && right >= frameWidth && bottom >= frameHeight) {
+            this
+        } else {
+            FramedRegionTransformLoader(source, framer, frameWidth, frameHeight, background,
+                    left, top, right, bottom)
+        }
+    }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val sourceBounds = Rect()
         val destBounds = Rect()
-        getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds, destBounds)
+        framer.getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds,
+                destBounds)
 
         val newOptions = options.buildUpon().setFinalScale(false).build()
         val sourceBitmap = source.region(sourceBounds).loadBitmap(newOptions)
@@ -53,7 +70,7 @@ abstract class FramedBitmapLoader(private val source: BitmapLoader,
                 setBounds(0, 0, frameWidth, frameHeight)
                 draw(canvas)
             }
-            val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+            val paint = if (newOptions.filterBitmap) Paint(Paint.FILTER_BITMAP_FLAG) else null
             canvas.drawBitmap(sourceBitmap, null, destBounds, paint)
             bitmap
         }
