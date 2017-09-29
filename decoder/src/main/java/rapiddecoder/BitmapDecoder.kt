@@ -31,8 +31,13 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         return RegionTransformDecoder(this, left, top, right, bottom)
     }
 
-    override fun loadBitmap(options: LoadBitmapOptions): Bitmap =
-            synchronized(decodeLock) { decode(BitmapFactory.Options()) }
+    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
+        val opts = BitmapFactory.Options()
+        opts.inPreferredConfig = options.config
+        return synchronized(decodeLock) {
+            decode(opts)
+        }
+    }
 
     internal abstract fun decode(opts: BitmapFactory.Options): Bitmap
     internal abstract fun decodeBounds(opts: BitmapFactory.Options)

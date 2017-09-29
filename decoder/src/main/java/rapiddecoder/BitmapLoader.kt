@@ -55,6 +55,7 @@ abstract class BitmapLoader {
     }
 
     companion object {
+        @JvmStatic
         fun fromResource(res: Resources, resId: Int): BitmapLoader =
                 BitmapFromResource(res, resId)
     }

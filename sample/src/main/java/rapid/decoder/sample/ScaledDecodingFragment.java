@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import rapid.decoder.BitmapDecoder;
+import rapiddecoder.BitmapLoader;
 
 public class ScaledDecodingFragment extends Fragment {
 	@Override
@@ -30,39 +30,34 @@ public class ScaledDecodingFragment extends Fragment {
         TextView textPngInfo = (TextView) view.findViewById(R.id.text_png_info);
 
         int width = getResources().getDimensionPixelSize(R.dimen.scaled_decoding_width);
-        int height = getResources().getDimensionPixelSize(R.dimen.scaled_decoding_height);
 
-        BitmapDecoder decoder;
         Bitmap bitmap;
         int sourceWidth;
         int sourceHeight;
 
         // Jpeg
 
-        decoder = BitmapDecoder.from(getResources(), R.drawable.amanda);
-        sourceWidth = decoder.width();
-        sourceHeight = decoder.height();
+        BitmapLoader pumpkins = BitmapLoader.fromResource(getResources(), R.drawable.pumpkins);
+        sourceWidth = pumpkins.getSourceWidth();
+        sourceHeight = pumpkins.getSourceHeight();
 
-        bitmap = decoder
-                .scale(width, height)
-                .useBuiltInDecoder(MainActivity.TEST_BUILT_IN_DECODER)
-                .decode();
+        bitmap = pumpkins
+                .scaleTo(width, Math.round(width * 0.6665f))
+                .loadBitmap();
         imageJpeg.setImageBitmap(bitmap);
 
-        //noinspection ConstantConditions
         textJpegInfo.setText("Source width = " + sourceWidth + ", Source height = " + sourceHeight + "\n" +
                 "Bitmap width = " + bitmap.getWidth() + ", Bitmap height = " + bitmap.getHeight());
 
         // Png
 
-        decoder = BitmapDecoder.from(getResources(), R.drawable.amanda2);
-        sourceWidth = decoder.width();
-        sourceHeight = decoder.height();
+        BitmapLoader a = BitmapLoader.fromResource(getResources(), R.drawable.a);
+        sourceWidth = a.getSourceWidth();
+        sourceHeight = a.getSourceHeight();
 
-        bitmap = decoder
-                .scale(width, height)
-                .useBuiltInDecoder(MainActivity.TEST_BUILT_IN_DECODER)
-                .decode();
+        bitmap = a
+                .scaleTo(width, Math.round(width * 0.575f))
+                .loadBitmap();
         imagePng.setImageBitmap(bitmap);
 
         //noinspection ConstantConditions

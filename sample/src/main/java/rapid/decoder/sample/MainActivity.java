@@ -2,13 +2,13 @@ package rapid.decoder.sample;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.v4.app.ActionBarDrawerToggle;
+import android.os.PersistableBundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
-import android.view.Gravity;
-import android.view.KeyEvent;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -16,42 +16,38 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import rapid.decoder.BitmapDecoder;
-
-public class MainActivity extends ActionBarActivity {
-    public static final boolean TEST_BUILT_IN_DECODER = true;
-
-    private ActionBarDrawerToggle mDrawerToggle;
+public class MainActivity extends AppCompatActivity {
     private DrawerLayout mDrawer;
     private ArrayAdapter<String> mAdapterDrawerMenu;
     private int nextContent = -1;
+    private ActionBarDrawerToggle drawerToggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BitmapDecoder.initDiskCache(this);
-        BitmapDecoder.initMemoryCache(this);
-
         mDrawer = (DrawerLayout) findViewById(R.id.drawer);
         ListView listDrawerMenu = (ListView) findViewById(R.id.list_drawer_menu);
 
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setHomeButtonEnabled(true);
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawer, R.drawable.ic_navigation_drawer,
+        drawerToggle = new ActionBarDrawerToggle(this, mDrawer,
                 R.string.drawer_open, R.string.drawer_close) {
-
             @Override
-            public void onDrawerClosed(View v) {
-                super.onDrawerClosed(v);
+            public void onDrawerClosed(View drawerView) {
+                super.onDrawerClosed(drawerView);
                 if (nextContent >= 0) {
                     loadContent(nextContent);
                     nextContent = -1;
                 }
             }
         };
+        mDrawer.addDrawerListener(drawerToggle);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(drawerToggle.getDrawerArrowDrawable());
+        }
 
         mAdapterDrawerMenu = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, getResources().getStringArray(R.array
@@ -67,15 +63,8 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        mDrawer.setDrawerListener(mDrawerToggle);
         supportInvalidateOptionsMenu();
         loadContent(0);
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        mDrawerToggle.syncState();
     }
 
     private void loadContent(int index) {
@@ -85,27 +74,27 @@ public class MainActivity extends ActionBarActivity {
             case 0:
                 fragment = new ScaledDecodingFragment();
                 break;
-            case 1:
-                fragment = new RegionalDecodingFragment();
-                break;
-            case 2:
-                fragment = new MutableDecodingFragment();
-                break;
-            case 3:
-                fragment = new FrameFragment();
-                break;
-            case 4:
-                fragment = new GalleryFragment();
-                break;
-            case 5:
-                fragment = new ContactsFragment();
-                break;
-            case 6:
-                fragment = new WrapContentFragment();
-                break;
-            case 7:
-                fragment = new ResetFragment();
-                break;
+//            case 1:
+//                fragment = new RegionalDecodingFragment();
+//                break;
+//            case 2:
+//                fragment = new MutableDecodingFragment();
+//                break;
+//            case 3:
+//                fragment = new FrameFragment();
+//                break;
+//            case 4:
+//                fragment = new GalleryFragment();
+//                break;
+//            case 5:
+//                fragment = new ContactsFragment();
+//                break;
+//            case 6:
+//                fragment = new WrapContentFragment();
+//                break;
+//            case 7:
+//                fragment = new ResetFragment();
+//                break;
             default:
                 return;
         }
@@ -117,23 +106,19 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU) {
-            mDrawer.openDrawer(Gravity.LEFT);
-            return true;
-        } else {
-            return super.onKeyDown(keyCode, event);
-        }
+    public boolean onOptionsItemSelected(MenuItem item) {
+        return drawerToggle.onOptionsItemSelected(item);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mDrawerToggle.onConfigurationChanged(newConfig);
+        drawerToggle.onConfigurationChanged(newConfig);
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return mDrawerToggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item);
+    public void onPostCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
+        super.onPostCreate(savedInstanceState, persistentState);
+        drawerToggle.syncState();
     }
 }
