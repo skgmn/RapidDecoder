@@ -3,6 +3,8 @@ package rapiddecoder
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
+import android.graphics.Canvas
+import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
     protected val decodeLock = Any()
@@ -13,6 +15,11 @@ internal abstract class BitmapDecoder : BitmapLoader() {
             return this
         }
         return ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
+    }
+
+    override fun scaleWidth(width: Int): BitmapLoader {
+        checkScaleToArguments(width, 1)
+        return ScaleWidthTransformDecoder(this, width.toFloat(), 1f)
     }
 
     override fun scaleBy(x: Float, y: Float): BitmapLoader {
@@ -34,8 +41,22 @@ internal abstract class BitmapDecoder : BitmapLoader() {
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val opts = BitmapFactory.Options()
         opts.inPreferredConfig = options.config
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            opts.inMutable = options.mutable
+        }
         return synchronized(decodeLock) {
-            decode(opts)
+            decode(opts).let {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB &&
+                        options.mutable &&
+                        !it.isMutable) {
+                    val clone = Bitmap.createBitmap(it.width, it.height, it.config)
+                    Canvas(clone).drawBitmap(it, 0f, 0f, null)
+                    it.recycle()
+                    clone
+                } else {
+                    it
+                }
+            }
         }
     }
 

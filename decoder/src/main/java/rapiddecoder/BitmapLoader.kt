@@ -19,14 +19,14 @@ abstract class BitmapLoader {
 
     fun region(bounds: Rect) = region(bounds.left, bounds.top, bounds.right, bounds.bottom)
 
-    fun scaleWidth(width: Int): BitmapLoader {
+    open fun scaleWidth(width: Int): BitmapLoader {
         if (width <= 0) {
             throw IllegalArgumentException("width should be positive")
         }
         return scaleTo(width, Math.round(width * (this.height.toFloat() / this.width)))
     }
 
-    fun scaleHeight(height: Int): BitmapLoader {
+    open fun scaleHeight(height: Int): BitmapLoader {
         if (height <= 0) {
             throw IllegalArgumentException("height should be positive")
         }
