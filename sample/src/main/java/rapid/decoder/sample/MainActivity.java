@@ -74,9 +74,9 @@ public class MainActivity extends AppCompatActivity {
             case 0:
                 fragment = new ScaledDecodingFragment();
                 break;
-//            case 1:
-//                fragment = new RegionalDecodingFragment();
-//                break;
+            case 1:
+                fragment = new RegionDecodingFragment();
+                break;
 //            case 2:
 //                fragment = new MutableDecodingFragment();
 //                break;

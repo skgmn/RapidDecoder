@@ -42,7 +42,7 @@ public class ScaledDecodingFragment extends Fragment {
         sourceHeight = pumpkins.getSourceHeight();
 
         bitmap = pumpkins
-                .scaleTo(width, Math.round(width * 0.6665f))
+                .scaleWidth(width)
                 .loadBitmap();
         imageJpeg.setImageBitmap(bitmap);
 
@@ -56,7 +56,7 @@ public class ScaledDecodingFragment extends Fragment {
         sourceHeight = a.getSourceHeight();
 
         bitmap = a
-                .scaleTo(width, Math.round(width * 0.575f))
+                .scaleWidth(width)
                 .loadBitmap();
         imagePng.setImageBitmap(bitmap);
 
