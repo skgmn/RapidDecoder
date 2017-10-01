@@ -20,6 +20,8 @@ abstract class BitmapLoader {
     abstract fun scaleBy(x: Float, y: Float): BitmapLoader
     abstract fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader
 
+    fun scaleBy(scale: Float) = scaleBy(scale, scale)
+
     fun region(bounds: Rect) = region(bounds.left, bounds.top, bounds.right, bounds.bottom)
 
     open fun scaleWidth(width: Int): BitmapLoader {

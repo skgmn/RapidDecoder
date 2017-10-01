@@ -75,22 +75,33 @@ internal abstract class BitmapSource : BitmapDecoder() {
 
     private fun decodeBounds() {
         val opts = BitmapFactory.Options()
+        opts.inScaled = false
         opts.inJustDecodeBounds = true
         decodeBounds(opts)
     }
 
     protected fun saveMetadata(opts: BitmapFactory.Options) {
+        if (boundsDecoded) {
+            return
+        }
         imageMimeType = opts.outMimeType
         val scale =
-                if (opts.inScaled && opts.inDensity != 0 && opts.inTargetDensity != 0) {
+                if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
                     opts.inTargetDensity.toDouble() / opts.inDensity
                 } else {
                     1.0
                 }
-        bitmapWidth = opts.outWidth
-        bitmapHeight = opts.outHeight
-        transformedWidth = Math.ceil(opts.outWidth * scale).toInt()
-        transformedHeight = Math.ceil(opts.outHeight * scale).toInt()
+        if (opts.inScaled) {
+            bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
+            bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
+            transformedWidth = opts.outWidth
+            transformedHeight = opts.outHeight
+        } else {
+            bitmapWidth = opts.outWidth
+            bitmapHeight = opts.outHeight
+            transformedWidth = Math.ceil(opts.outWidth * scale).toInt()
+            transformedHeight = Math.ceil(opts.outHeight * scale).toInt()
+        }
         boundsDecoded = true
     }
 }

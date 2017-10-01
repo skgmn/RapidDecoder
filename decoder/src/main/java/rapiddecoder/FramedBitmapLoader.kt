@@ -59,7 +59,10 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
                 destBounds)
 
         val newOptions = options.buildUpon().setFinalScale(false).build()
-        val sourceBitmap = source.region(sourceBounds).loadBitmap(newOptions)
+        val sourceBitmap = source
+                .region(sourceBounds)
+                .scaleTo(destBounds.width(), destBounds.height())
+                .loadBitmap(newOptions)
 
         return if (destBounds.left == 0 && destBounds.top == 0 &&
                 destBounds.right == frameWidth && destBounds.bottom == frameHeight) {

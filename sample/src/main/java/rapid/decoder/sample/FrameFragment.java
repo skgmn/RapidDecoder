@@ -16,6 +16,8 @@ import rapiddecoder.BitmapLoader;
 import rapiddecoder.compat.DisplayCompat;
 
 public class FrameFragment extends Fragment {
+    private static final float SCALE = 0.5f;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -45,11 +47,11 @@ public class FrameFragment extends Fragment {
         Drawable transparentBackground = ResourcesCompat.getDrawable(getResources(),
                 R.drawable.transparent_background, null);
 
-        BitmapLoader pumpkins = BitmapLoader.fromResource(getResources(), R.drawable.pumpkins)
-                .scaleBy(0.5f, 0.5f);
+        BitmapLoader pumpkins = BitmapLoader.fromResource(getResources(), R.drawable.pumpkins);
         Bitmap bitmap;
 
         bitmap = pumpkins
+                .scaleBy(SCALE)
                 .frame(ImageView.ScaleType.MATRIX, imageWidth, imageWidth, transparentBackground)
                 .loadBitmap();
         imageMatrix.setImageBitmap(bitmap);
@@ -74,6 +76,7 @@ public class FrameFragment extends Fragment {
         imageFitEnd.setImageBitmap(bitmap);
 
         bitmap = pumpkins
+                .scaleBy(SCALE)
                 .frame(ImageView.ScaleType.CENTER, imageWidth, imageWidth, transparentBackground)
                 .loadBitmap();
         imageCenter.setImageBitmap(bitmap);
