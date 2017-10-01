@@ -22,6 +22,11 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         return ScaleWidthTransformDecoder(this, width.toFloat(), 1f)
     }
 
+    override fun scaleHeight(height: Int): BitmapLoader {
+        checkScaleToArguments(1, height)
+        return ScaleHeightTransformDecoder(this, height.toFloat(), 1f)
+    }
+
     override fun scaleBy(x: Float, y: Float): BitmapLoader {
         checkScaleByArguments(x, y)
         return if (x == 1f && y == 1f) {

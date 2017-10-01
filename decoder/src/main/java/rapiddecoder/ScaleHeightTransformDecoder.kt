@@ -4,9 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
 
-internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
-                                          private val targetWidth: Float,
-                                          private val heightAdjustRatio: Float) : BitmapDecoder() {
+internal class ScaleHeightTransformDecoder(private val source: BitmapDecoder,
+                                           private val targetHeight: Float,
+                                           private val widthAdjustRatio: Float) : BitmapDecoder() {
     override val width: Int
         get() = Math.round(targetWidth)
     override val height: Int
@@ -20,8 +20,8 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
     override val mimeType: String?
         get() = source.mimeType
 
-    private val targetHeight: Float by lazy {
-        targetWidth * (source.height.toFloat() / source.width) * heightAdjustRatio
+    private val targetWidth: Float by lazy {
+        targetHeight * (source.width.toFloat() / source.height) * widthAdjustRatio
     }
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
@@ -33,16 +33,16 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
         }
     }
 
-    override fun scaleWidth(width: Int): BitmapLoader {
-        checkScaleToArguments(width, 1)
-        return if (source.hasSize && source.width == width) {
+    override fun scaleHeight(height: Int): BitmapLoader {
+        checkScaleToArguments(1, height)
+        return if (source.hasSize && source.height == height) {
             source
         } else {
-            val floatWidth = width.toFloat()
-            if (floatWidth == targetWidth) {
+            val floatHeight = height.toFloat()
+            if (floatHeight == targetHeight) {
                 this
             } else {
-                ScaleWidthTransformDecoder(source, floatWidth, heightAdjustRatio)
+                ScaleHeightTransformDecoder(source, floatHeight, widthAdjustRatio)
             }
         }
     }
@@ -60,14 +60,14 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
                 ScaleToTransformDecoder(source, newWidth, newHeight)
             }
         } else {
-            val newWidth = targetWidth * x
-            val newHeightAdjustRatio = heightAdjustRatio * (y / x)
-            ScaleWidthTransformDecoder(source, newWidth, newHeightAdjustRatio)
+            val newHeight = targetHeight * y
+            val newWidthAdjustRatio = widthAdjustRatio * (x / y)
+            ScaleHeightTransformDecoder(source, newHeight, newWidthAdjustRatio)
         }
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        val scale = targetWidth / source.width
+        val scale = targetHeight / source.height
         return source.region(
                 Math.round(left / scale),
                 Math.round(top / scale),
@@ -81,19 +81,19 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
         opts.inSampleSize = 1
         opts.inScaled = false
 
-        var sourceWidth: Float = source.sourceWidth.toFloat()
-        val targetWidth = width
-        while (sourceWidth >= targetWidth * 2) {
+        var sourceHeight: Float = source.sourceHeight.toFloat()
+        val targetHeight = height
+        while (sourceWidth >= targetHeight * 2) {
             opts.inSampleSize *= 2
-            sourceWidth /= 2
+            sourceHeight /= 2
         }
 
         val bitmap = synchronized(decodeLock) { source.decode(opts) }
-        if (bitmap.width == targetWidth || !options.finalScale) {
+        if (bitmap.height == targetHeight || !options.finalScale) {
             return bitmap
         }
 
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, height,
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, targetHeight,
                 options.filterBitmap)
         if (scaledBitmap !== bitmap) {
             bitmap.recycle()

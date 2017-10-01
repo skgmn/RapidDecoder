@@ -20,12 +20,12 @@ internal class ScaleToTransformLoader(private val source: BitmapLoader,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        if (source.hasSize && source.width == width && source.height == height) {
-            return source
+        return if (source.hasSize && source.width == width && source.height == height) {
+            source
         } else {
             val floatWidth = width.toFloat()
             val floatHeight = height.toFloat()
-            return if (floatWidth == targetWidth && floatHeight == targetHeight) {
+            if (floatWidth == targetWidth && floatHeight == targetHeight) {
                 this
             } else {
                 ScaleToTransformLoader(source, floatWidth, floatHeight)
