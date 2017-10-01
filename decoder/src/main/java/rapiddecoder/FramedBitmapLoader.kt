@@ -5,9 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import rapiddecoder.frame.FramingMethod
 
 internal class FramedBitmapLoader(private val source: BitmapLoader,
-                                  private val framer: Framer,
+                                  private val framingMethod: FramingMethod,
                                   private val frameWidth: Int,
                                   private val frameHeight: Int,
                                   private val background: Drawable? = null) : BitmapLoader() {
@@ -46,7 +47,7 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
         return if (left <= 0 && top <= 0 && right >= frameWidth && bottom >= frameHeight) {
             this
         } else {
-            FramedRegionTransformLoader(source, framer, frameWidth, frameHeight, background,
+            FramedRegionTransformLoader(source, framingMethod, frameWidth, frameHeight, background,
                     left, top, right, bottom)
         }
     }
@@ -54,7 +55,7 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val sourceBounds = Rect()
         val destBounds = Rect()
-        framer.getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds,
+        framingMethod.getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds,
                 destBounds)
 
         val newOptions = options.buildUpon().setFinalScale(false).build()
@@ -62,7 +63,12 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
 
         return if (destBounds.left == 0 && destBounds.top == 0 &&
                 destBounds.right == frameWidth && destBounds.bottom == frameHeight) {
-            Bitmap.createScaledBitmap(sourceBitmap, frameWidth, frameHeight, true)
+            val scaledBitmap = Bitmap.createScaledBitmap(sourceBitmap, frameWidth, frameHeight,
+                    newOptions.filterBitmap)
+            if (sourceBitmap !== scaledBitmap) {
+                sourceBitmap.recycle()
+            }
+            scaledBitmap
         } else {
             val bitmap = Bitmap.createBitmap(frameWidth, frameHeight, sourceBitmap.config)
             val canvas = Canvas(bitmap)

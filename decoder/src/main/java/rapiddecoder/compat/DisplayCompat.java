@@ -1,4 +1,4 @@
-package rapid.decoder.compat;
+package rapiddecoder.compat;
 
 import android.annotation.SuppressLint;
 import android.graphics.Point;

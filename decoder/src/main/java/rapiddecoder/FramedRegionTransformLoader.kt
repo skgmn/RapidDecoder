@@ -5,9 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import rapiddecoder.frame.FramingMethod
 
 internal class FramedRegionTransformLoader(private val source: BitmapLoader,
-                                           private val framer: Framer,
+                                           private val framingMethod: FramingMethod,
                                            private val frameWidth: Int,
                                            private val frameHeight: Int,
                                            private val background: Drawable? = null,
@@ -61,14 +62,14 @@ internal class FramedRegionTransformLoader(private val source: BitmapLoader,
         }
         val newLeft = this.left + left
         val newTop = this.top + top
-        return FramedRegionTransformLoader(source, framer, frameWidth, frameHeight,
+        return FramedRegionTransformLoader(source, framingMethod, frameWidth, frameHeight,
                 background, newLeft, newTop, newLeft + (right - left), newTop + (bottom - top))
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val sourceBounds = Rect()
         val destBounds = Rect()
-        framer.getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds,
+        framingMethod.getBounds(source.width, source.height, frameWidth, frameHeight, sourceBounds,
                 destBounds)
 
         val destRegionBounds = Rect()

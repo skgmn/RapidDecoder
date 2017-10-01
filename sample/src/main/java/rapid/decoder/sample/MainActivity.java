@@ -80,9 +80,9 @@ public class MainActivity extends AppCompatActivity {
             case 2:
                 fragment = new MutableDecodingFragment();
                 break;
-//            case 3:
-//                fragment = new FrameFragment();
-//                break;
+            case 3:
+                fragment = new FrameFragment();
+                break;
 //            case 4:
 //                fragment = new GalleryFragment();
 //                break;

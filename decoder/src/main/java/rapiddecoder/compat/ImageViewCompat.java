@@ -1,4 +1,4 @@
-package rapid.decoder.compat;
+package rapiddecoder.compat;
 
 import android.os.Build;
 import android.widget.ImageView;

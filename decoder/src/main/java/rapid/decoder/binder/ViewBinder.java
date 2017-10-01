@@ -18,8 +18,8 @@ import java.lang.ref.WeakReference;
 
 import rapid.decoder.NextLayoutInspector;
 import rapid.decoder.cache.ResourcePool;
-import rapid.decoder.compat.ImageViewCompat;
-import rapid.decoder.compat.ViewCompat;
+import rapiddecoder.compat.ImageViewCompat;
+import rapiddecoder.compat.ViewCompat;
 import rapid.decoder.frame.FramingMethod;
 import rapid.decoder.frame.ScaleTypeFraming;
 

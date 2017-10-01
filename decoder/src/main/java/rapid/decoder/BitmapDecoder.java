@@ -36,7 +36,7 @@ import java.util.List;
 import rapid.decoder.cache.BitmapLruCache;
 import rapid.decoder.cache.DiskLruCache;
 import rapid.decoder.cache.ResourcePool;
-import rapid.decoder.compat.DisplayCompat;
+import rapiddecoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;

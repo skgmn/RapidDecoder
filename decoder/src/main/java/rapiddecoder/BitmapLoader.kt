@@ -4,6 +4,9 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.widget.ImageView
+import rapiddecoder.frame.FramingMethod
+import rapiddecoder.frame.FramingMethods
 
 abstract class BitmapLoader {
     abstract val sourceWidth: Int
@@ -34,9 +37,14 @@ abstract class BitmapLoader {
     }
 
     @JvmOverloads
-    fun frame(framer: Framer, frameWidth: Int, frameHeight: Int,
+    fun frame(framingMethod: FramingMethod, frameWidth: Int, frameHeight: Int,
               background: Drawable? = null): BitmapLoader =
-            FramedBitmapLoader(this, framer, frameWidth, frameHeight, background)
+            FramedBitmapLoader(this, framingMethod, frameWidth, frameHeight, background)
+
+    @JvmOverloads
+    fun frame(scaleType: ImageView.ScaleType, frameWidth: Int, frameHeight: Int,
+              background: Drawable? = null): BitmapLoader =
+            frame(FramingMethods.fromScaleType(scaleType), frameWidth, frameHeight, background)
 
     abstract fun loadBitmap(options: LoadBitmapOptions): Bitmap
 
