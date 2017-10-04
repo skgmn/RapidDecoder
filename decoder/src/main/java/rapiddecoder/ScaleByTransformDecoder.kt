@@ -1,36 +1,34 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.graphics.Rect
 
-internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
+internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                                        private val x: Float,
                                        private val y: Float) : BitmapDecoder() {
     override val width: Int by lazy {
-        Math.round(source.width * x)
+        Math.round(other.width * x)
     }
     override val height: Int by lazy {
-        Math.round(source.height * y)
+        Math.round(other.height * y)
     }
     override val hasSize: Boolean
-        get() = source.hasSize
+        get() = other.hasSize
     override val sourceWidth: Int
-        get() = source.sourceWidth
+        get() = other.sourceWidth
     override val sourceHeight: Int
-        get() = source.sourceHeight
+        get() = other.sourceHeight
     override val mimeType: String?
-        get() = source.mimeType
+        get() = other.mimeType
     override val densityRatio: Float
-        get() = source.densityRatio
+        get() = other.densityRatio
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (source.hasSize && source.width == width && source.height == height) {
-            source
+        return if (other.hasSize && other.width == width && other.height == height) {
+            other
         } else {
-            ScaleToTransformDecoder(source, width.toFloat(), height.toFloat())
+            ScaleToTransformDecoder(other, width.toFloat(), height.toFloat())
         }
     }
 
@@ -42,15 +40,15 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
             val newX = this.x * x
             val newY = this.y * y
             if (newX == 1f && newY == 1f) {
-                source
+                other
             } else {
-                ScaleByTransformDecoder(source, newX, newY)
+                ScaleByTransformDecoder(other, newX, newY)
             }
         }
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        return source.region(
+        return other.region(
                 Math.round(left / x),
                 Math.round(top / y),
                 Math.round(right / x),
@@ -58,39 +56,24 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = options.toBitmapOptions()
-        opts.inSampleSize = 1
-        opts.inScaled = false
+    override fun decode(state: BitmapDecodeState): Bitmap {
+        state.densityScale = true
+        state.scaleX *= x
+        state.scaleY *= y
 
-        val densityRatio = source.densityRatio
-        var sx = x * densityRatio
-        var sy = y * densityRatio
-        while (sx <= 0.5f && sy <= 0.5f) {
-            opts.inSampleSize *= 2
-            sx *= 2f
-            sy *= 2f
-        }
-
-        val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
-        if (sx == 1f && sy == 1f || !options.finalScale) {
-            return checkMutable(bitmap, options)
+        val bitmap = synchronized(other.decodeLock) { other.decode(state) }
+        if (state.remainScaleX == 1f && state.remainScaleY == 1f ||
+                !state.finalScale) {
+            return bitmap
         }
 
         val m = Matrix()
-        m.setScale(sx, sy)
+        m.setScale(state.remainScaleX, state.remainScaleY)
         val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m,
-                options.filterBitmap)
+                state.filterBitmap)
         if (scaledBitmap !== bitmap) {
             bitmap.recycle()
         }
         return scaledBitmap
     }
-
-    override fun decode(opts: BitmapFactory.Options): Bitmap = source.decode(opts)
-
-    override fun decodeBounds(opts: BitmapFactory.Options) = source.decodeBounds(opts)
-
-    override fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap =
-            source.decodeRegion(region, opts)
 }

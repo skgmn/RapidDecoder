@@ -1,10 +1,8 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Rect
 
-internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
+internal class ScaleWidthTransformDecoder(private val other: BitmapDecoder,
                                           private val targetWidth: Float,
                                           private val heightAdjustRatio: Float) : BitmapDecoder() {
     override val width: Int
@@ -12,37 +10,39 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
     override val height: Int
         get() = Math.round(targetHeight)
     override val hasSize: Boolean
-        get() = source.hasSize
+        get() = other.hasSize
     override val sourceWidth: Int
-        get() = source.sourceWidth
+        get() = other.sourceWidth
     override val sourceHeight: Int
-        get() = source.sourceHeight
+        get() = other.sourceHeight
     override val mimeType: String?
-        get() = source.mimeType
+        get() = other.mimeType
+    override val densityRatio: Float
+        get() = other.densityRatio
 
     private val targetHeight: Float by lazy {
-        targetWidth * (source.height.toFloat() / source.width) * heightAdjustRatio
+        targetWidth * (other.height.toFloat() / other.width) * heightAdjustRatio
     }
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (source.hasSize && source.width == width && source.height == height) {
-            source
+        return if (other.hasSize && other.width == width && other.height == height) {
+            other
         } else {
-            ScaleToTransformDecoder(source, width.toFloat(), height.toFloat())
+            ScaleToTransformDecoder(other, width.toFloat(), height.toFloat())
         }
     }
 
     override fun scaleWidth(width: Int): BitmapLoader {
         checkScaleToArguments(width, 1)
-        return if (source.hasSize && source.width == width) {
-            source
+        return if (other.hasSize && other.width == width) {
+            other
         } else {
             val floatWidth = width.toFloat()
             if (floatWidth == targetWidth) {
                 this
             } else {
-                ScaleWidthTransformDecoder(source, floatWidth, heightAdjustRatio)
+                ScaleWidthTransformDecoder(other, floatWidth, heightAdjustRatio)
             }
         }
     }
@@ -51,24 +51,24 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
         checkScaleByArguments(x, y)
         return if (x == 1f && y == 1f) {
             this
-        } else if (source.hasSize) {
+        } else if (other.hasSize) {
             val newWidth = targetWidth * x
             val newHeight = targetHeight * y
-            if (source.width.toFloat() == newWidth && source.height.toFloat() == newHeight) {
-                source
+            if (other.width.toFloat() == newWidth && other.height.toFloat() == newHeight) {
+                other
             } else {
-                ScaleToTransformDecoder(source, newWidth, newHeight)
+                ScaleToTransformDecoder(other, newWidth, newHeight)
             }
         } else {
             val newWidth = targetWidth * x
             val newHeightAdjustRatio = heightAdjustRatio * (y / x)
-            ScaleWidthTransformDecoder(source, newWidth, newHeightAdjustRatio)
+            ScaleWidthTransformDecoder(other, newWidth, newHeightAdjustRatio)
         }
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        val scale = targetWidth / source.width
-        return source.region(
+        val scale = targetWidth / other.width
+        return other.region(
                 Math.round(left / scale),
                 Math.round(top / scale),
                 Math.round(right / scale),
@@ -76,35 +76,23 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = BitmapFactory.Options()
-        opts.inSampleSize = 1
-        opts.inScaled = false
+    override fun decode(state: BitmapDecodeState): Bitmap {
+        val scale = targetWidth / other.sourceWidth
 
-        var sourceWidth: Float = source.sourceWidth.toFloat()
-        val targetWidth = width
-        while (sourceWidth >= targetWidth * 2) {
-            opts.inSampleSize *= 2
-            sourceWidth /= 2
-        }
+        state.densityScale = false
+        state.scaleX *= scale
+        state.scaleY *= scale
 
-        val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
-        if (bitmap.width == targetWidth || !options.finalScale) {
+        val bitmap = synchronized(other.decodeLock) { other.decode(state) }
+        val width = width
+        if (bitmap.width == width || !state.finalScale) {
             return bitmap
         }
 
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, height,
-                options.filterBitmap)
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, state.filterBitmap)
         if (scaledBitmap !== bitmap) {
             bitmap.recycle()
         }
         return scaledBitmap
     }
-
-    override fun decode(opts: BitmapFactory.Options): Bitmap = source.decode(opts)
-
-    override fun decodeBounds(opts: BitmapFactory.Options) = source.decodeBounds(opts)
-
-    override fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap =
-            source.decodeRegion(region, opts)
 }

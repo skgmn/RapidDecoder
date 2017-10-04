@@ -1,22 +1,21 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Rect
 import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
-    internal open val densityRatio = 1f
+    internal abstract val densityRatio: Float
 
     internal val decodeLock = Any()
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        if (hasSize && width == this.width && height == this.height) {
-            return this
+        return if (hasSize && width == this.width && height == this.height) {
+            this
+        } else {
+            ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
         }
-        return ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())
     }
 
     override fun scaleWidth(width: Int): BitmapLoader {
@@ -38,20 +37,13 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         }
     }
 
-    override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
-            return this
-        }
-        return RegionTransformDecoder(this, left, top, right, bottom)
-    }
-
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = options.toBitmapOptions()
-        val bitmap = synchronized(decodeLock) { decode(opts) }
+        val state = BitmapDecodeState(options)
+        val bitmap = synchronized(decodeLock) { decode(state) }
         return checkMutable(bitmap, options)
     }
-    
-    protected fun checkMutable(bitmap: Bitmap, options: LoadBitmapOptions): Bitmap {
+
+    private fun checkMutable(bitmap: Bitmap, options: LoadBitmapOptions): Bitmap {
         return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB &&
                 options.mutable &&
                 !bitmap.isMutable) {
@@ -64,7 +56,5 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         }
     }
 
-    internal abstract fun decode(opts: BitmapFactory.Options): Bitmap
-    internal abstract fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap
-    internal abstract fun decodeBounds(opts: BitmapFactory.Options)
+    internal abstract fun decode(state: BitmapDecodeState): Bitmap
 }

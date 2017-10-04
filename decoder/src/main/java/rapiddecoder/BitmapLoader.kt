@@ -2,6 +2,8 @@ package rapiddecoder
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
@@ -66,7 +68,20 @@ abstract class BitmapLoader {
 
     companion object {
         @JvmStatic
-        fun fromResource(res: Resources, resId: Int): BitmapLoader =
-                BitmapFromResource(res, resId)
+        fun fromResource(res: Resources, resId: Int): BitmapLoader {
+            val source = object : BitmapSource {
+                override val densityRatioSupported: Boolean
+                    get() = true
+
+                override fun decode(opts: BitmapFactory.Options): Bitmap? =
+                        BitmapFactory.decodeResource(res, resId, opts)
+
+                override fun createRegionDecoder(): BitmapRegionDecoder {
+                    val stream = res.openRawResource(resId)
+                    return BitmapRegionDecoder.newInstance(stream, false)
+                }
+            }
+            return BitmapResourceFullDecoder(source)
+        }
     }
 }
