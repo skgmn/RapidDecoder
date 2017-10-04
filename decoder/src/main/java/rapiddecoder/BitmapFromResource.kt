@@ -4,6 +4,7 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
+import android.graphics.Rect
 
 internal class BitmapFromResource(private val res: Resources,
                                   private val resId: Int) : BitmapSource() {
@@ -19,16 +20,15 @@ internal class BitmapFromResource(private val res: Resources,
         saveMetadata(opts)
     }
 
-    override fun createRegionDecoder(): BitmapRegionDecoder {
-        val afd = res.openRawResourceFd(resId)
-        if (afd != null) {
-            try {
-                return BitmapRegionDecoder.newInstance(afd.fileDescriptor, false)
-            } catch (e: Throwable) {
-                afd.close()
-            }
-        }
+    override fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap {
         val inputStream = res.openRawResource(resId)
-        return BitmapRegionDecoder.newInstance(inputStream, false)
+        val regionDecoder = BitmapRegionDecoder.newInstance(inputStream, false)
+        try {
+            val bitmap = regionDecoder.decodeRegion(region, opts)
+            saveMetadata(opts, regionDecoder)
+            return bitmap
+        } finally {
+            regionDecoder.recycle()
+        }
     }
 }

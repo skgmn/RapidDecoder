@@ -1,20 +1,20 @@
 package rapiddecoder
 
 import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
 
 internal abstract class BitmapSource : BitmapDecoder() {
-    private var bitmapWidth = -1
-    private var bitmapHeight = -1
-    private var transformedWidth = -1
-    private var transformedHeight = -1
-    private var boundsDecoded = false
+    private var bitmapWidth = INVALID_SIZE
+    private var bitmapHeight = INVALID_SIZE
+    private var densityScaledWidth = INVALID_SIZE
+    private var densityScaledHeight = INVALID_SIZE
     private var imageMimeType: String? = null
 
     override val sourceWidth: Int
         get() {
-            if (bitmapWidth == -1) {
+            if (bitmapWidth == INVALID_SIZE) {
                 synchronized(decodeLock) {
-                    if (bitmapWidth == -1) {
+                    if (bitmapWidth == INVALID_SIZE) {
                         decodeBounds()
                     }
                 }
@@ -24,9 +24,9 @@ internal abstract class BitmapSource : BitmapDecoder() {
 
     override val sourceHeight: Int
         get() {
-            if (bitmapHeight == -1) {
+            if (bitmapHeight == INVALID_SIZE) {
                 synchronized(decodeLock) {
-                    if (bitmapHeight == -1) {
+                    if (bitmapHeight == INVALID_SIZE) {
                         decodeBounds()
                     }
                 }
@@ -36,26 +36,26 @@ internal abstract class BitmapSource : BitmapDecoder() {
 
     override val width: Int
         get() {
-            if (transformedWidth == -1) {
+            if (densityScaledWidth == INVALID_SIZE) {
                 synchronized(decodeLock) {
-                    if (transformedWidth == -1) {
+                    if (densityScaledWidth == INVALID_SIZE) {
                         decodeBounds()
                     }
                 }
             }
-            return transformedWidth
+            return densityScaledWidth
         }
 
     override val height: Int
         get() {
-            if (transformedHeight == -1) {
+            if (densityScaledHeight == INVALID_SIZE) {
                 synchronized(decodeLock) {
-                    if (transformedHeight == -1) {
+                    if (densityScaledHeight == INVALID_SIZE) {
                         decodeBounds()
                     }
                 }
             }
-            return transformedHeight
+            return densityScaledHeight
         }
 
     override val mimeType: String?
@@ -71,7 +71,7 @@ internal abstract class BitmapSource : BitmapDecoder() {
         }
 
     override val hasSize: Boolean
-        get() = synchronized(decodeLock) { boundsDecoded }
+        get() = synchronized(decodeLock) { densityScaledWidth != INVALID_SIZE }
 
     private fun decodeBounds() {
         val opts = BitmapFactory.Options()
@@ -81,27 +81,47 @@ internal abstract class BitmapSource : BitmapDecoder() {
     }
 
     protected fun saveMetadata(opts: BitmapFactory.Options) {
-        if (boundsDecoded) {
-            return
-        }
         imageMimeType = opts.outMimeType
-        val scale =
-                if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-                    opts.inTargetDensity.toDouble() / opts.inDensity
-                } else {
-                    1.0
-                }
         if (opts.inScaled) {
-            bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
-            bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
-            transformedWidth = opts.outWidth
-            transformedHeight = opts.outHeight
+            if (bitmapWidth == INVALID_SIZE) {
+                val scale = getDensityScale(opts)
+                bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
+                bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
+            }
+            if (densityScaledWidth == INVALID_SIZE) {
+                densityScaledWidth = opts.outWidth
+                densityScaledHeight = opts.outHeight
+            }
         } else {
-            bitmapWidth = opts.outWidth
-            bitmapHeight = opts.outHeight
-            transformedWidth = Math.ceil(opts.outWidth * scale).toInt()
-            transformedHeight = Math.ceil(opts.outHeight * scale).toInt()
+            if (bitmapWidth == INVALID_SIZE) {
+                bitmapWidth = opts.outWidth
+                bitmapHeight = opts.outHeight
+            }
+            if (densityScaledWidth == INVALID_SIZE) {
+                val scale = getDensityScale(opts)
+                densityScaledWidth = Math.ceil(opts.outWidth * scale).toInt()
+                densityScaledHeight = Math.ceil(opts.outHeight * scale).toInt()
+            }
         }
-        boundsDecoded = true
+    }
+
+    protected fun saveMetadata(opts: BitmapFactory.Options, regionDecoder: BitmapRegionDecoder) {
+        imageMimeType = opts.outMimeType
+        if (bitmapWidth == INVALID_SIZE) {
+            bitmapWidth = regionDecoder.width
+            bitmapHeight = regionDecoder.height
+        }
+    }
+
+    private fun getDensityScale(opts: BitmapFactory.Options): Double {
+        return if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
+            opts.inTargetDensity.toDouble() / opts.inDensity
+        } else {
+            1.0
+        }
+    }
+
+    companion object {
+        private const val INVALID_SIZE = -1
     }
 }

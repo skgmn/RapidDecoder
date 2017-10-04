@@ -2,8 +2,8 @@ package rapiddecoder
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
@@ -66,6 +66,6 @@ internal abstract class BitmapDecoder : BitmapLoader() {
     }
 
     internal abstract fun decode(opts: BitmapFactory.Options): Bitmap
+    internal abstract fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap
     internal abstract fun decodeBounds(opts: BitmapFactory.Options)
-    internal abstract fun createRegionDecoder(): BitmapRegionDecoder
 }

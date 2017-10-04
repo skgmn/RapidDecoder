@@ -2,7 +2,6 @@ package rapiddecoder
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 import android.graphics.Rect
 
 internal class RegionTransformDecoder(private val source: BitmapDecoder,
@@ -62,18 +61,13 @@ internal class RegionTransformDecoder(private val source: BitmapDecoder,
                 newLeft + (right - left), newTop + (bottom - top))
     }
 
-    override fun decode(opts: BitmapFactory.Options): Bitmap {
-        val regionDecoder = source.createRegionDecoder()
-        try {
-            return regionDecoder.decodeRegion(Rect(left, top, right, bottom), opts)
-        } finally {
-            regionDecoder.recycle()
-        }
-    }
+    override fun decode(opts: BitmapFactory.Options): Bitmap =
+            source.decodeRegion(Rect(left, top, right, bottom), opts)
 
     override fun decodeBounds(opts: BitmapFactory.Options) {
         source.decodeBounds(opts)
     }
 
-    override fun createRegionDecoder(): BitmapRegionDecoder = source.createRegionDecoder()
+    override fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap =
+            source.decodeRegion(region, opts)
 }

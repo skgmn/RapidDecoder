@@ -2,8 +2,8 @@ package rapiddecoder
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 import android.graphics.Matrix
+import android.graphics.Rect
 
 internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
                                        private val x: Float,
@@ -87,5 +87,6 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
 
     override fun decodeBounds(opts: BitmapFactory.Options) = source.decodeBounds(opts)
 
-    override fun createRegionDecoder(): BitmapRegionDecoder = source.createRegionDecoder()
+    override fun decodeRegion(region: Rect, opts: BitmapFactory.Options): Bitmap =
+            source.decodeRegion(region, opts)
 }
