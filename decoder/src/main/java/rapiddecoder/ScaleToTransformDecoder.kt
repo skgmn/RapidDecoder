@@ -19,6 +19,8 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
         get() = source.sourceHeight
     override val mimeType: String?
         get() = source.mimeType
+    override val densityRatio: Float
+        get() = source.densityRatio
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
@@ -64,7 +66,7 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = BitmapFactory.Options()
+        val opts = options.toBitmapOptions()
         opts.inSampleSize = 1
         opts.inScaled = false
 
@@ -81,7 +83,7 @@ internal class ScaleToTransformDecoder(private val source: BitmapDecoder,
         val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
         if (bitmap.width == targetWidth && bitmap.height == targetHeight
                 || !options.finalScale) {
-            return bitmap
+            return checkMutable(bitmap, options)
         }
 
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight,

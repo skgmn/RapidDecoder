@@ -7,6 +7,8 @@ import android.graphics.Rect
 import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
+    internal open val densityRatio = 1f
+
     internal val decodeLock = Any()
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
@@ -44,24 +46,21 @@ internal abstract class BitmapDecoder : BitmapLoader() {
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val opts = BitmapFactory.Options()
-        opts.inPreferredConfig = options.config
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            opts.inMutable = options.mutable
-        }
-        return synchronized(decodeLock) {
-            decode(opts).let {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB &&
-                        options.mutable &&
-                        !it.isMutable) {
-                    val clone = Bitmap.createBitmap(it.width, it.height, it.config)
-                    Canvas(clone).drawBitmap(it, 0f, 0f, null)
-                    it.recycle()
-                    clone
-                } else {
-                    it
-                }
-            }
+        val opts = options.toBitmapOptions()
+        val bitmap = synchronized(decodeLock) { decode(opts) }
+        return checkMutable(bitmap, options)
+    }
+    
+    protected fun checkMutable(bitmap: Bitmap, options: LoadBitmapOptions): Bitmap {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB &&
+                options.mutable &&
+                !bitmap.isMutable) {
+            val clone = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
+            Canvas(clone).drawBitmap(bitmap, 0f, 0f, null)
+            bitmap.recycle()
+            clone
+        } else {
+            bitmap
         }
     }
 

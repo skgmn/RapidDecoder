@@ -30,7 +30,7 @@ public class RegionDecodingFragment extends Fragment {
 
         Bitmap bitmap = BitmapLoader.fromResource(getResources(), R.drawable.pumpkins)
                 .region(140, 22, 1010, 1111)
-                .scaleBy(0.5f, 0.5f)
+                .scaleBy(0.5f)
                 .loadBitmap();
         imageJpeg.setImageBitmap(bitmap);
 
@@ -38,7 +38,7 @@ public class RegionDecodingFragment extends Fragment {
 
         bitmap = BitmapLoader.fromResource(getResources(), R.drawable.a)
                 .region(204, 0, 900, 773)
-                .scaleBy(0.5f, 0.5f)
+                .scaleBy(0.5f)
                 .loadBitmap();
         imagePng.setImageBitmap(bitmap);
     }

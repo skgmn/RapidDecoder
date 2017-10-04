@@ -8,6 +8,7 @@ internal abstract class BitmapSource : BitmapDecoder() {
     private var bitmapHeight = INVALID_SIZE
     private var densityScaledWidth = INVALID_SIZE
     private var densityScaledHeight = INVALID_SIZE
+    private var densityScaleRatio = Float.NaN
     private var imageMimeType: String? = null
 
     override val sourceWidth: Int
@@ -81,10 +82,10 @@ internal abstract class BitmapSource : BitmapDecoder() {
     }
 
     protected fun saveMetadata(opts: BitmapFactory.Options) {
-        imageMimeType = opts.outMimeType
+        saveMetadataCommon(opts)
         if (opts.inScaled) {
             if (bitmapWidth == INVALID_SIZE) {
-                val scale = getDensityScale(opts)
+                val scale = densityScaleRatio.toDouble()
                 bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
                 bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
             }
@@ -98,7 +99,7 @@ internal abstract class BitmapSource : BitmapDecoder() {
                 bitmapHeight = opts.outHeight
             }
             if (densityScaledWidth == INVALID_SIZE) {
-                val scale = getDensityScale(opts)
+                val scale = densityScaleRatio.toDouble()
                 densityScaledWidth = Math.ceil(opts.outWidth * scale).toInt()
                 densityScaledHeight = Math.ceil(opts.outHeight * scale).toInt()
             }
@@ -106,18 +107,22 @@ internal abstract class BitmapSource : BitmapDecoder() {
     }
 
     protected fun saveMetadata(opts: BitmapFactory.Options, regionDecoder: BitmapRegionDecoder) {
-        imageMimeType = opts.outMimeType
+        saveMetadataCommon(opts)
         if (bitmapWidth == INVALID_SIZE) {
             bitmapWidth = regionDecoder.width
             bitmapHeight = regionDecoder.height
         }
     }
 
-    private fun getDensityScale(opts: BitmapFactory.Options): Double {
-        return if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
-            opts.inTargetDensity.toDouble() / opts.inDensity
-        } else {
-            1.0
+    private fun saveMetadataCommon(opts: BitmapFactory.Options) {
+        imageMimeType = opts.outMimeType
+        if (densityScaleRatio.isNaN()) {
+            densityScaleRatio =
+                    if (opts.inDensity != 0 && opts.inTargetDensity != 0) {
+                        opts.inTargetDensity.toFloat() / opts.inDensity
+                    } else {
+                        1.0f
+                    }
         }
     }
 
