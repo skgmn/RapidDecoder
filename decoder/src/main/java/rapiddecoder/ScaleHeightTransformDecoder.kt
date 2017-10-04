@@ -88,7 +88,7 @@ internal class ScaleHeightTransformDecoder(private val source: BitmapDecoder,
             sourceHeight /= 2
         }
 
-        val bitmap = synchronized(decodeLock) { source.decode(opts) }
+        val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
         if (bitmap.height == targetHeight || !options.finalScale) {
             return bitmap
         }

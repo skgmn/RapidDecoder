@@ -88,7 +88,7 @@ internal class ScaleWidthTransformDecoder(private val source: BitmapDecoder,
             sourceWidth /= 2
         }
 
-        val bitmap = synchronized(decodeLock) { source.decode(opts) }
+        val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
         if (bitmap.width == targetWidth || !options.finalScale) {
             return bitmap
         }

@@ -59,6 +59,7 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         val opts = BitmapFactory.Options()
         opts.inSampleSize = 1
+        opts.inScaled = true
 
         var sx = x
         var sy = y
@@ -68,7 +69,7 @@ internal class ScaleByTransformDecoder(private val source: BitmapDecoder,
             sy *= 2f
         }
 
-        val bitmap = synchronized(decodeLock) { source.decode(opts) }
+        val bitmap = synchronized(source.decodeLock) { source.decode(opts) }
         if (sx == 1f && sy == 1f || !options.finalScale) {
             return bitmap
         }

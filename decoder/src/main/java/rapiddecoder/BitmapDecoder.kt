@@ -7,7 +7,7 @@ import android.graphics.Rect
 import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
-    protected val decodeLock = Any()
+    internal val decodeLock = Any()
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
