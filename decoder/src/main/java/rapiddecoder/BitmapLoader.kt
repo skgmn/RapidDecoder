@@ -1,14 +1,15 @@
 package rapiddecoder
 
+import android.content.Context
+import android.content.res.AssetManager
 import android.content.res.Resources
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import rapiddecoder.frame.FramingMethod
 import rapiddecoder.frame.FramingMethods
+import java.io.File
 
 abstract class BitmapLoader {
     abstract val sourceWidth: Int
@@ -68,20 +69,35 @@ abstract class BitmapLoader {
 
     companion object {
         @JvmStatic
-        fun fromResource(res: Resources, resId: Int): BitmapLoader {
-            val source = object : BitmapSource {
-                override val densityRatioSupported: Boolean
-                    get() = true
+        fun fromResource(context: Context, resId: Int): BitmapLoader =
+                fromResource(context.resources, resId)
 
-                override fun decode(opts: BitmapFactory.Options): Bitmap? =
-                        BitmapFactory.decodeResource(res, resId, opts)
+        @JvmStatic
+        fun fromResource(res: Resources, resId: Int): BitmapLoader =
+                BitmapResourceFullDecoder(AndroidResourceBitmapSource(res, resId))
 
-                override fun createRegionDecoder(): BitmapRegionDecoder {
-                    val stream = res.openRawResource(resId)
-                    return BitmapRegionDecoder.newInstance(stream, false)
-                }
-            }
-            return BitmapResourceFullDecoder(source)
-        }
+        @JvmStatic
+        fun fromAsset(context: Context, path: String): BitmapLoader =
+                fromAsset(context.assets, path)
+
+        @JvmStatic
+        fun fromAsset(assets: AssetManager, path: String): BitmapLoader =
+                BitmapResourceFullDecoder(AndroidAssetBitmapSource(assets, path))
+
+        @JvmStatic
+        fun fromFile(file: File): BitmapLoader =
+                BitmapResourceFullDecoder(FileBitmapSource(file.absolutePath))
+
+        @JvmStatic
+        fun fromFile(path: String): BitmapLoader =
+                BitmapResourceFullDecoder(FileBitmapSource(path))
+
+        @JvmStatic
+        fun fromMemory(bytes: ByteArray): BitmapLoader =
+                fromMemory(bytes, 0, bytes.size)
+
+        @JvmStatic
+        fun fromMemory(bytes: ByteArray, offset: Int, length: Int): BitmapLoader =
+                BitmapResourceFullDecoder(MemoryBitmapSource(bytes, offset, length))
     }
 }

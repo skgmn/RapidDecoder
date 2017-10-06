@@ -2,7 +2,7 @@ package rapiddecoder.frame
 
 import android.graphics.Rect
 
-class Center : FramingMethod {
+internal class Center : FramingMethod {
     override fun getBounds(sourceWidth: Int, sourceHeight: Int, frameWidth: Int, frameHeight: Int, outSrc: Rect, outDest: Rect) {
         if (sourceWidth > frameWidth) {
             outSrc.left = (sourceWidth - frameWidth) / 2

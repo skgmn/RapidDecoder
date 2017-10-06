@@ -3,7 +3,7 @@ package rapiddecoder.frame
 import android.graphics.Rect
 import rapid.decoder.frame.AspectRatioCalculator
 
-class CenterCrop : FramingMethod {
+internal class CenterCrop : FramingMethod {
     override fun getBounds(sourceWidth: Int, sourceHeight: Int, frameWidth: Int, frameHeight: Int,
                            outSrc: Rect, outDest: Rect) {
         val targetWidth: Int

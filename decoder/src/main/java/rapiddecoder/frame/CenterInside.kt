@@ -3,7 +3,7 @@ package rapiddecoder.frame
 import android.graphics.Rect
 import rapid.decoder.frame.AspectRatioCalculator
 
-class CenterInside : FramingMethod {
+internal class CenterInside : FramingMethod {
     override fun getBounds(sourceWidth: Int, sourceHeight: Int, frameWidth: Int, frameHeight: Int, outSrc: Rect, outDest: Rect) {
         outSrc.set(0, 0, sourceWidth, sourceHeight)
         if (sourceWidth <= frameWidth && sourceHeight <= frameHeight) {

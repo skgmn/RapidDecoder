@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.view.Gravity
 import rapid.decoder.frame.AspectRatioCalculator
 
-class FitGravity(private val gravity: Int) : FramingMethod {
+internal class FitGravity(private val gravity: Int) : FramingMethod {
     override fun getBounds(sourceWidth: Int, sourceHeight: Int, frameWidth: Int, frameHeight: Int, outSrc: Rect, outDest: Rect) {
         outSrc.set(0, 0, sourceWidth, sourceHeight)
 
