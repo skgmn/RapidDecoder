@@ -1,8 +1,6 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Build
 
 class LoadBitmapOptions(val finalScale: Boolean = true,
                         val filterBitmap: Boolean = true,
@@ -13,6 +11,9 @@ class LoadBitmapOptions(val finalScale: Boolean = true,
                     filterBitmap = filterBitmap,
                     config = config,
                     mutable = mutable)
+
+    internal fun shouldBeRedrawnFrom(bitmap: Bitmap) =
+            config?.equals(bitmap.config) == true || mutable && !bitmap.isMutable
 
     class Builder(private var finalScale: Boolean = true,
                   private var filterBitmap: Boolean = true,

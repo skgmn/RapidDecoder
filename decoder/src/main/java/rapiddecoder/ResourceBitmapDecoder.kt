@@ -2,7 +2,7 @@ package rapiddecoder
 
 import android.graphics.BitmapFactory
 
-internal abstract class BitmapResourceDecoder(
+internal abstract class ResourceBitmapDecoder(
         protected val source: BitmapSource) : BitmapDecoder() {
     protected var bitmapWidth = INVALID_SIZE
     protected var bitmapHeight = INVALID_SIZE

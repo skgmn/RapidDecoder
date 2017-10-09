@@ -75,7 +75,7 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromResource(res: Resources, resId: Int): BitmapLoader =
-                BitmapResourceFullDecoder(AndroidResourceBitmapSource(res, resId))
+                ResourceFullBitmapDecoder(AndroidResourceBitmapSource(res, resId))
 
         @JvmStatic
         fun fromAsset(context: Context, path: String): BitmapLoader =
@@ -83,15 +83,15 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromAsset(assets: AssetManager, path: String): BitmapLoader =
-                BitmapResourceFullDecoder(AndroidAssetBitmapSource(assets, path))
+                ResourceFullBitmapDecoder(AndroidAssetBitmapSource(assets, path))
 
         @JvmStatic
         fun fromFile(file: File): BitmapLoader =
-                BitmapResourceFullDecoder(FileBitmapSource(file.absolutePath))
+                ResourceFullBitmapDecoder(FileBitmapSource(file.absolutePath))
 
         @JvmStatic
         fun fromFile(path: String): BitmapLoader =
-                BitmapResourceFullDecoder(FileBitmapSource(path))
+                ResourceFullBitmapDecoder(FileBitmapSource(path))
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray): BitmapLoader =
@@ -99,10 +99,10 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray, offset: Int, length: Int): BitmapLoader =
-                BitmapResourceFullDecoder(MemoryBitmapSource(bytes, offset, length))
+                ResourceFullBitmapDecoder(MemoryBitmapSource(bytes, offset, length))
 
         @JvmStatic
         fun fromStream(stream: InputStream): BitmapLoader =
-                BitmapResourceFullDecoder(InputStreamBitmapSource(stream))
+                ResourceFullBitmapDecoder(InputStreamBitmapSource(stream))
     }
 }

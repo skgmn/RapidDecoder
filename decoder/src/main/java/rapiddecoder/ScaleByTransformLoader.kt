@@ -1,6 +1,9 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
 
 internal class ScaleByTransformLoader(private val source: BitmapLoader,
                                       private val x: Float,
@@ -54,11 +57,30 @@ internal class ScaleByTransformLoader(private val source: BitmapLoader,
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val sourceBitmap = source.loadBitmap(options)
-        val scaledBitmap = Bitmap.createScaledBitmap(sourceBitmap,
-                Math.ceil(sourceBitmap.width.toDouble() * x).toInt(),
-                Math.ceil(sourceBitmap.height.toDouble() * y).toInt(),
-                options.filterBitmap)
+        val newOptions = options.buildUpon()
+                .setFinalScale(false)
+                .setMutable(false)
+                .setConfig(null)
+                .build()
+        val sourceBitmap = source.loadBitmap(newOptions)
+        val finalWidth = Math.ceil(sourceBitmap.width.toDouble() * x).toInt()
+        val finalHeight = Math.ceil(sourceBitmap.height.toDouble() * y).toInt()
+        val scaledBitmap = if (options.shouldBeRedrawnFrom(sourceBitmap)) {
+            Bitmap.createBitmap(finalWidth, finalHeight,
+                    options.config ?: sourceBitmap.config).also { scaledBitmap ->
+                val canvas = Canvas(scaledBitmap)
+                val paint = if (options.filterBitmap) {
+                    Paint(Paint.FILTER_BITMAP_FLAG)
+                } else {
+                    null
+                }
+                canvas.drawBitmap(sourceBitmap, null,
+                        Rect(0, 0, scaledBitmap.width, scaledBitmap.height), paint)
+            }
+        } else {
+            Bitmap.createScaledBitmap(sourceBitmap, finalWidth, finalHeight,
+                    options.filterBitmap)
+        }
         if (sourceBitmap !== scaledBitmap) {
             sourceBitmap.recycle()
         }

@@ -2,7 +2,7 @@ package rapiddecoder
 
 import android.graphics.Bitmap
 
-internal class BitmapResourceFullDecoder(source: BitmapSource) : BitmapResourceDecoder(source) {
+internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapDecoder(source) {
     private var densityScaledWidth = INVALID_SIZE
     private var densityScaledHeight = INVALID_SIZE
 
@@ -26,7 +26,7 @@ internal class BitmapResourceFullDecoder(source: BitmapSource) : BitmapResourceD
         if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
             return this
         }
-        return BitmapResourceRegionDecoder(source, left, top, right, bottom)
+        return ResourceRegionBitmapDecoder(source, left, top, right, bottom)
     }
 
     override fun decode(state: BitmapDecodeState): Bitmap {
