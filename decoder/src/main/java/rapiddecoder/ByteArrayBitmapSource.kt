@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
 
-internal class MemoryBitmapSource(
+internal class ByteArrayBitmapSource(
         private val bytes: ByteArray,
         private val offset: Int,
         private val length: Int) : BitmapSource {

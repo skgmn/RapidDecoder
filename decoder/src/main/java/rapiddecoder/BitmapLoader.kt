@@ -99,7 +99,7 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray, offset: Int, length: Int): BitmapLoader =
-                ResourceFullBitmapDecoder(MemoryBitmapSource(bytes, offset, length))
+                ResourceFullBitmapDecoder(ByteArrayBitmapSource(bytes, offset, length))
 
         @JvmStatic
         fun fromStream(stream: InputStream): BitmapLoader =

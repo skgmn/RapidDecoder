@@ -2,9 +2,8 @@ package rapiddecoder
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Paint
 
-internal class TransformBitmapLoader(private val bitmap: Bitmap) : BitmapLoader() {
+internal class InMemoryBitmapLoader(private val bitmap: Bitmap) : BitmapLoader() {
     override val sourceWidth: Int
         get() = bitmap.width
     override val sourceHeight: Int
@@ -30,11 +29,10 @@ internal class TransformBitmapLoader(private val bitmap: Bitmap) : BitmapLoader(
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         if (options.shouldBeRedrawnFrom(bitmap)) {
             val config = options.config ?: bitmap.config
-            val newBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, config)
-            val canvas = Canvas(newBitmap)
-            val paint = if (options.filterBitmap) Paint(Paint.FILTER_BITMAP_FLAG) else null
-            canvas.drawBitmap(bitmap, 0f, 0f, paint)
-            return newBitmap
+            return bitmap.copy(config, options.mutable) ?:
+                    Bitmap.createBitmap(bitmap.width, bitmap.height, config).also {
+                        Canvas(it).drawBitmap(bitmap, 0f, 0f, null)
+                    }
         } else {
             return bitmap
         }
