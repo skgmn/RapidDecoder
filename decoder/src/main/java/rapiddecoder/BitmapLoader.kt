@@ -104,5 +104,14 @@ abstract class BitmapLoader {
         @JvmStatic
         fun fromStream(stream: InputStream): BitmapLoader =
                 ResourceFullBitmapDecoder(InputStreamBitmapSource(stream))
+
+        @JvmStatic
+        fun fromBitmap(bitmap: Bitmap): BitmapLoader =
+                InMemoryBitmapLoader(bitmap)
+
+        @JvmStatic
+        fun fromDrawable(d: Drawable): BitmapLoader =
+                DrawableBitmapLoader(d, 0, 0, d.intrinsicWidth, d.intrinsicHeight,
+                        d.intrinsicWidth.toFloat(), d.intrinsicHeight.toFloat())
     }
 }

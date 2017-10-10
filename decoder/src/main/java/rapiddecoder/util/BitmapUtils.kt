@@ -1,31 +1,15 @@
 package rapiddecoder.util
 
-import android.graphics.*
+import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 
 object BitmapUtils {
-    @JvmStatic
-    fun getBitmap(d: Drawable): Bitmap {
-        if (d is BitmapDrawable) {
-            return d.bitmap
-        } else {
-            val opaque = d.opacity == PixelFormat.OPAQUE
-
-            val bitmap = Bitmap.createBitmap(d.intrinsicWidth, d.intrinsicHeight,
-                    if (opaque) Config.RGB_565 else Config.ARGB_8888)
-            d.setDither(opaque)
-            d.setBounds(0, 0, bitmap.width, bitmap.height)
-
-            val cv = Canvas(bitmap)
-            d.draw(cv)
-
-            return bitmap
-        }
-    }
-
     @JvmStatic
     fun getByteCount(bitmap: Bitmap): Int {
         return if (Build.VERSION.SDK_INT >= 19) {
@@ -44,7 +28,7 @@ object BitmapUtils {
     }
 
     @JvmStatic
-    fun copy(bitmap: Bitmap, srcRect: Rect?, targetWidth: Int, targetHeight: Int, config: Config,
+    fun copy(bitmap: Bitmap, rectSrc: Rect?, targetWidth: Int, targetHeight: Int, config: Config,
              filter: Boolean): Bitmap {
         val newBitmap = Bitmap.createBitmap(targetWidth, targetHeight, config)
         val canvas = Canvas(newBitmap)
@@ -53,7 +37,34 @@ object BitmapUtils {
         } else {
             null
         }
-        canvas.drawBitmap(bitmap, srcRect, Rect(0, 0, targetWidth, targetHeight), paint)
+        canvas.drawBitmap(bitmap, rectSrc, Rect(0, 0, targetWidth, targetHeight), paint)
         return newBitmap
+    }
+
+    @JvmStatic
+    fun copy(d: Drawable, rectSrc: Rect?, targetWidth: Int, targetHeight: Int, config: Config,
+             filter: Boolean): Bitmap {
+        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, config)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && d is ColorDrawable) {
+            bitmap.eraseColor(d.color)
+        } else {
+            val canvas = Canvas(bitmap)
+            d.isFilterBitmap = filter
+            if (rectSrc == null || d.intrinsicWidth == -1 || d.intrinsicHeight == -1 ||
+                    (rectSrc.left == 0 && rectSrc.top == 0 &&
+                            rectSrc.right == targetWidth && rectSrc.bottom == targetHeight)) {
+                d.setBounds(0, 0, targetWidth, targetHeight)
+            } else {
+                val scaleWidth = targetWidth.toFloat() / rectSrc.width()
+                val scaleHeight = targetHeight.toFloat() / rectSrc.height()
+                val left = Math.round(-rectSrc.left * scaleWidth)
+                val top = Math.round(-rectSrc.top * scaleHeight)
+                val right = left + Math.round(d.intrinsicWidth * scaleWidth)
+                val bottom = top + Math.round(d.intrinsicHeight * scaleHeight)
+                d.setBounds(left, top, right, bottom)
+            }
+            d.draw(canvas)
+        }
+        return bitmap
     }
 }
