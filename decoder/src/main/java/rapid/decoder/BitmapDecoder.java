@@ -40,6 +40,7 @@ import rapiddecoder.compat.DisplayCompat;
 import rapid.decoder.frame.AspectRatioCalculator;
 import rapid.decoder.frame.FramedDecoder;
 import rapid.decoder.frame.FramingMethod;
+import rapiddecoder.util.BitmapUtils;
 
 import static rapid.decoder.cache.ResourcePool.POINT;
 import static rapid.decoder.cache.ResourcePool.RECT;

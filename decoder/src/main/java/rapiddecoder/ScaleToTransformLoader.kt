@@ -1,11 +1,9 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Rect
+import rapiddecoder.util.BitmapUtils
 
-internal class ScaleToTransformLoader(private val source: BitmapLoader,
+internal class ScaleToTransformLoader(private val other: BitmapLoader,
                                       private val targetWidth: Float,
                                       private val targetHeight: Float) : BitmapLoader() {
     override val width: Int
@@ -15,23 +13,23 @@ internal class ScaleToTransformLoader(private val source: BitmapLoader,
     override val hasSize: Boolean
         get() = true
     override val sourceWidth: Int
-        get() = source.sourceWidth
+        get() = other.sourceWidth
     override val sourceHeight: Int
-        get() = source.sourceHeight
+        get() = other.sourceHeight
     override val mimeType: String?
-        get() = source.mimeType
+        get() = other.mimeType
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (source.hasSize && source.width == width && source.height == height) {
-            source
+        return if (other.hasSize && other.width == width && other.height == height) {
+            other
         } else {
             val floatWidth = width.toFloat()
             val floatHeight = height.toFloat()
             if (floatWidth == targetWidth && floatHeight == targetHeight) {
                 this
             } else {
-                ScaleToTransformLoader(source, floatWidth, floatHeight)
+                ScaleToTransformLoader(other, floatWidth, floatHeight)
             }
         }
     }
@@ -43,20 +41,20 @@ internal class ScaleToTransformLoader(private val source: BitmapLoader,
         } else {
             val newWidth = targetWidth * x
             val newHeight = targetHeight * y
-            if (source.hasSize &&
-                    source.width.toFloat() == newWidth &&
-                    source.height.toFloat() == newHeight) {
-                source
+            if (other.hasSize &&
+                    other.width.toFloat() == newWidth &&
+                    other.height.toFloat() == newHeight) {
+                other
             } else {
-                ScaleToTransformLoader(source, newWidth, newHeight)
+                ScaleToTransformLoader(other, newWidth, newHeight)
             }
         }
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        val sx = targetWidth / source.width
-        val sy = targetHeight / source.height
-        return source.region(
+        val sx = targetWidth / other.width
+        val sy = targetHeight / other.height
+        return other.region(
                 Math.round(left / sx),
                 Math.round(top / sy),
                 Math.round(right / sx),
@@ -70,21 +68,12 @@ internal class ScaleToTransformLoader(private val source: BitmapLoader,
                 .setMutable(false)
                 .setConfig(null)
                 .build()
-        val sourceBitmap = source.loadBitmap(newOptions)
+        val sourceBitmap = other.loadBitmap(newOptions)
         val finalWidth = Math.ceil(targetWidth.toDouble()).toInt()
         val finalHeight = Math.ceil(targetHeight.toDouble()).toInt()
         val scaledBitmap = if (options.shouldBeRedrawnFrom(sourceBitmap)) {
-            Bitmap.createBitmap(finalWidth, finalHeight,
-                    options.config ?: sourceBitmap.config).also { scaledBitmap ->
-                val canvas = Canvas(scaledBitmap)
-                val paint = if (options.filterBitmap) {
-                    Paint(Paint.FILTER_BITMAP_FLAG)
-                } else {
-                    null
-                }
-                canvas.drawBitmap(sourceBitmap, null,
-                        Rect(0, 0, scaledBitmap.width, scaledBitmap.height), paint)
-            }
+            BitmapUtils.copy(sourceBitmap, null, finalWidth, finalHeight,
+                    options.config ?: sourceBitmap.config, options.filterBitmap)
         } else {
             Bitmap.createScaledBitmap(sourceBitmap, finalWidth, finalHeight,
                     options.filterBitmap)

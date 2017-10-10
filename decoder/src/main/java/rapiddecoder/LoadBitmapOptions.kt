@@ -13,7 +13,7 @@ class LoadBitmapOptions(val finalScale: Boolean = true,
                     mutable = mutable)
 
     internal fun shouldBeRedrawnFrom(bitmap: Bitmap) =
-            config?.equals(bitmap.config) == true || mutable && !bitmap.isMutable
+            config?.equals(bitmap.config) == false || mutable && !bitmap.isMutable
 
     class Builder(private var finalScale: Boolean = true,
                   private var filterBitmap: Boolean = true,

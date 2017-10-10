@@ -23,7 +23,11 @@ internal class InMemoryBitmapLoader(private val bitmap: Bitmap) : BitmapLoader()
     override fun scaleBy(x: Float, y: Float): BitmapLoader = ScaleByTransformLoader(this, x, y)
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+            this
+        } else {
+            RegionTransformLoader(this, left, top, right, bottom)
+        }
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {

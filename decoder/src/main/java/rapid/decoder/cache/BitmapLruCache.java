@@ -9,7 +9,7 @@ import java.util.Map;
 
 import rapid.decoder.BitmapLoader;
 import rapid.decoder.BitmapMeta;
-import rapid.decoder.BitmapUtils;
+import rapiddecoder.util.BitmapUtils;
 
 public class BitmapLruCache extends LruCache<MemoryCacheKey, Bitmap> {
     private static class CachedMeta implements BitmapMeta {
