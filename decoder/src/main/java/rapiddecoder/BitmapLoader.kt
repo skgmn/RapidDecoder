@@ -10,6 +10,7 @@ import android.widget.ImageView
 import rapiddecoder.frame.FramingMethod
 import rapiddecoder.frame.FramingMethods
 import java.io.File
+import java.io.FileDescriptor
 import java.io.InputStream
 
 abstract class BitmapLoader {
@@ -92,6 +93,10 @@ abstract class BitmapLoader {
         @JvmStatic
         fun fromFile(path: String): BitmapLoader =
                 ResourceFullBitmapDecoder(FileBitmapSource(path))
+
+        @JvmStatic
+        fun fromFileDescriptor(fd: FileDescriptor): BitmapLoader =
+                ResourceFullBitmapDecoder(FileDescriptorBitmapSource(fd))
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray): BitmapLoader =
