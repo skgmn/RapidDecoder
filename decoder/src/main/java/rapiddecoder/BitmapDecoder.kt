@@ -1,8 +1,6 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Build
 
 internal abstract class BitmapDecoder : BitmapLoader() {
     internal abstract val densityRatio: Float
@@ -37,24 +35,8 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         }
     }
 
-    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        val state = BitmapDecodeState(options)
-        val bitmap = synchronized(decodeLock) { decode(state) }
-        return checkMutable(bitmap, options)
-    }
-
-    private fun checkMutable(bitmap: Bitmap, options: LoadBitmapOptions): Bitmap {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB &&
-                options.mutable &&
-                !bitmap.isMutable) {
-            val clone = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
-            Canvas(clone).drawBitmap(bitmap, 0f, 0f, null)
-            bitmap.recycle()
-            clone
-        } else {
-            bitmap
-        }
-    }
+    override fun loadBitmap(options: LoadBitmapOptions): Bitmap =
+            synchronized(decodeLock) { decode(BitmapDecodeState(options)) }
 
     internal abstract fun decode(state: BitmapDecodeState): Bitmap
 }

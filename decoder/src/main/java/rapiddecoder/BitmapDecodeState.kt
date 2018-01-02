@@ -1,15 +1,12 @@
 package rapiddecoder
 
 import android.graphics.BitmapFactory
-import android.os.Build
 
 internal class BitmapDecodeState(private val loadBitmapOptions: LoadBitmapOptions) {
     val finalScale
         get() = loadBitmapOptions.finalScale
     val filterBitmap
         get() = loadBitmapOptions.filterBitmap
-    val mutable
-        get() = loadBitmapOptions.mutable
 
     var densityScale = loadBitmapOptions.finalScale
     var scaleX = 1f
@@ -25,9 +22,7 @@ internal class BitmapDecodeState(private val loadBitmapOptions: LoadBitmapOption
         val opts = options
         opts.inScaled = densityScale
         opts.inPreferredConfig = loadBitmapOptions.config
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            opts.inMutable = loadBitmapOptions.mutable
-        }
+        opts.inMutable = loadBitmapOptions.mutable
 
         remainScaleX = scaleX
         remainScaleY = scaleY
