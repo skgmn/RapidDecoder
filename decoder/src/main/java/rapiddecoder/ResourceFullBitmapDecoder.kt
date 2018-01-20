@@ -9,7 +9,7 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
     override val width: Int
         get() {
             if (densityScaledWidth == INVALID_SIZE) {
-                densityScaledWidth = Math.ceil(sourceWidth.toDouble() * densityRatio).toInt()
+                densityScaledWidth = Math.ceil(sourceWidth.toDouble() * densityScale).toInt()
             }
             return densityScaledWidth
         }
@@ -17,7 +17,7 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
     override val height: Int
         get() {
             if (densityScaledHeight == INVALID_SIZE) {
-                densityScaledHeight = Math.ceil(sourceHeight.toDouble() * densityRatio).toInt()
+                densityScaledHeight = Math.ceil(sourceHeight.toDouble() * densityScale).toInt()
             }
             return densityScaledHeight
         }
@@ -29,20 +29,21 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
         return ResourceRegionBitmapDecoder(source, left, top, right, bottom)
     }
 
-    override fun decode(state: BitmapDecodeState): Bitmap {
-        state.prepareDecode()
-        val opts = state.options
+    override fun decodeResource(options: LoadBitmapOptions,
+                                input: BitmapDecodeInput,
+                                output: BitmapDecodeOutput): Bitmap {
+        val opts = output.options
         val bitmap = source.decode(opts) ?: throw DecodeFailedException()
 
         if (!boundsDecoded) {
             imageMimeType = opts.outMimeType
-            val scale = if (source.densityRatioSupported &&
+            val scale = if (source.densityScaleSupported &&
                     opts.inTargetDensity != 0 && opts.inDensity != 0) {
                 opts.inTargetDensity.toDouble() / opts.inDensity
             } else {
                 1.0
             }
-            bitmapDensityRatio = scale.toFloat()
+            bitmapDensityScale = scale.toFloat()
             if (opts.inScaled && opts.inTargetDensity != 0 && opts.inDensity != 0) {
                 bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
                 bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
@@ -54,6 +55,7 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
                 densityScaledWidth = Math.ceil(opts.outWidth * scale).toInt()
                 densityScaledHeight = Math.ceil(opts.outHeight * scale).toInt()
             }
+
             boundsDecoded = true
         }
 

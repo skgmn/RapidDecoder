@@ -44,9 +44,10 @@ class LoadResourceTest {
     @Test
     fun decodeFull() {
         bitmaps.forEach { id ->
+            val resName = res.getResourceName(id)
             val bitmap1 = BitmapLoader.fromResource(res, id).loadBitmap()
             val bitmap2 = BitmapFactory.decodeResource(res, id)
-            assertTrue(bitmap1.sameAs(bitmap2))
+            assertTrue("no transformation for $resName", bitmap1.sameAs(bitmap2))
         }
     }
 
@@ -68,15 +69,16 @@ class LoadResourceTest {
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
             testDimensions.forEach { dimension ->
+                if (dimension.x
+                         == 56 && dimension.y == 113 && id == R.drawable.android) {
+                    System.out.println("")
+                }
                 val bitmap1 = BitmapLoader.fromResource(res, id)
                         .scaleTo(dimension.x, dimension.y)
                         .loadBitmap()
                 val bitmap2 = EagerBitmapLoader.fromResources(res, id)
                         .scaleTo(dimension.x, dimension.y)
                         .loadBitmap()
-                if (!bitmap1.sameAs(bitmap2)) {
-                    System.out.println("$bitmap1, $bitmap2")
-                }
                 assertTrue("scaleTo(${dimension.x}, ${dimension.y}) for $resName",
                         bitmap1.sameAs(bitmap2))
             }

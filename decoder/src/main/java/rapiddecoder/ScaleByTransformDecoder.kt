@@ -1,7 +1,6 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
-import android.graphics.Matrix
 
 internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                                        private val x: Float,
@@ -20,8 +19,8 @@ internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
         get() = other.sourceHeight
     override val mimeType: String?
         get() = other.mimeType
-    override val densityRatio: Float
-        get() = other.densityRatio
+    override val densityScale: Float
+        get() = other.densityScale
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
@@ -56,24 +55,18 @@ internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun decode(state: BitmapDecodeState): Bitmap {
-        state.densityScale = true
-        state.scaleX *= x
-        state.scaleY *= y
-
-        val bitmap = synchronized(other.decodeLock) { other.decode(state) }
-        if (state.remainScaleX == 1f && state.remainScaleY == 1f ||
-                !state.finalScale) {
-            return bitmap
+    override fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput {
+        return other.buildInput(options).apply {
+            scaleX *= x
+            scaleY *= y
         }
+    }
 
-        val m = Matrix()
-        m.setScale(state.remainScaleX, state.remainScaleY)
-        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m,
-                state.filterBitmap)
-        if (scaledBitmap !== bitmap) {
-            bitmap.recycle()
+    override fun decode(options: LoadBitmapOptions,
+                        input: BitmapDecodeInput,
+                        output: BitmapDecodeOutput): Bitmap {
+        return synchronized(other.decodeLock) {
+            other.decode(options, input, output)
         }
-        return scaledBitmap
     }
 }

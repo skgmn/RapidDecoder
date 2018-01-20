@@ -3,7 +3,7 @@ package rapiddecoder
 import android.graphics.Bitmap
 
 internal abstract class BitmapDecoder : BitmapLoader() {
-    internal abstract val densityRatio: Float
+    internal abstract val densityScale: Float
 
     internal val decodeLock = Any()
 
@@ -35,8 +35,16 @@ internal abstract class BitmapDecoder : BitmapLoader() {
         }
     }
 
-    override fun loadBitmap(options: LoadBitmapOptions): Bitmap =
-            synchronized(decodeLock) { decode(BitmapDecodeState(options)) }
+    override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
+        return synchronized(decodeLock) {
+            decode(options, buildInput(options), BitmapDecodeOutput())
+        }
+    }
 
-    internal abstract fun decode(state: BitmapDecodeState): Bitmap
+    internal open fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput =
+            BitmapDecodeInput()
+
+    internal abstract fun decode(options: LoadBitmapOptions,
+                                  input: BitmapDecodeInput,
+                                  output: BitmapDecodeOutput): Bitmap
 }

@@ -1,6 +1,7 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
+import kotlin.math.roundToInt
 
 internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
                                        private val targetWidth: Float,
@@ -17,8 +18,8 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
         get() = other.sourceHeight
     override val mimeType: String?
         get() = other.mimeType
-    override val densityRatio: Float
-        get() = other.densityRatio
+    override val densityScale: Float
+        get() = other.densityScale
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
@@ -63,25 +64,37 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun decode(state: BitmapDecodeState): Bitmap {
-        state.densityScale = false
-        state.scaleX *= targetWidth / other.sourceWidth.toFloat()
-        state.scaleY *= targetHeight / other.sourceHeight.toFloat()
+    override fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput {
+        return BitmapDecodeInput(options).apply {
+            scaleX = targetWidth / other.width
+            scaleY = targetHeight / other.height
+        }
+    }
 
-        val bitmap = synchronized(other.decodeLock) { other.decode(state) }
+    override fun decode(options: LoadBitmapOptions,
+                        input: BitmapDecodeInput,
+                        output: BitmapDecodeOutput): Bitmap {
+        val newInput = if (!input.finalScale) {
+            input
+        } else {
+            BitmapDecodeInput(input).apply {
+                finalScale = false
+            }
+        }
+        val bitmap = synchronized(other.decodeLock) {
+            other.decode(options, newInput, output)
+        }
 
-        val targetWidth = Math.round(targetWidth)
-        val targetHeight = Math.round(targetHeight)
-        if (bitmap.width == targetWidth && bitmap.height == targetHeight
-                || !state.finalScale) {
+        if (!input.finalScale) {
             return bitmap
         }
 
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight,
-                state.filterBitmap)
-        if (scaledBitmap !== bitmap) {
-            bitmap.recycle()
+        val targetWidth = targetWidth.roundToInt()
+        val targetHeight = targetHeight.roundToInt()
+        return if (bitmap.width != targetWidth || bitmap.height != targetHeight) {
+            Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+        } else {
+            bitmap
         }
-        return scaledBitmap
     }
 }

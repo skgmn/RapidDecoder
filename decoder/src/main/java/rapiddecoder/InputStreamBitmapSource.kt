@@ -8,7 +8,7 @@ import java.io.InputStream
 internal class InputStreamBitmapSource(stream: InputStream) : BitmapSource {
     private val wrappedStream = RewindableInputStream(stream)
 
-    override val densityRatioSupported: Boolean
+    override val densityScaleSupported: Boolean
         get() = false
 
     override fun decode(opts: BitmapFactory.Options): Bitmap? {

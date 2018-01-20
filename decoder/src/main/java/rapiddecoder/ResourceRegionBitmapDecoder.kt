@@ -35,20 +35,24 @@ internal class ResourceRegionBitmapDecoder(
                 newLeft + (right - left), newTop + (bottom - top))
     }
 
-    override fun decode(state: BitmapDecodeState): Bitmap {
-        val densityRatio = densityRatio
-        state.scaleX *= densityRatio
-        state.scaleY *= densityRatio
-        state.prepareDecode()
+    override fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput {
+        val densityScale = densityScale
+        return super.buildInput(options).apply {
+            scaleX *= densityScale
+            scaleY *= densityScale
+        }
+    }
 
-        val opts = state.options
+    override fun decodeResource(options: LoadBitmapOptions, input: BitmapDecodeInput, output: BitmapDecodeOutput): Bitmap {
+        val opts = output.options
         val regionDecoder = source.createRegionDecoder()
         try {
+            val densityScale = densityScale
             val scaledRegion = Rect(
-                    Math.round(l / densityRatio),
-                    Math.round(t / densityRatio),
-                    Math.round(r / densityRatio),
-                    Math.round(b / densityRatio))
+                    Math.round(l / densityScale),
+                    Math.round(t / densityScale),
+                    Math.round(r / densityScale),
+                    Math.round(b / densityScale))
             val bitmap = regionDecoder.decodeRegion(scaledRegion, opts)
                     ?: throw DecodeFailedException()
             if (!boundsDecoded) {

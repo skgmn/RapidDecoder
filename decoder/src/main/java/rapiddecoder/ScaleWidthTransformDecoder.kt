@@ -17,8 +17,8 @@ internal class ScaleWidthTransformDecoder(private val other: BitmapDecoder,
         get() = other.sourceHeight
     override val mimeType: String?
         get() = other.mimeType
-    override val densityRatio: Float
-        get() = other.densityRatio
+    override val densityScale: Float
+        get() = other.densityScale
 
     private val targetHeight: Float by lazy {
         targetWidth * (other.height.toFloat() / other.width) * heightAdjustRatio
@@ -76,23 +76,19 @@ internal class ScaleWidthTransformDecoder(private val other: BitmapDecoder,
                 .scaleTo(right - left, bottom - top)
     }
 
-    override fun decode(state: BitmapDecodeState): Bitmap {
-        val scale = targetWidth / other.sourceWidth
-
-        state.densityScale = false
-        state.scaleX *= scale
-        state.scaleY *= scale
-
-        val bitmap = synchronized(other.decodeLock) { other.decode(state) }
-        val width = width
-        if (bitmap.width == width || !state.finalScale) {
-            return bitmap
+    override fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput {
+        val scale = targetWidth / other.width
+        return other.buildInput(options).apply {
+            scaleX *= scale
+            scaleY *= scale
         }
+    }
 
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, state.filterBitmap)
-        if (scaledBitmap !== bitmap) {
-            bitmap.recycle()
+    override fun decode(options: LoadBitmapOptions,
+                        input: BitmapDecodeInput,
+                        output: BitmapDecodeOutput): Bitmap {
+        return synchronized(other.decodeLock) {
+            other.decode(options, input, output)
         }
-        return scaledBitmap
     }
 }
