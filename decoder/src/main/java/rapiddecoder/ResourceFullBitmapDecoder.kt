@@ -9,7 +9,7 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
     override val width: Int
         get() {
             if (densityScaledWidth == INVALID_SIZE) {
-                densityScaledWidth = Math.ceil(sourceWidth.toDouble() * densityScale).toInt()
+                densityScaledWidth = Math.round(sourceWidth * densityScale)
             }
             return densityScaledWidth
         }
@@ -17,7 +17,7 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
     override val height: Int
         get() {
             if (densityScaledHeight == INVALID_SIZE) {
-                densityScaledHeight = Math.ceil(sourceHeight.toDouble() * densityScale).toInt()
+                densityScaledHeight = Math.round(sourceHeight * densityScale)
             }
             return densityScaledHeight
         }

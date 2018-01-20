@@ -1,9 +1,7 @@
 package rapiddecoder
 
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
+import android.graphics.*
 
 internal class ResourceEagerBitmapLoader(
         private val res: Resources,
@@ -11,11 +9,18 @@ internal class ResourceEagerBitmapLoader(
 ) : EagerBitmapLoader() {
     override fun scaleTo(width: Int, height: Int): EagerBitmapLoader {
         val opts = BitmapFactory.Options()
+        opts.inScaled = false
         opts.inJustDecodeBounds = true
         BitmapFactory.decodeResource(res, id, opts)
 
-        val sourceWidth = opts.outWidth
-        val sourceHeight = opts.outHeight
+        val densityScale = if (opts.inDensity == 0) {
+            1f
+        } else {
+            opts.inTargetDensity / opts.inDensity.toFloat()
+        }
+
+        val sourceWidth = Math.round(opts.outWidth * densityScale)
+        val sourceHeight = Math.round(opts.outHeight * densityScale)
         var scaleWidth = width / sourceWidth.toFloat()
         var scaleHeight = height / sourceHeight.toFloat()
         var sampleSize = 1
@@ -25,6 +30,7 @@ internal class ResourceEagerBitmapLoader(
             scaleHeight *= 2f
         }
 
+        opts.inScaled = true
         opts.inJustDecodeBounds = false
         opts.inSampleSize = sampleSize
         val bitmap = BitmapFactory.decodeResource(res, id, opts)
@@ -53,8 +59,33 @@ internal class ResourceEagerBitmapLoader(
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): EagerBitmapLoader {
-        val bitmap = BitmapFactory.decodeResource(res, id)
-        val newBitmap = Bitmap.createBitmap(bitmap, left, top, right, bottom)
+        val opts = BitmapFactory.Options()
+        opts.inJustDecodeBounds = true
+        BitmapFactory.decodeResource(res, id, opts)
+
+        opts.inJustDecodeBounds = false
+        opts.inSampleSize = 1
+        val densityScale = if (opts.inDensity == 0) {
+            1f
+        } else {
+            opts.inTargetDensity / opts.inDensity.toFloat()
+        }
+
+        var scale = densityScale
+        while (scale <= 0.5f) {
+            opts.inSampleSize *= 2
+            scale *= 2f
+        }
+
+        val stream = res.openRawResource(id)
+        val decoder = BitmapRegionDecoder.newInstance(stream, false)
+        val region = Rect(
+                Math.round(left / densityScale),
+                Math.round(top / densityScale),
+                Math.round(right / densityScale),
+                Math.round(bottom / densityScale)
+        )
+        val newBitmap = decoder.decodeRegion(region, opts)
         return MemoryEagerBitmapLoader(newBitmap)
     }
 
