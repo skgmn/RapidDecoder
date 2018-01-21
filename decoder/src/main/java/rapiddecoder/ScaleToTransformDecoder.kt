@@ -10,8 +10,6 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
         get() = Math.round(targetWidth)
     override val height: Int
         get() = Math.round(targetHeight)
-    override val hasSize: Boolean
-        get() = true
     override val sourceWidth: Int
         get() = other.sourceWidth
     override val sourceHeight: Int
@@ -23,7 +21,8 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (other.hasSize && other.width == width && other.height == height) {
+        return if (other.hasMetadata(MetadataType.SIZE) &&
+                other.width == width && other.height == height) {
             other
         } else {
             val floatWidth = width.toFloat()
@@ -43,7 +42,7 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
         } else {
             val newWidth = targetWidth * x
             val newHeight = targetHeight * y
-            if (other.hasSize &&
+            if (other.hasMetadata(MetadataType.SIZE) &&
                     other.width.toFloat() == newWidth &&
                     other.height.toFloat() == newHeight) {
                 other
@@ -96,5 +95,10 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
         } else {
             bitmap
         }
+    }
+
+    override fun hasMetadata(type: MetadataType): Boolean = when (type) {
+        MetadataType.SIZE -> true
+        else -> other.hasMetadata(type)
     }
 }

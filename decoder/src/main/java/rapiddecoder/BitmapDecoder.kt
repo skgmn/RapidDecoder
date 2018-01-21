@@ -9,7 +9,8 @@ internal abstract class BitmapDecoder : BitmapLoader() {
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (hasSize && width == this.width && height == this.height) {
+        return if (hasMetadata(MetadataType.SIZE) &&
+                width == this.width && height == this.height) {
             this
         } else {
             ScaleToTransformDecoder(this, width.toFloat(), height.toFloat())

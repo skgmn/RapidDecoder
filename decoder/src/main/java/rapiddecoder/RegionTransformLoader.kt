@@ -28,11 +28,10 @@ internal class RegionTransformLoader(private val other: BitmapLoader,
         get() = b - t
     override val mimeType: String?
         get() = other.mimeType
-    override val hasSize: Boolean
-        get() = other.hasSize
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
-        return if (hasSize && width == this.width && height == this.height) {
+        return if (hasMetadata(MetadataType.SIZE) &&
+                width == this.width && height == this.height) {
             this
         } else {
             ScaleToTransformLoader(this, width.toFloat(), height.toFloat())
@@ -48,7 +47,8 @@ internal class RegionTransformLoader(private val other: BitmapLoader,
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        return if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+        return if (hasMetadata(MetadataType.SIZE) &&
+                left <= 0 && top <= 0 && right >= width && bottom >= height) {
             this
         } else {
             val newLeft = this.left + left
@@ -82,4 +82,6 @@ internal class RegionTransformLoader(private val other: BitmapLoader,
             }
         }
     }
+
+    override fun hasMetadata(type: MetadataType): Boolean = other.hasMetadata(type)
 }

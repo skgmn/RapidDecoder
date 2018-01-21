@@ -32,8 +32,6 @@ internal class DrawableBitmapLoader(private val d: Drawable,
         get() = Math.round(targetHeight)
     override val mimeType: String?
         get() = "image/png"
-    override val hasSize: Boolean
-        get() = true
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader =
             DrawableBitmapLoader(d, l, t, r, b, width.toFloat(), height.toFloat())
@@ -94,4 +92,7 @@ internal class DrawableBitmapLoader(private val d: Drawable,
 
     private fun hasRegion(): Boolean =
             l != 0 || t != 0 || r != d.intrinsicWidth || b != d.intrinsicHeight
+
+    override fun hasMetadata(type: MetadataType): Boolean =
+            type != MetadataType.DENSITY_SCALE
 }

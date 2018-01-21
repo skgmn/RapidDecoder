@@ -32,9 +32,12 @@ class LoadResourceTest {
     fun decodeFull() {
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
-            val bitmap1 = BitmapLoader.fromResource(res, id).loadBitmap()
+            val loader = BitmapLoader.fromResource(res, id)
+            val bitmap1 = loader.loadBitmap()
             val bitmap2 = BitmapFactory.decodeResource(res, id)
-            assertTrue("no transformation for $resName", bitmap1.sameAs(bitmap2))
+            assertTrue(resName, bitmap1.sameAs(bitmap2))
+            assertEquals(resName, bitmap1.width, loader.width)
+            assertEquals(resName, bitmap1.height, loader.height)
         }
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
@@ -46,7 +49,7 @@ class LoadResourceTest {
             val bitmap2 = BitmapFactory.decodeResource(res, id)
             assertEquals(bitmap1.width, width)
             assertEquals(bitmap1.height, height)
-            assertTrue("no transformation for $resName (decode bounds first)", bitmap1.sameAs(bitmap2))
+            assertTrue(resName, bitmap1.sameAs(bitmap2))
         }
     }
 
@@ -68,14 +71,16 @@ class LoadResourceTest {
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
             testDimensions.forEach { dimension ->
-                val bitmap1 = BitmapLoader.fromResource(res, id)
+                val loader = BitmapLoader.fromResource(res, id)
                         .scaleTo(dimension.x, dimension.y)
-                        .loadBitmap()
+                val bitmap1 = loader.loadBitmap()
                 val bitmap2 = EagerBitmapLoader.fromResources(res, id)
                         .scaleTo(dimension.x, dimension.y)
                         .loadBitmap()
-                assertTrue("scaleTo(${dimension.x}, ${dimension.y}) for $resName",
+                assertTrue("$resName.scaleTo(${dimension.x}, ${dimension.y})",
                         bitmap1.sameAs(bitmap2))
+                assertEquals(bitmap1.width, loader.width)
+                assertEquals(bitmap1.height, loader.height)
             }
             testDimensions.forEach { dimension ->
                 val loader = BitmapLoader.fromResource(res, id)
@@ -89,7 +94,7 @@ class LoadResourceTest {
                         .loadBitmap()
                 assertEquals(bitmap1.width, width)
                 assertEquals(bitmap1.height, height)
-                assertTrue("scaleTo(${dimension.x}, ${dimension.y}) for $resName (decode bounds first)",
+                assertTrue("$resName.scaleTo(${dimension.x}, ${dimension.y})",
                         bitmap1.sameAs(bitmap2))
             }
         }
@@ -113,14 +118,19 @@ class LoadResourceTest {
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
             testScales.forEach { dimension ->
-                val bitmap1 = BitmapLoader.fromResource(res, id)
+                if (id == R.drawable.android && dimension.x == 0.104f && dimension.y == 0.276f) {
+                    System.out.println()
+                }
+                val loader = BitmapLoader.fromResource(res, id)
                         .scaleBy(dimension.x, dimension.y)
-                        .loadBitmap()
+                val bitmap1 = loader.loadBitmap()
                 val bitmap2 = EagerBitmapLoader.fromResources(res, id)
                         .scaleBy(dimension.x, dimension.y)
                         .loadBitmap()
-                assertTrue("scaleBy(${dimension.x}, ${dimension.y}) for $resName",
-                        bitmap1.sameAs(bitmap2))
+                val message = "$resName.scaleBy(${dimension.x}, ${dimension.y})"
+                assertTrue(message, bitmap1.sameAs(bitmap2))
+                assertEquals(message, bitmap1.width, loader.width)
+                assertEquals(message, bitmap1.height, loader.height)
             }
             testScales.forEach { dimension ->
                 val loader = BitmapLoader.fromResource(res, id)
@@ -134,7 +144,7 @@ class LoadResourceTest {
                         .loadBitmap()
                 assertEquals(bitmap1.width, width)
                 assertEquals(bitmap1.height, height)
-                assertTrue("scaleBy(${dimension.x}, ${dimension.y}) for $resName (decode bounds first)",
+                assertTrue("$resName.scaleBy(${dimension.x}, ${dimension.y})",
                         bitmap1.sameAs(bitmap2))
             }
         }

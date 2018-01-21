@@ -3,30 +3,29 @@ package rapiddecoder
 import android.graphics.Bitmap
 import rapiddecoder.util.BitmapUtils
 
-internal class ScaleByTransformLoader(private val source: BitmapLoader,
+internal class ScaleByTransformLoader(private val other: BitmapLoader,
                                       private val x: Float,
                                       private val y: Float) : BitmapLoader() {
     override val width: Int by lazy {
-        Math.round(source.width * x)
+        Math.round(other.width * x)
     }
     override val height: Int by lazy {
-        Math.round(source.height * y)
+        Math.round(other.height * y)
     }
-    override val hasSize: Boolean
-        get() = source.hasSize
     override val sourceWidth: Int
-        get() = source.sourceWidth
+        get() = other.sourceWidth
     override val sourceHeight: Int
-        get() = source.sourceHeight
+        get() = other.sourceHeight
     override val mimeType: String?
-        get() = source.mimeType
+        get() = other.mimeType
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (source.hasSize && source.width == width && source.height == height) {
-            source
+        return if (other.hasMetadata(MetadataType.SIZE) &&
+                other.width == width && other.height == height) {
+            other
         } else {
-            ScaleToTransformLoader(source, width.toFloat(), height.toFloat())
+            ScaleToTransformLoader(other, width.toFloat(), height.toFloat())
         }
     }
 
@@ -38,15 +37,15 @@ internal class ScaleByTransformLoader(private val source: BitmapLoader,
             val newX = this.x * x
             val newY = this.y * y
             if (newX == 1f && newY == 1f) {
-                source
+                other
             } else {
-                ScaleByTransformLoader(source, newX, newY)
+                ScaleByTransformLoader(other, newX, newY)
             }
         }
     }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        return source.region(
+        return other.region(
                 Math.round(left / x),
                 Math.round(top / y),
                 Math.round(right / x),
@@ -60,7 +59,7 @@ internal class ScaleByTransformLoader(private val source: BitmapLoader,
                 .setMutable(false)
                 .setConfig(null)
                 .build()
-        val sourceBitmap = source.loadBitmap(newOptions)
+        val sourceBitmap = other.loadBitmap(newOptions)
         val finalWidth = Math.ceil(sourceBitmap.width.toDouble() * x).toInt()
         val finalHeight = Math.ceil(sourceBitmap.height.toDouble() * y).toInt()
         val scaledBitmap = if (options.shouldBeRedrawnFrom(sourceBitmap)) {
@@ -75,4 +74,6 @@ internal class ScaleByTransformLoader(private val source: BitmapLoader,
         }
         return scaledBitmap
     }
+
+    override fun hasMetadata(type: MetadataType): Boolean = other.hasMetadata(type)
 }

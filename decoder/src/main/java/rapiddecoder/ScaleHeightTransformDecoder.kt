@@ -9,8 +9,6 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
         get() = Math.round(targetWidth)
     override val height: Int
         get() = Math.round(targetHeight)
-    override val hasSize: Boolean
-        get() = other.hasSize
     override val sourceWidth: Int
         get() = other.sourceWidth
     override val sourceHeight: Int
@@ -26,7 +24,8 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (other.hasSize && other.width == width && other.height == height) {
+        return if (other.hasMetadata(MetadataType.SIZE) &&
+                other.width == width && other.height == height) {
             other
         } else {
             ScaleToTransformDecoder(other, width.toFloat(), height.toFloat())
@@ -35,7 +34,7 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
 
     override fun scaleHeight(height: Int): BitmapLoader {
         checkScaleToArguments(1, height)
-        return if (other.hasSize && other.height == height) {
+        return if (other.hasMetadata(MetadataType.SIZE) && other.height == height) {
             other
         } else {
             val floatHeight = height.toFloat()
@@ -51,7 +50,7 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
         checkScaleByArguments(x, y)
         return if (x == 1f && y == 1f) {
             this
-        } else if (other.hasSize) {
+        } else if (other.hasMetadata(MetadataType.SIZE)) {
             val newWidth = targetWidth * x
             val newHeight = targetHeight * y
             if (other.width.toFloat() == newWidth && other.height.toFloat() == newHeight) {
@@ -90,5 +89,10 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
         return synchronized(other.decodeLock) {
             other.decode(options, input, output)
         }
+    }
+
+    override fun hasMetadata(type: MetadataType): Boolean = when (type) {
+        MetadataType.SIZE -> true
+        else -> other.hasMetadata(type)
     }
 }

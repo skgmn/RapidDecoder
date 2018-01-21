@@ -5,14 +5,17 @@ import android.graphics.Bitmap
 internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                                        private val x: Float,
                                        private val y: Float) : BitmapDecoder() {
-    override val width: Int by lazy {
+    // Using delegated property causes eager value initialization with no reason
+    private val widthEvaluator = lazy {
         Math.round(other.width * x)
     }
-    override val height: Int by lazy {
+    private val heightEvaluator = lazy {
         Math.round(other.height * y)
     }
-    override val hasSize: Boolean
-        get() = other.hasSize
+    override val width: Int
+        get() = widthEvaluator.value
+    override val height: Int
+        get() = heightEvaluator.value
     override val sourceWidth: Int
         get() = other.sourceWidth
     override val sourceHeight: Int
@@ -24,7 +27,8 @@ internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
-        return if (other.hasSize && other.width == width && other.height == height) {
+        return if (other.hasMetadata(MetadataType.SIZE) &&
+                other.width == width && other.height == height) {
             other
         } else {
             ScaleToTransformDecoder(other, width.toFloat(), height.toFloat())
@@ -69,4 +73,6 @@ internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
             other.decode(options, input, output)
         }
     }
+
+    override fun hasMetadata(type: MetadataType): Boolean = other.hasMetadata(type)
 }

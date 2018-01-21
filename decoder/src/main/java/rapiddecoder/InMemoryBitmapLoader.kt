@@ -14,8 +14,6 @@ internal class InMemoryBitmapLoader(private val bitmap: Bitmap) : BitmapLoader()
         get() = bitmap.height
     override val mimeType: String?
         get() = "image/png"
-    override val hasSize: Boolean
-        get() = true
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader =
             ScaleToTransformLoader(this, width.toFloat(), height.toFloat())
@@ -23,7 +21,7 @@ internal class InMemoryBitmapLoader(private val bitmap: Bitmap) : BitmapLoader()
     override fun scaleBy(x: Float, y: Float): BitmapLoader = ScaleByTransformLoader(this, x, y)
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        return if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+        return if (left <= 0 && top <= 0 && right >= width && bottom >= height) {
             this
         } else {
             RegionTransformLoader(this, left, top, right, bottom)
@@ -31,14 +29,16 @@ internal class InMemoryBitmapLoader(private val bitmap: Bitmap) : BitmapLoader()
     }
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
-        if (options.shouldBeRedrawnFrom(bitmap)) {
+        return if (options.shouldBeRedrawnFrom(bitmap)) {
             val config = options.config ?: bitmap.config
-            return bitmap.copy(config, options.mutable) ?:
+            bitmap.copy(config, options.mutable) ?:
                     Bitmap.createBitmap(bitmap.width, bitmap.height, config).also {
                         Canvas(it).drawBitmap(bitmap, 0f, 0f, null)
                     }
         } else {
-            return bitmap
+            bitmap
         }
     }
+
+    override fun hasMetadata(type: MetadataType): Boolean = type != MetadataType.DENSITY_SCALE
 }

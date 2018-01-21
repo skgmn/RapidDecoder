@@ -26,7 +26,8 @@ internal class ResourceRegionBitmapDecoder(
         get() = b - t
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+        if (hasMetadata(MetadataType.SIZE) &&
+                left <= 0 && top <= 0 && right >= width && bottom >= height) {
             return this
         }
         val newLeft = this.left + left
@@ -55,15 +56,24 @@ internal class ResourceRegionBitmapDecoder(
                     Math.round(b / densityScale))
             val bitmap = regionDecoder.decodeRegion(scaledRegion, opts)
                     ?: throw DecodeFailedException()
-            if (!boundsDecoded) {
-                imageMimeType = opts.outMimeType
+            imageMimeType = opts.outMimeType
+            if (bitmapWidth == INVALID_SIZE) {
                 bitmapWidth = regionDecoder.width
                 bitmapHeight = regionDecoder.height
-                boundsDecoded = true
             }
             return bitmap
         } finally {
             regionDecoder.recycle()
+        }
+    }
+
+    override fun hasMetadata(type: MetadataType): Boolean {
+        return synchronized(decodeLock) {
+            when (type) {
+                MetadataType.DENSITY_SCALE -> !bitmapDensityScale.isNaN()
+                MetadataType.MIME_TYPE -> imageMimeType != null
+                MetadataType.SIZE, MetadataType.SOURCE_SIZE -> bitmapWidth != INVALID_SIZE
+            }
         }
     }
 }

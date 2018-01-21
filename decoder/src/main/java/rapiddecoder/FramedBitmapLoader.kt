@@ -22,8 +22,6 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
         get() = frameHeight
     override val mimeType: String?
         get() = source.mimeType
-    override val hasSize: Boolean
-        get() = true
 
     override fun scaleTo(width: Int, height: Int): BitmapLoader {
         checkScaleToArguments(width, height)
@@ -84,4 +82,7 @@ internal class FramedBitmapLoader(private val source: BitmapLoader,
             bitmap
         }
     }
+
+    override fun hasMetadata(type: MetadataType): Boolean =
+            type != MetadataType.DENSITY_SCALE
 }

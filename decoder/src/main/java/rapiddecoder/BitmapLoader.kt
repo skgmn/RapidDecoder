@@ -19,8 +19,8 @@ abstract class BitmapLoader {
     abstract val width: Int
     abstract val height: Int
     abstract val mimeType: String?
-    abstract val hasSize: Boolean
 
+    abstract fun hasMetadata(type: MetadataType): Boolean
     abstract fun scaleTo(width: Int, height: Int): BitmapLoader
     abstract fun scaleBy(x: Float, y: Float): BitmapLoader
     abstract fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader

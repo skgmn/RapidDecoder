@@ -23,7 +23,8 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
         }
 
     override fun region(left: Int, top: Int, right: Int, bottom: Int): BitmapLoader {
-        if (hasSize && left <= 0 && top <= 0 && right >= width && bottom >= height) {
+        if (hasMetadata(MetadataType.SIZE) &&
+                left <= 0 && top <= 0 && right >= width && bottom >= height) {
             return this
         }
         return ResourceRegionBitmapDecoder(source, left, top, right, bottom)
@@ -35,8 +36,8 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
         val opts = output.options
         val bitmap = source.decode(opts) ?: throw DecodeFailedException()
 
-        if (!boundsDecoded) {
-            imageMimeType = opts.outMimeType
+        imageMimeType = opts.outMimeType
+        if (bitmapDensityScale.isNaN()) {
             val scale = if (source.densityScaleSupported &&
                     opts.inTargetDensity != 0 && opts.inDensity != 0) {
                 opts.inTargetDensity.toDouble() / opts.inDensity
@@ -44,21 +45,25 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
                 1.0
             }
             bitmapDensityScale = scale.toFloat()
-            if (opts.inScaled && opts.inTargetDensity != 0 && opts.inDensity != 0) {
-                bitmapWidth = Math.floor(opts.outWidth / scale).toInt()
-                bitmapHeight = Math.floor(opts.outHeight / scale).toInt()
-                densityScaledWidth = opts.outWidth
-                densityScaledHeight = opts.outHeight
-            } else {
-                bitmapWidth = opts.outWidth
-                bitmapHeight = opts.outHeight
-                densityScaledWidth = Math.ceil(opts.outWidth * scale).toInt()
-                densityScaledHeight = Math.ceil(opts.outHeight * scale).toInt()
-            }
-
-            boundsDecoded = true
+        }
+        if (opts.inSampleSize == 1) {
+            bitmapWidth = opts.outWidth
+            bitmapHeight = opts.outHeight
+            densityScaledWidth = bitmap.width
+            densityScaledHeight = bitmap.height
         }
 
         return bitmap
+    }
+
+    override fun hasMetadata(type: MetadataType): Boolean {
+        return synchronized(decodeLock) {
+            when (type) {
+                MetadataType.SIZE -> densityScaledWidth != INVALID_SIZE
+                MetadataType.DENSITY_SCALE -> !bitmapDensityScale.isNaN()
+                MetadataType.MIME_TYPE -> imageMimeType != null
+                MetadataType.SOURCE_SIZE -> bitmapWidth != INVALID_SIZE
+            }
+        }
     }
 }
