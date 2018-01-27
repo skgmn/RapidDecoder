@@ -1,6 +1,7 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
+import android.graphics.Point
 
 internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapDecoder(source) {
     private var densityScaledWidth = INVALID_SIZE
@@ -65,5 +66,22 @@ internal class ResourceFullBitmapDecoder(source: BitmapSource) : ResourceBitmapD
                 MetadataType.SOURCE_SIZE -> bitmapWidth != INVALID_SIZE
             }
         }
+    }
+
+    override fun getScaledSizeWithSampling(scaleX: Float, scaleY: Float): Point {
+        var scaleRemainX = scaleX
+        var scaleRemainY = scaleY
+        var sampleScale = 1f
+        while (scaleRemainX <= 0.5f && scaleRemainY <= 0.5f) {
+            sampleScale *= 0.5f
+            scaleRemainX *= 2f
+            scaleRemainY *= 2f
+        }
+
+        val scaledWidth = Math.round(Math.round(
+                Math.round(sourceWidth * sampleScale) * densityScale) * scaleRemainX)
+        val scaledHeight = Math.round(Math.round(
+                Math.round(sourceHeight * sampleScale) * densityScale) * scaleRemainY)
+        return Point(scaledWidth, scaledHeight)
     }
 }

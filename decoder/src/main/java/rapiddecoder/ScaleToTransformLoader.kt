@@ -68,8 +68,8 @@ internal class ScaleToTransformLoader(private val other: BitmapLoader,
                 .setConfig(null)
                 .build()
         val sourceBitmap = other.loadBitmap(newOptions)
-        val finalWidth = Math.ceil(targetWidth.toDouble()).toInt()
-        val finalHeight = Math.ceil(targetHeight.toDouble()).toInt()
+        val finalWidth = Math.round(targetWidth)
+        val finalHeight = Math.round(targetHeight)
         val scaledBitmap = if (options.shouldBeRedrawnFrom(sourceBitmap)) {
             BitmapUtils.copy(sourceBitmap, null, finalWidth, finalHeight,
                     options.config ?: sourceBitmap.config, options.filterBitmap)

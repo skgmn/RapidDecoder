@@ -6,16 +6,13 @@ internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                                        private val x: Float,
                                        private val y: Float) : BitmapDecoder() {
     // Using delegated property causes eager value initialization with no reason
-    private val widthEvaluator = lazy {
-        Math.round(other.width * x)
-    }
-    private val heightEvaluator = lazy {
-        Math.round(other.height * y)
+    private val sizeEvaluator = lazy {
+        other.getScaledSizeWithSampling(x, y)
     }
     override val width: Int
-        get() = widthEvaluator.value
+        get() = sizeEvaluator.value.x
     override val height: Int
-        get() = heightEvaluator.value
+        get() = sizeEvaluator.value.y
     override val sourceWidth: Int
         get() = other.sourceWidth
     override val sourceHeight: Int

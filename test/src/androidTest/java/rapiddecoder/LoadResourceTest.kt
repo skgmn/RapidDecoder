@@ -47,8 +47,8 @@ class LoadResourceTest {
 
             val bitmap1 = loader.loadBitmap()
             val bitmap2 = BitmapFactory.decodeResource(res, id)
-            assertEquals(bitmap1.width, width)
-            assertEquals(bitmap1.height, height)
+            assertEquals(resName, bitmap1.width, width)
+            assertEquals(resName, bitmap1.height, height)
             assertTrue(resName, bitmap1.sameAs(bitmap2))
         }
     }
@@ -104,6 +104,7 @@ class LoadResourceTest {
     fun scaleBy() {
         // Some generated random values
         val testScales = arrayOf(
+                PointF(0.5f, 0.5f),
                 PointF(0.969f, 0.568f),
                 PointF(0.051f, 0.779f),
                 PointF(0.926f, 0.367f),
@@ -118,9 +119,6 @@ class LoadResourceTest {
         bitmaps.forEach { id ->
             val resName = res.getResourceName(id)
             testScales.forEach { dimension ->
-                if (id == R.drawable.android && dimension.x == 0.104f && dimension.y == 0.276f) {
-                    System.out.println()
-                }
                 val loader = BitmapLoader.fromResource(res, id)
                         .scaleBy(dimension.x, dimension.y)
                 val bitmap1 = loader.loadBitmap()
@@ -128,6 +126,8 @@ class LoadResourceTest {
                         .scaleBy(dimension.x, dimension.y)
                         .loadBitmap()
                 val message = "$resName.scaleBy(${dimension.x}, ${dimension.y})"
+                assertEquals(message, bitmap2.width, bitmap1.width)
+                assertEquals(message, bitmap2.height, bitmap1.height)
                 assertTrue(message, bitmap1.sameAs(bitmap2))
                 assertEquals(message, bitmap1.width, loader.width)
                 assertEquals(message, bitmap1.height, loader.height)

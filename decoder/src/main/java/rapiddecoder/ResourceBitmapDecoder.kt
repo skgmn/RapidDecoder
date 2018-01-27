@@ -103,16 +103,14 @@ internal abstract class ResourceBitmapDecoder(
                 output.remainScaleX == 1f && output.remainScaleY == 1f) {
             bitmap
         } else {
-            val scaledBitmap = synchronized(scaleMatrixLock) {
-                val m = scaleMatrix
-                m.reset()
-                m.setScale(output.remainScaleX, output.remainScaleY)
-                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, m, true)
+            val m = Matrix()
+            m.setScale(output.remainScaleX, output.remainScaleY)
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height,
+                    m, true).also {
+                if (bitmap !== it) {
+                    bitmap.recycle()
+                }
             }
-            if (bitmap !== scaledBitmap) {
-                bitmap.recycle()
-            }
-            scaledBitmap
         }
 
         return if (!options.mutable && scaledBitmap.isMutable) {
@@ -140,9 +138,5 @@ internal abstract class ResourceBitmapDecoder(
 
     companion object {
         internal const val INVALID_SIZE = -1
-        private val scaleMatrixLock = Any()
-        private val scaleMatrix by lazy(LazyThreadSafetyMode.NONE) {
-            Matrix()
-        }
     }
 }

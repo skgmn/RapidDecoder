@@ -1,6 +1,7 @@
 package rapiddecoder
 
 import android.graphics.Bitmap
+import android.graphics.Point
 
 internal abstract class BitmapDecoder : BitmapLoader() {
     internal abstract val densityScale: Float
@@ -35,6 +36,9 @@ internal abstract class BitmapDecoder : BitmapLoader() {
             ScaleByTransformDecoder(this, x, y)
         }
     }
+
+    internal open fun getScaledSizeWithSampling(scaleX: Float, scaleY: Float): Point =
+            Point(Math.round(width * scaleX), Math.round(height * scaleY))
 
     override fun loadBitmap(options: LoadBitmapOptions): Bitmap {
         return synchronized(decodeLock) {
