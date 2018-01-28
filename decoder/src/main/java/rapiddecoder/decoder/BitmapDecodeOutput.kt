@@ -1,4 +1,4 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 import android.graphics.BitmapFactory
 

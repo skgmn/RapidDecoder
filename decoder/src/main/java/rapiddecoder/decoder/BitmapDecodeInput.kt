@@ -1,4 +1,6 @@
-package rapiddecoder
+package rapiddecoder.decoder
+
+import rapiddecoder.LoadBitmapOptions
 
 internal class BitmapDecodeInput(
         var finalScale: Boolean = true,

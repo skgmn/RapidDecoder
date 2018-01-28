@@ -1,6 +1,9 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 import android.graphics.Bitmap
+import rapiddecoder.BitmapLoader
+import rapiddecoder.LoadBitmapOptions
+import rapiddecoder.MetadataType
 
 internal class ScaleByTransformDecoder(private val other: BitmapDecoder,
                                        private val x: Float,

@@ -1,4 +1,4 @@
-package rapiddecoder
+package rapiddecoder.source
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -9,7 +9,7 @@ class FileDescriptorBitmapSource(private val fd: FileDescriptor) : BitmapSource 
     override val densityScaleSupported: Boolean
         get() = false
 
-    override fun decode(opts: BitmapFactory.Options): Bitmap? =
+    override fun decode(opts: BitmapFactory.Options?): Bitmap? =
             BitmapFactory.decodeFileDescriptor(fd, null, opts)
 
     override fun createRegionDecoder(): BitmapRegionDecoder =

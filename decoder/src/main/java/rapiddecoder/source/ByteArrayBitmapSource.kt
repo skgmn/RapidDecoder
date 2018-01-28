@@ -1,4 +1,4 @@
-package rapiddecoder
+package rapiddecoder.source
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -11,7 +11,7 @@ internal class ByteArrayBitmapSource(
     override val densityScaleSupported: Boolean
         get() = false
 
-    override fun decode(opts: BitmapFactory.Options): Bitmap? =
+    override fun decode(opts: BitmapFactory.Options?): Bitmap? =
             BitmapFactory.decodeByteArray(bytes, offset, length, opts)
 
     override fun createRegionDecoder(): BitmapRegionDecoder =

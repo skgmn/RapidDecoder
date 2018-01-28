@@ -1,7 +1,10 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 import android.graphics.Bitmap
 import android.graphics.Point
+import rapiddecoder.BitmapLoader
+import rapiddecoder.LoadBitmapOptions
+import rapiddecoder.MetadataType
 
 internal abstract class BitmapDecoder : BitmapLoader() {
     internal abstract val densityScale: Float
@@ -50,6 +53,6 @@ internal abstract class BitmapDecoder : BitmapLoader() {
             BitmapDecodeInput()
 
     internal abstract fun decode(options: LoadBitmapOptions,
-                                  input: BitmapDecodeInput,
-                                  output: BitmapDecodeOutput): Bitmap
+                                 input: BitmapDecodeInput,
+                                 output: BitmapDecodeOutput): Bitmap
 }

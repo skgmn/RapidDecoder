@@ -1,4 +1,4 @@
-package rapiddecoder
+package rapiddecoder.source
 
 import android.content.res.AssetManager
 import android.graphics.Bitmap
@@ -11,7 +11,7 @@ class AndroidAssetBitmapSource(
     override val densityScaleSupported: Boolean
         get() = false
 
-    override fun decode(opts: BitmapFactory.Options): Bitmap? {
+    override fun decode(opts: BitmapFactory.Options?): Bitmap? {
         assets.openFd(path).use { pfd ->
             return BitmapFactory.decodeFileDescriptor(pfd.fileDescriptor, null, opts)
         }

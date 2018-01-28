@@ -1,6 +1,9 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 import android.graphics.Bitmap
+import rapiddecoder.BitmapLoader
+import rapiddecoder.LoadBitmapOptions
+import rapiddecoder.MetadataType
 import kotlin.math.roundToInt
 
 internal class ScaleToTransformDecoder(private val other: BitmapDecoder,

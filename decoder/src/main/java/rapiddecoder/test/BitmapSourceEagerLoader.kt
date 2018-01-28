@@ -1,17 +1,22 @@
-package rapiddecoder
+package rapiddecoder.test
 
-import android.content.res.Resources
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.graphics.Rect
+import rapiddecoder.decoder.DecodeFailedException
+import rapiddecoder.source.BitmapSource
+import rapiddecoder.test.EagerBitmapLoader
+import rapiddecoder.test.MemoryEagerBitmapLoader
 
-internal class ResourceEagerBitmapLoader(
-        private val res: Resources,
-        private val id: Int
+internal class BitmapSourceEagerLoader(
+        private val source: BitmapSource
 ) : EagerBitmapLoader() {
     override fun scaleTo(width: Int, height: Int): EagerBitmapLoader {
         val opts = BitmapFactory.Options()
         opts.inScaled = false
         opts.inJustDecodeBounds = true
-        BitmapFactory.decodeResource(res, id, opts)
+        source.decode(opts)
 
         val densityScale = if (opts.inDensity == 0) {
             1f
@@ -33,7 +38,7 @@ internal class ResourceEagerBitmapLoader(
         opts.inScaled = true
         opts.inJustDecodeBounds = false
         opts.inSampleSize = sampleSize
-        val bitmap = BitmapFactory.decodeResource(res, id, opts)
+        val bitmap = source.decode(opts)
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
         return MemoryEagerBitmapLoader(scaledBitmap)
     }
@@ -50,7 +55,7 @@ internal class ResourceEagerBitmapLoader(
         }
 
         opts.inSampleSize = sampleSize
-        val bitmap = BitmapFactory.decodeResource(res, id, opts)
+        val bitmap = source.decode(opts) ?: throw DecodeFailedException()
         val m = Matrix()
         m.setScale(scaleWidth, scaleHeight)
         val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height,
@@ -61,7 +66,7 @@ internal class ResourceEagerBitmapLoader(
     override fun region(left: Int, top: Int, right: Int, bottom: Int): EagerBitmapLoader {
         val opts = BitmapFactory.Options()
         opts.inJustDecodeBounds = true
-        BitmapFactory.decodeResource(res, id, opts)
+        source.decode(opts)
 
         opts.inJustDecodeBounds = false
         opts.inSampleSize = 1
@@ -77,8 +82,7 @@ internal class ResourceEagerBitmapLoader(
             scale *= 2f
         }
 
-        val stream = res.openRawResource(id)
-        val decoder = BitmapRegionDecoder.newInstance(stream, false)
+        val decoder = source.createRegionDecoder()
         val region = Rect(
                 Math.round(left / densityScale),
                 Math.round(top / densityScale),
@@ -89,5 +93,5 @@ internal class ResourceEagerBitmapLoader(
         return MemoryEagerBitmapLoader(newBitmap)
     }
 
-    override fun loadBitmap(): Bitmap = BitmapFactory.decodeResource(res, id)
+    override fun loadBitmap(): Bitmap = source.decode(null) ?: throw DecodeFailedException()
 }

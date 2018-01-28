@@ -1,14 +1,18 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import rapiddecoder.BitmapLoader
+import rapiddecoder.LoadBitmapOptions
+import rapiddecoder.MetadataType
+import rapiddecoder.source.BitmapSource
 
-internal class ResourceRegionBitmapDecoder(
+internal class BitmapSourceRegionDecoder(
         source: BitmapSource,
         private val left: Int,
         private val top: Int,
         private val right: Int,
-        private val bottom: Int) : ResourceBitmapDecoder(source) {
+        private val bottom: Int) : BitmapSourceDecoder(source) {
     private val l: Int
         get() = left.coerceAtLeast(0)
     private val t: Int
@@ -32,7 +36,7 @@ internal class ResourceRegionBitmapDecoder(
         }
         val newLeft = this.left + left
         val newTop = this.top + top
-        return ResourceRegionBitmapDecoder(source, newLeft, newTop,
+        return BitmapSourceRegionDecoder(source, newLeft, newTop,
                 newLeft + (right - left), newTop + (bottom - top))
     }
 

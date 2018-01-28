@@ -7,8 +7,10 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
+import rapiddecoder.decoder.BitmapSourceFullDecoder
 import rapiddecoder.frame.FramingMethod
 import rapiddecoder.frame.FramingMethods
+import rapiddecoder.source.*
 import java.io.File
 import java.io.FileDescriptor
 import java.io.InputStream
@@ -76,7 +78,7 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromResource(res: Resources, resId: Int): BitmapLoader =
-                ResourceFullBitmapDecoder(AndroidResourceBitmapSource(res, resId))
+                BitmapSourceFullDecoder(AndroidResourceBitmapSource(res, resId))
 
         @JvmStatic
         fun fromAsset(context: Context, path: String): BitmapLoader =
@@ -84,19 +86,19 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromAsset(assets: AssetManager, path: String): BitmapLoader =
-                ResourceFullBitmapDecoder(AndroidAssetBitmapSource(assets, path))
+                BitmapSourceFullDecoder(AndroidAssetBitmapSource(assets, path))
 
         @JvmStatic
         fun fromFile(file: File): BitmapLoader =
-                ResourceFullBitmapDecoder(FileBitmapSource(file.absolutePath))
+                BitmapSourceFullDecoder(FileBitmapSource(file.absolutePath))
 
         @JvmStatic
         fun fromFile(path: String): BitmapLoader =
-                ResourceFullBitmapDecoder(FileBitmapSource(path))
+                BitmapSourceFullDecoder(FileBitmapSource(path))
 
         @JvmStatic
         fun fromFileDescriptor(fd: FileDescriptor): BitmapLoader =
-                ResourceFullBitmapDecoder(FileDescriptorBitmapSource(fd))
+                BitmapSourceFullDecoder(FileDescriptorBitmapSource(fd))
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray): BitmapLoader =
@@ -104,11 +106,11 @@ abstract class BitmapLoader {
 
         @JvmStatic
         fun fromMemory(bytes: ByteArray, offset: Int, length: Int): BitmapLoader =
-                ResourceFullBitmapDecoder(ByteArrayBitmapSource(bytes, offset, length))
+                BitmapSourceFullDecoder(ByteArrayBitmapSource(bytes, offset, length))
 
         @JvmStatic
         fun fromStream(stream: InputStream): BitmapLoader =
-                ResourceFullBitmapDecoder(InputStreamBitmapSource(stream))
+                BitmapSourceFullDecoder(InputStreamBitmapSource(stream))
 
         @JvmStatic
         fun fromBitmap(bitmap: Bitmap): BitmapLoader =

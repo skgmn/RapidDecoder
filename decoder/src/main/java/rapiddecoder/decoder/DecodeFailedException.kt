@@ -1,3 +1,3 @@
-package rapiddecoder
+package rapiddecoder.decoder
 
 class DecodeFailedException : RuntimeException()

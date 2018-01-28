@@ -1,8 +1,9 @@
-package rapiddecoder
+package rapiddecoder.source
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
+import rapiddecoder.RewindableInputStream
 import java.io.InputStream
 
 internal class InputStreamBitmapSource(stream: InputStream) : BitmapSource {
@@ -11,8 +12,8 @@ internal class InputStreamBitmapSource(stream: InputStream) : BitmapSource {
     override val densityScaleSupported: Boolean
         get() = false
 
-    override fun decode(opts: BitmapFactory.Options): Bitmap? {
-        if (!opts.inJustDecodeBounds) {
+    override fun decode(opts: BitmapFactory.Options?): Bitmap? {
+        if (opts?.inJustDecodeBounds != true) {
             wrappedStream.rewind()
         }
         return BitmapFactory.decodeStream(wrappedStream, null, opts)
