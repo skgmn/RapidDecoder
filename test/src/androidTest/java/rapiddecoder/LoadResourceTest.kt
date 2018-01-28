@@ -46,15 +46,15 @@ class LoadResourceTest {
                         },
                         eagerLoaderProvider = {
                             EagerBitmapLoader.fromResources(res, R.drawable.pond)
+                        }),
+                TestTarget(
+                        name = "asset/doomsday_rule",
+                        loaderProvider = {
+                            BitmapLoader.fromAsset(context, "doomsday_rule.jpg")
+                        },
+                        eagerLoaderProvider = {
+                            EagerBitmapLoader.fromAsset(context, "doomsday_rule.jpg")
                         })
-//                TestTarget(
-//                        name = "asset/doomsday_rule",
-//                        loaderProvider = {
-//                            BitmapLoader.fromAsset(context, "doomsday_rule.jpg")
-//                        },
-//                        eagerLoaderProvider = {
-//                            EagerBitmapLoader.fromAsset(context, "doomsday_rule.jpg")
-//                        })
         )
     }
 

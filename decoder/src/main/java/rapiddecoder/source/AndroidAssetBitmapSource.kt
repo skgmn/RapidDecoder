@@ -12,14 +12,14 @@ class AndroidAssetBitmapSource(
         get() = false
 
     override fun decode(opts: BitmapFactory.Options?): Bitmap? {
-        assets.openFd(path).use { pfd ->
-            return BitmapFactory.decodeFileDescriptor(pfd.fileDescriptor, null, opts)
+        return assets.open(path).use { stream ->
+            BitmapFactory.decodeStream(stream, null, opts)
         }
     }
 
     override fun createRegionDecoder(): BitmapRegionDecoder {
-        assets.openFd(path).use { pfd ->
-            return BitmapRegionDecoder.newInstance(pfd.fileDescriptor, false)
+        return assets.open(path).use { stream ->
+            BitmapRegionDecoder.newInstance(stream, false)
         }
     }
 }
