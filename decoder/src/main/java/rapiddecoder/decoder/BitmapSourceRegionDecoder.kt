@@ -48,7 +48,7 @@ internal class BitmapSourceRegionDecoder(
         }
     }
 
-    override fun decodeResource(options: LoadBitmapOptions, input: BitmapDecodeInput, output: BitmapDecodeOutput): Bitmap {
+    override fun decodeSource(options: LoadBitmapOptions, input: BitmapDecodeInput, output: BitmapDecodeOutput): Bitmap {
         val opts = output.options
         val regionDecoder = source.createRegionDecoder()
         try {

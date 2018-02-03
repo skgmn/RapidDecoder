@@ -6,6 +6,8 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import rapiddecoder.source.AndroidAssetBitmapSource
 import rapiddecoder.source.AndroidResourceBitmapSource
+import rapiddecoder.source.InputStreamBitmapSource
+import java.io.InputStream
 
 abstract class EagerBitmapLoader {
     abstract fun scaleTo(width: Int, height: Int): EagerBitmapLoader
@@ -25,5 +27,9 @@ abstract class EagerBitmapLoader {
         @JvmStatic
         fun fromAsset(assets: AssetManager, path: String): EagerBitmapLoader =
                 BitmapSourceEagerLoader(AndroidAssetBitmapSource(assets, path))
+
+        @JvmStatic
+        fun fromStream(stream: InputStream): EagerBitmapLoader =
+                BitmapSourceEagerLoader(InputStreamBitmapSource(stream))
     }
 }

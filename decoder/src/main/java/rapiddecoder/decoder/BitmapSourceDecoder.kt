@@ -12,7 +12,7 @@ internal abstract class BitmapSourceDecoder(
     protected var bitmapHeight = INVALID_SIZE
     protected var imageMimeType: String? = null
 
-    protected var bitmapDensityScale = if (source.densityScaleSupported) Float.NaN else 1f
+    protected var bitmapDensityScale = if (source.supportsDensityScale) Float.NaN else 1f
 
     override val sourceWidth: Int
         get() {
@@ -54,7 +54,7 @@ internal abstract class BitmapSourceDecoder(
             return bitmapDensityScale
         }
 
-    private fun decodeBounds() {
+    protected fun decodeBounds() {
         if (bitmapWidth != INVALID_SIZE &&
                 imageMimeType != null &&
                 !bitmapDensityScale.isNaN()) {
@@ -130,13 +130,13 @@ internal abstract class BitmapSourceDecoder(
                         input: BitmapDecodeInput,
                         output: BitmapDecodeOutput): Bitmap {
         prepareDecode(options, input, output)
-        val bitmap = decodeResource(options, input, output)
+        val bitmap = decodeSource(options, input, output)
         return finalizeDecode(options, input, output, bitmap)
     }
 
-    protected abstract fun decodeResource(options: LoadBitmapOptions,
-                                          input: BitmapDecodeInput,
-                                          output: BitmapDecodeOutput): Bitmap
+    protected abstract fun decodeSource(options: LoadBitmapOptions,
+                                        input: BitmapDecodeInput,
+                                        output: BitmapDecodeOutput): Bitmap
 
     companion object {
         internal const val INVALID_SIZE = -1

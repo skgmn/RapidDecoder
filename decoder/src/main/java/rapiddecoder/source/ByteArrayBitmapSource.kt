@@ -8,7 +8,10 @@ internal class ByteArrayBitmapSource(
         private val bytes: ByteArray,
         private val offset: Int,
         private val length: Int) : BitmapSource {
-    override val densityScaleSupported: Boolean
+    override val reopenable: Boolean
+        get() = true
+
+    override val supportsDensityScale: Boolean
         get() = false
 
     override fun decode(opts: BitmapFactory.Options?): Bitmap? =

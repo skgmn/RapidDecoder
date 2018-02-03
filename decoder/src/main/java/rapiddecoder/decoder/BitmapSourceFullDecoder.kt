@@ -35,15 +35,20 @@ internal class BitmapSourceFullDecoder(source: BitmapSource) : BitmapSourceDecod
         return BitmapSourceRegionDecoder(source, left, top, right, bottom)
     }
 
-    override fun decodeResource(options: LoadBitmapOptions,
-                                input: BitmapDecodeInput,
-                                output: BitmapDecodeOutput): Bitmap {
+    override fun decodeSource(options: LoadBitmapOptions,
+                              input: BitmapDecodeInput,
+                              output: BitmapDecodeOutput): Bitmap {
         val opts = output.options
+
+        if (!source.reopenable && opts.inSampleSize != 1) {
+            decodeBounds()
+        }
+
         val bitmap = source.decode(opts) ?: throw DecodeFailedException()
 
         imageMimeType = opts.outMimeType
         if (bitmapDensityScale.isNaN()) {
-            val scale = if (source.densityScaleSupported &&
+            val scale = if (source.supportsDensityScale &&
                     opts.inTargetDensity != 0 && opts.inDensity != 0) {
                 opts.inTargetDensity.toDouble() / opts.inDensity
             } else {

@@ -6,7 +6,10 @@ import android.graphics.BitmapRegionDecoder
 import java.io.FileDescriptor
 
 class FileDescriptorBitmapSource(private val fd: FileDescriptor) : BitmapSource {
-    override val densityScaleSupported: Boolean
+    override val reopenable: Boolean
+        get() = true
+
+    override val supportsDensityScale: Boolean
         get() = false
 
     override fun decode(opts: BitmapFactory.Options?): Bitmap? =

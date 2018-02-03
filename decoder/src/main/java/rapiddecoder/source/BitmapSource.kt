@@ -5,7 +5,8 @@ import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
 
 internal interface BitmapSource {
-    val densityScaleSupported: Boolean
+    val supportsDensityScale: Boolean
+    val reopenable: Boolean
 
     fun decode(opts: BitmapFactory.Options?): Bitmap?
     fun createRegionDecoder(): BitmapRegionDecoder

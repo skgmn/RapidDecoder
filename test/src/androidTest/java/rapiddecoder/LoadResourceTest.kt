@@ -54,7 +54,16 @@ class LoadResourceTest {
                         },
                         eagerLoaderProvider = {
                             EagerBitmapLoader.fromAsset(context, "doomsday_rule.jpg")
-                        })
+                        }),
+                TestTarget(
+                        name = "stream/img_fjords",
+                        loaderProvider = {
+                            BitmapLoader.fromStream(context.assets.open("img_fjords.jpg"))
+                        },
+                        eagerLoaderProvider = {
+                            EagerBitmapLoader.fromStream(context.assets.open("img_fjords.jpg"))
+                        }
+                )
         )
     }
 

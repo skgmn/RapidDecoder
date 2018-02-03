@@ -8,7 +8,10 @@ import android.graphics.BitmapRegionDecoder
 internal class AndroidResourceBitmapSource(
         private val res: Resources,
         private val resId: Int) : BitmapSource {
-    override val densityScaleSupported: Boolean
+    override val reopenable: Boolean
+        get() = true
+
+    override val supportsDensityScale: Boolean
         get() = true
 
     override fun decode(opts: BitmapFactory.Options?): Bitmap? =
