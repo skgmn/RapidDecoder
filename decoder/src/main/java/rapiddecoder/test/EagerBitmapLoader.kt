@@ -6,7 +6,9 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import rapiddecoder.source.AndroidAssetBitmapSource
 import rapiddecoder.source.AndroidResourceBitmapSource
+import rapiddecoder.source.FileBitmapSource
 import rapiddecoder.source.InputStreamBitmapSource
+import java.io.File
 import java.io.InputStream
 
 abstract class EagerBitmapLoader {
@@ -31,5 +33,9 @@ abstract class EagerBitmapLoader {
         @JvmStatic
         fun fromStream(stream: InputStream): EagerBitmapLoader =
                 BitmapSourceEagerLoader(InputStreamBitmapSource(stream))
+
+        @JvmStatic
+        fun fromFile(file: File): EagerBitmapLoader =
+                BitmapSourceEagerLoader(FileBitmapSource(file.absolutePath))
     }
 }

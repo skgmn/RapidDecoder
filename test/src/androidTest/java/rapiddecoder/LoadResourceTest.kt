@@ -22,6 +22,20 @@ class LoadResourceTest {
     fun setup() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         res = context.resources
+
+        if (!fileExported) {
+            fileExported = true
+            context.openFileOutput("soap_bubble.jpg", Context.MODE_PRIVATE).use { output ->
+                context.assets.open("soap_bubble.jpg").use { input ->
+                    val buffer = ByteArray(4096)
+                    var bytesRead = 0
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        output.write(buffer, 0, bytesRead)
+                    }
+                }
+            }
+        }
+
         testTargets = arrayOf(
                 TestTarget(
                         name = "res/android",
@@ -62,8 +76,15 @@ class LoadResourceTest {
                         },
                         eagerLoaderProvider = {
                             EagerBitmapLoader.fromStream(context.assets.open("img_fjords.jpg"))
-                        }
-                )
+                        }),
+                TestTarget(
+                        name = "file/soap_bubble",
+                        loaderProvider = {
+                            BitmapLoader.fromFile(context.getFileStreamPath("soap_bubble.jpg"))
+                        },
+                        eagerLoaderProvider = {
+                            EagerBitmapLoader.fromFile(context.getFileStreamPath("soap_bubble.jpg"))
+                        })
         )
     }
 
@@ -183,5 +204,9 @@ class LoadResourceTest {
                         bitmap1.sameAs(bitmap2))
             }
         }
+    }
+
+    companion object {
+        private var fileExported = false
     }
 }
