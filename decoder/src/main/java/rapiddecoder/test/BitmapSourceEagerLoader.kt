@@ -91,6 +91,36 @@ internal class BitmapSourceEagerLoader(
         return MemoryEagerBitmapLoader(scaledBitmap)
     }
 
+    override fun scaleHeight(height: Int): EagerBitmapLoader {
+        val opts = BitmapFactory.Options()
+        opts.inScaled = false
+        opts.inJustDecodeBounds = true
+        source.decode(opts)
+
+        val densityScale = if (opts.inDensity == 0) {
+            1f
+        } else {
+            opts.inTargetDensity / opts.inDensity.toFloat()
+        }
+
+        val sourceWidth = Math.round(opts.outWidth * densityScale)
+        val sourceHeight = Math.round(opts.outHeight * densityScale)
+        var scaleHeight = height / sourceHeight.toFloat()
+        val width = Math.round(sourceWidth * scaleHeight)
+        var sampleSize = 1
+        while (scaleHeight <= 0.5f) {
+            sampleSize *= 2
+            scaleHeight *= 2f
+        }
+
+        opts.inScaled = true
+        opts.inJustDecodeBounds = false
+        opts.inSampleSize = sampleSize
+        val bitmap = source.decode(opts)
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        return MemoryEagerBitmapLoader(scaledBitmap)
+    }
+
     override fun region(left: Int, top: Int, right: Int, bottom: Int): EagerBitmapLoader {
         val opts = BitmapFactory.Options()
         opts.inJustDecodeBounds = true

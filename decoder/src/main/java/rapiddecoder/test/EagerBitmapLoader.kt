@@ -15,6 +15,7 @@ abstract class EagerBitmapLoader {
     abstract fun scaleTo(width: Int, height: Int): EagerBitmapLoader
     abstract fun scaleBy(x: Float, y: Float): EagerBitmapLoader
     abstract fun scaleWidth(width: Int): EagerBitmapLoader
+    abstract fun scaleHeight(height: Int): EagerBitmapLoader
     abstract fun region(left: Int, top: Int, right: Int, bottom: Int): EagerBitmapLoader
     abstract fun loadBitmap(): Bitmap
 

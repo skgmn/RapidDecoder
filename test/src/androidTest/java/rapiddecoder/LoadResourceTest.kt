@@ -205,8 +205,8 @@ class LoadResourceTest {
     @Test
     fun scaleWidth() {
         val testWidths = intArrayOf(
-                404/*, 311, 448, 152, 278,
-                127, 466, 258, 329, 483*/
+                404, 311, 448, 152, 278,
+                127, 466, 258, 329, 483
         )
         testTargets.forEach { t ->
             testWidths.forEach { w ->
@@ -234,6 +234,46 @@ class LoadResourceTest {
                 assertEquals(bitmap1.width, width)
                 assertEquals(bitmap1.height, height)
                 assertTrue("${t.name}.scaleWidth($w)",
+                        bitmap1.sameAs(bitmap2))
+            }
+        }
+    }
+
+    @Test
+    fun scaleHeight() {
+        val testHeights = intArrayOf(
+                166, 201, 129, 41, 407,
+                158, 63, 272, 55, 434
+        )
+        testTargets.forEach { t ->
+            testHeights.forEach { h ->
+                if (t.name == "res/pond" && h == 201) {
+                    val a = ""
+                }
+                val loader = t.loaderProvider()
+                        .scaleHeight(h)
+                val bitmap1 = loader.loadBitmap()
+                val bitmap2 = t.eagerLoaderProvider()
+                        .scaleHeight(h)
+                        .loadBitmap()
+                assertEquals(bitmap1.width, loader.width)
+                assertEquals(bitmap1.height, loader.height)
+                assertTrue("${t.name}.scaleHeight($h)",
+                        bitmap1.sameAs(bitmap2))
+            }
+            testHeights.forEach { h ->
+                val loader = t.loaderProvider()
+                        .scaleHeight(h)
+                val width = loader.width
+                val height = loader.height
+
+                val bitmap1 = loader.loadBitmap()
+                val bitmap2 = t.eagerLoaderProvider()
+                        .scaleHeight(h)
+                        .loadBitmap()
+                assertEquals(bitmap1.width, width)
+                assertEquals(bitmap1.height, height)
+                assertTrue("${t.name}.scaleHeight($h)",
                         bitmap1.sameAs(bitmap2))
             }
         }

@@ -1,27 +1,15 @@
 package rapiddecoder.decoder
 
-import android.graphics.Bitmap
 import rapiddecoder.BitmapLoader
 import rapiddecoder.LoadBitmapOptions
 import rapiddecoder.MetadataType
 
-internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
-                                           private val targetHeight: Float,
-                                           private val widthAdjustRatio: Float) : BitmapDecoder() {
-    override val width: Int
-        get() = Math.round(targetWidth)
-    override val height: Int
-        get() = Math.round(targetHeight)
-    override val sourceWidth: Int
-        get() = other.sourceWidth
-    override val sourceHeight: Int
-        get() = other.sourceHeight
-    override val mimeType: String?
-        get() = other.mimeType
-    override val densityScale: Float
-        get() = other.densityScale
-
-    private val targetWidth: Float by lazy {
+internal class ScaleHeightTransformDecoder(
+        other: BitmapDecoder,
+        override val targetHeight: Float,
+        private val widthAdjustRatio: Float
+) : AbstractScaleToTransformDecoder(other) {
+    override val targetWidth: Float by lazy {
         targetHeight * (other.width.toFloat() / other.height) * widthAdjustRatio
     }
 
@@ -79,23 +67,12 @@ internal class ScaleHeightTransformDecoder(private val other: BitmapDecoder,
     }
 
     override fun buildInput(options: LoadBitmapOptions): BitmapDecodeInput {
-        val scale = targetHeight / other.sourceHeight
+        val scale = targetHeight / other.height
         return other.buildInput(options).apply {
             scaleX *= scale
             scaleY *= scale
         }
     }
 
-    override fun decode(options: LoadBitmapOptions,
-                        input: BitmapDecodeInput,
-                        output: BitmapDecodeOutput): Bitmap {
-        return synchronized(other.decodeLock) {
-            other.decode(options, input, output)
-        }
-    }
-
-    override fun hasMetadata(type: MetadataType): Boolean = when (type) {
-        MetadataType.SIZE -> true
-        else -> other.hasMetadata(type)
-    }
+    override fun hasMetadata(type: MetadataType): Boolean = other.hasMetadata(type)
 }
