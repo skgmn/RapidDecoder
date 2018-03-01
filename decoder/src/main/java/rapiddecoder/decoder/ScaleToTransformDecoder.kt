@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import rapiddecoder.BitmapLoader
 import rapiddecoder.LoadBitmapOptions
 import rapiddecoder.MetadataType
-import kotlin.math.roundToInt
 
 internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
                                        private val targetWidth: Float,
@@ -91,8 +90,8 @@ internal class ScaleToTransformDecoder(private val other: BitmapDecoder,
             return bitmap
         }
 
-        val targetWidth = targetWidth.roundToInt()
-        val targetHeight = targetHeight.roundToInt()
+        val targetWidth = width
+        val targetHeight = height
         return if (bitmap.width != targetWidth || bitmap.height != targetHeight) {
             Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
         } else {

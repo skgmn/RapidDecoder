@@ -6,8 +6,6 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import rapiddecoder.decoder.DecodeFailedException
 import rapiddecoder.source.BitmapSource
-import rapiddecoder.test.EagerBitmapLoader
-import rapiddecoder.test.MemoryEagerBitmapLoader
 
 internal class BitmapSourceEagerLoader(
         private val source: BitmapSource
@@ -60,6 +58,36 @@ internal class BitmapSourceEagerLoader(
         m.setScale(scaleWidth, scaleHeight)
         val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height,
                 m, true)
+        return MemoryEagerBitmapLoader(scaledBitmap)
+    }
+
+    override fun scaleWidth(width: Int): EagerBitmapLoader {
+        val opts = BitmapFactory.Options()
+        opts.inScaled = false
+        opts.inJustDecodeBounds = true
+        source.decode(opts)
+
+        val densityScale = if (opts.inDensity == 0) {
+            1f
+        } else {
+            opts.inTargetDensity / opts.inDensity.toFloat()
+        }
+
+        val sourceWidth = Math.round(opts.outWidth * densityScale)
+        val sourceHeight = Math.round(opts.outHeight * densityScale)
+        var scaleWidth = width / sourceWidth.toFloat()
+        val height = Math.round(sourceHeight * scaleWidth)
+        var sampleSize = 1
+        while (scaleWidth <= 0.5f) {
+            sampleSize *= 2
+            scaleWidth *= 2f
+        }
+
+        opts.inScaled = true
+        opts.inJustDecodeBounds = false
+        opts.inSampleSize = sampleSize
+        val bitmap = source.decode(opts)
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
         return MemoryEagerBitmapLoader(scaledBitmap)
     }
 

@@ -17,6 +17,12 @@ internal class MemoryEagerBitmapLoader(private val bitmap: Bitmap): EagerBitmapL
         return MemoryEagerBitmapLoader(newBitmap)
     }
 
+    override fun scaleWidth(width: Int): EagerBitmapLoader {
+        val height = Math.round(width.toFloat() * bitmap.height / bitmap.width)
+        val newBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        return MemoryEagerBitmapLoader(newBitmap)
+    }
+
     override fun region(left: Int, top: Int, right: Int, bottom: Int): EagerBitmapLoader {
         val newBitmap = Bitmap.createBitmap(bitmap, left, top,
                 right - left, bottom - top, null, true)

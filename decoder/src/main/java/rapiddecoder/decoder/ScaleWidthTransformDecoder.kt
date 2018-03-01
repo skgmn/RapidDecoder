@@ -89,13 +89,29 @@ internal class ScaleWidthTransformDecoder(private val other: BitmapDecoder,
     override fun decode(options: LoadBitmapOptions,
                         input: BitmapDecodeInput,
                         output: BitmapDecodeOutput): Bitmap {
-        return synchronized(other.decodeLock) {
-            other.decode(options, input, output)
+        val newInput = if (!input.finalScale) {
+            input
+        } else {
+            BitmapDecodeInput(input).apply {
+                finalScale = false
+            }
+        }
+        val bitmap = synchronized(other.decodeLock) {
+            other.decode(options, newInput, output)
+        }
+
+        if (!input.finalScale) {
+            return bitmap
+        }
+
+        val targetWidth = width
+        val targetHeight = height
+        return if (bitmap.width != targetWidth || bitmap.height != targetHeight) {
+            Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+        } else {
+            bitmap
         }
     }
 
-    override fun hasMetadata(type: MetadataType): Boolean = when (type) {
-        MetadataType.SIZE -> true
-        else -> other.hasMetadata(type)
-    }
+    override fun hasMetadata(type: MetadataType): Boolean = other.hasMetadata(type)
 }

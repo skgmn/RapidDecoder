@@ -27,11 +27,7 @@ class LoadResourceTest {
             fileExported = true
             context.openFileOutput("soap_bubble.jpg", Context.MODE_PRIVATE).use { output ->
                 context.assets.open("soap_bubble.jpg").use { input ->
-                    val buffer = ByteArray(4096)
-                    var bytesRead = 0
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                    }
+                    input.copyTo(output)
                 }
             }
         }
@@ -201,6 +197,43 @@ class LoadResourceTest {
                 assertEquals(bitmap1.width, width)
                 assertEquals(bitmap1.height, height)
                 assertTrue("${t.name}.scaleBy(${dimension.x}, ${dimension.y})",
+                        bitmap1.sameAs(bitmap2))
+            }
+        }
+    }
+
+    @Test
+    fun scaleWidth() {
+        val testWidths = intArrayOf(
+                404/*, 311, 448, 152, 278,
+                127, 466, 258, 329, 483*/
+        )
+        testTargets.forEach { t ->
+            testWidths.forEach { w ->
+                val loader = t.loaderProvider()
+                        .scaleWidth(w)
+                val bitmap1 = loader.loadBitmap()
+                val bitmap2 = t.eagerLoaderProvider()
+                        .scaleWidth(w)
+                        .loadBitmap()
+                assertEquals(bitmap1.width, loader.width)
+                assertEquals(bitmap1.height, loader.height)
+                assertTrue("${t.name}.scaleWidth($w)",
+                        bitmap1.sameAs(bitmap2))
+            }
+            testWidths.forEach { w ->
+                val loader = t.loaderProvider()
+                        .scaleWidth(w)
+                val width = loader.width
+                val height = loader.height
+
+                val bitmap1 = loader.loadBitmap()
+                val bitmap2 = t.eagerLoaderProvider()
+                        .scaleWidth(w)
+                        .loadBitmap()
+                assertEquals(bitmap1.width, width)
+                assertEquals(bitmap1.height, height)
+                assertTrue("${t.name}.scaleWidth($w)",
                         bitmap1.sameAs(bitmap2))
             }
         }
